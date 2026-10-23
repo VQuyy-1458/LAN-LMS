@@ -155,3 +155,7 @@ Server gửi `heartbeat` mỗi 15 giây, client trả `heartbeat.ack` có id tro
 ## 11. Thay đổi và kiểm chứng
 
 Thành viên 1 sở hữu chuẩn chung và auth/WS; 3 sở hữu course/CSV/materials/attendance/gradebook; 4 sở hữu assignment/exam/submission/judge; 2 tích hợp frontend. Các module phải dùng response model và test quyền tương ứng. OpenAPI sinh từ code phải khớp tài liệu; hiện chưa có code nên chưa xác nhận endpoint, hiệu năng hay tính an toàn đã đạt.
+
+## 12. Trạng thái triển khai thành viên 1
+
+Đã có auth, health, WS, dependency phân quyền và migration nền tảng; 11 kiểm thử tự động đã qua ngày 24/10/2026. Các API course/CSV/materials/attendance/assignment/exam/submission/gradebook ở trên vẫn là hợp đồng cho các thành viên tích hợp, chưa có implementation. Hướng dẫn chạy và giới hạn tại [MEMBER_1_HANDOFF.md](MEMBER_1_HANDOFF.md).

@@ -1513,7 +1513,7 @@ Một lưu ý về tiến độ: khoảng thời gian 22–31/10 rất ngắn đ
 
 ## 59. Trạng thái và nguồn yêu cầu
 
-Đây là đặc tả thiết kế, chưa phải mô tả sản phẩm đã triển khai. Tại lần rà soát 24/10/2026, repository chỉ có tài liệu và `.gitignore`; chưa có ứng dụng, migration hoặc kết quả kiểm thử. Không đánh dấu Done theo ngày kế hoạch.
+Đây là đặc tả thiết kế của toàn hệ thống. Ban đầu repository chỉ có tài liệu; lần triển khai thành viên 1 ngày 24/10/2026 đã bổ sung nền tảng auth/session/CSRF, quyền dùng chung, WebSocket, migration và kiểm thử. Xem [bàn giao thành viên 1](MEMBER_1_HANDOFF.md). Chưa hoàn thành frontend/LMS/judge hay kiểm thử LAN xuyên suốt. Không đánh dấu Done theo ngày kế hoạch.
 
 Nguồn đối chiếu: Instruction.md (yêu cầu kỹ thuật, báo cáo, thực nghiệm), Topics.md (chủ đề 3, mục 4.5–4.6), README.md mẫu học phần và Submission.md (đóng gói, hạn nộp). Không cần chép đường dẫn máy cá nhân vào repository. Các chức năng CSV, QR, lịch, trọng số, C/C++ và Java là phạm vi nhóm chọn theo trao đổi với giảng viên; không phải tất cả đều được bắt buộc riêng trong bốn file yêu cầu chung.
 

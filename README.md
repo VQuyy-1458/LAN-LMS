@@ -2,7 +2,7 @@
 
 Hệ thống quản lý học tập và thi lập trình trên mạng LAN theo mô hình Client–Server, dành cho nhóm 4 thành viên.
 
-**Trạng thái ngày 24/10/2026:** repository đang ở giai đoạn đặc tả; chỉ có tài liệu và `.gitignore`, chưa có frontend/backend/judge. Chưa có lệnh chạy hay kết quả kiểm thử đã xác minh.
+**Trạng thái ngày 24/10/2026:** đã triển khai nền tảng backend thành viên 1 (auth, session, CSRF, quyền dùng chung, WebSocket, migration và kiểm thử). Frontend, nghiệp vụ LMS và judge chưa triển khai. Xem [hướng dẫn chạy và bàn giao](docs/MEMBER_1_HANDOFF.md).
 
 ## Tài liệu chính
 
@@ -52,13 +52,13 @@ Tên/MSSV và tỷ lệ đóng góp thực tế sẽ được nhóm bổ sung; k
 
 ## Cấu trúc hiện tại và kế hoạch
 
-Hiện có README này, `docs/PROJECT_PLAN.md`, `docs/api-specification.md`, `.gitignore`.
+Hiện có `server/app/`, `database/migrations/`, `scripts/`, `tests/` và tài liệu. Xem [bàn giao thành viên 1](docs/MEMBER_1_HANDOFF.md) để chạy backend và tích hợp.
 
 Khi triển khai sẽ tạo `client/`, `server/`, `judge/`, `database/`, `storage/`, `scripts/`, `tests/`, `experiments/`, `REPORT/`. Không coi các thư mục mô tả trong kế hoạch là đã tồn tại.
 
 ## Cài đặt, cấu hình và chạy
 
-Chưa có mã nguồn, dependency lockfile hoặc migration nên chưa cung cấp lệnh chạy được xác nhận. Ví dụ trong kế hoạch là hướng dẫn thiết kế. Trước bàn giao phải bổ sung:
+Backend đã có dependency lockfile, migration và lệnh chạy trong [hướng dẫn thành viên 1](docs/MEMBER_1_HANDOFF.md). Trước bàn giao toàn hệ thống vẫn cần:
 
 1. Phiên bản Python, Node, compiler/JDK, Docker/WSL2 đã thử.
 2. Dependency/lockfile, build image judge và `.env.example` không có secret.
