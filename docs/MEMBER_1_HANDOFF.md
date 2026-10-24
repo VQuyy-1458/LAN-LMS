@@ -92,3 +92,7 @@ Hub hỗ trợ submission.updated, exam.updated, session.updated. Chưa có exam
 `tests/test_member1.py` kiểm thử login/logout, cookie, Origin/CSRF, mật khẩu/thu hồi toàn bộ session, phân quyền, policy fail closed, expiry/inactive, rate limit, WS heartbeat/delivery/revocation/timeout và migration upgrade/downgrade/upgrade.
 
 Không có secret/DB mẫu thật được commit. Chưa xác nhận hiệu năng, benchmark, frontend hay judge end-to-end, LAN hai máy và sandbox. Nginx phải được kiểm thử trên máy triển khai. Khi thêm router, áp dụng learning_user hoặc dependency chuyên biệt cho mọi endpoint cần bảo vệ. Không sửa current_user để bỏ bắt buộc đổi mật khẩu của các module khác.
+
+## Cập nhật cấu trúc thư mục
+
+Auth router hiện ở server/app/modules/auth/router.py, export qua modules/auth/__init__.py; main.py giữ nguyên import. Các file khung mới được mô tả tại [REPOSITORY_GUIDE.md](REPOSITORY_GUIDE.md). Không coi các module router rỗng là đã tích hợp.

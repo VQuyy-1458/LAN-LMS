@@ -5,8 +5,8 @@ from fastapi import APIRouter, Depends, Request, Response
 from pydantic import BaseModel, Field
 from sqlalchemy import delete, func, select
 
-from ..core.database import AuthSession, LoginAttempt, User
-from ..core.security import COOKIE, check_origin, current_user, digest, fail, hasher, verify
+from ...core.database import AuthSession, LoginAttempt, User
+from ...core.security import COOKIE, check_origin, current_user, digest, fail, hasher, verify
 
 router = APIRouter(prefix='/api/auth', tags=['auth'])
 # A valid hash prevents skipping the expensive password check for unknown usernames.

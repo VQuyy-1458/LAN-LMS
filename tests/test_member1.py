@@ -162,6 +162,10 @@ def test_websocket_recipient_isolation(app):
         with c.websocket_connect('/ws', headers=ORIGIN) as ws:
             c.portal.call(app.state.hub.publish, 'submission.updated', {'submission_id': 99}, {999})
             assert ws.receive_json()['type'] == 'heartbeat'
+            # Let the endpoint close cleanly before TestClient tears down its task.
+            ws.send_json({'type': 'heartbeat.ack', 'id': 'invalid'})
+            with pytest.raises(WebSocketDisconnect):
+                ws.receive_json()
 
 
 def test_secure_cookie(app):

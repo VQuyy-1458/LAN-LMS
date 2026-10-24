@@ -2,7 +2,7 @@
 
 Hệ thống quản lý học tập và thi lập trình trên mạng LAN theo mô hình Client–Server, dành cho nhóm 4 thành viên.
 
-**Trạng thái ngày 24/10/2026:** đã triển khai nền tảng backend thành viên 1 (auth, session, CSRF, quyền dùng chung, WebSocket, migration và kiểm thử). Frontend, nghiệp vụ LMS và judge chưa triển khai. Xem [hướng dẫn chạy và bàn giao](docs/MEMBER_1_HANDOFF.md).
+**Trạng thái ngày 24/10/2026:** đã triển khai nền tảng backend thành viên 1 (auth, session, CSRF, quyền dùng chung, WebSocket, migration và kiểm thử). Frontend, nghiệp vụ LMS và judge mới có file khung, chưa có chức năng. Xem [hướng dẫn chạy và bàn giao](docs/MEMBER_1_HANDOFF.md).
 
 ## Tài liệu chính
 
@@ -54,7 +54,7 @@ Tên/MSSV và tỷ lệ đóng góp thực tế sẽ được nhóm bổ sung; k
 
 Hiện có `server/app/`, `database/migrations/`, `scripts/`, `tests/` và tài liệu. Xem [bàn giao thành viên 1](docs/MEMBER_1_HANDOFF.md) để chạy backend và tích hợp.
 
-Khi triển khai sẽ tạo `client/`, `server/`, `judge/`, `database/`, `storage/`, `scripts/`, `tests/`, `experiments/`, `REPORT/`. Không coi các thư mục mô tả trong kế hoạch là đã tồn tại.
+Đã tạo sẵn `client/`, `server/`, `judge/`, `database/`, `storage/`, `scripts/`, `tests/`, `experiments/`, `REPORT/`. Xem [quy ước thư mục](docs/REPOSITORY_GUIDE.md). Ngoài nền tảng thành viên 1, các file còn lại là khung có ghi rõ người phụ trách; frontend chưa có dependencies/scripts và judge chưa chạy được.
 
 ## Cài đặt, cấu hình và chạy
 

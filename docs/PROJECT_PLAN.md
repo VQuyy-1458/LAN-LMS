@@ -746,6 +746,8 @@ Hợp đồng phiên bản 1.1 được quy định tại [api-specification.md]
 
 ## 27. Cấu trúc thư mục thống nhất
 
+Đã tạo khung theo cấu trúc dưới; code nền tảng thành viên 1 đang có được giữ nguyên và auth.py đã chuyển thành modules/auth/router.py. Xem [REPOSITORY_GUIDE.md](REPOSITORY_GUIDE.md) để biết nơi đặt code và trạng thái file khung. Frontend manifest chưa có dependencies/scripts; judge và Compose chưa triển khai.
+
 ```
 LAN-LMS/
 ├── client/
@@ -1592,7 +1594,7 @@ Baseline do nhóm xây dựng: cùng pipeline, một worker. Phương án so sá
 | Worker dừng khi đang chấm | Dừng worker, đợi lease, khởi động lại | Không mất job, chỉ một kết quả cuối được ghi |
 | Retry và dữ liệu lỗi | Cùng key gửi lại; CSV trùng; QR trùng | Không tạo bản ghi trùng, mã lỗi đúng |
 
-Ghi CPU/RAM/OS, phiên bản công cụ, cấu hình LAN, số worker, dataset, lần chạy và cách warm-up. Tải mô phỏng từ một máy không được mô tả thành 20 máy vật lý. Lưu script, dữ liệu giả lập, log thô và bảng tổng hợp trong `tests/load/` và `experiments/`; chưa tạo các thư mục này cho đến khi có nội dung thật.
+Ghi CPU/RAM/OS, phiên bản công cụ, cấu hình LAN, số worker, dataset, lần chạy và cách warm-up. Tải mô phỏng từ một máy không được mô tả thành 20 máy vật lý. Lưu script, dữ liệu giả lập, log thô và bảng tổng hợp trong `tests/load/` và `experiments/`; các thư mục này có thể có .gitkeep giữ chỗ, chỉ bổ sung kết quả khi đã đo thực tế.
 
 Không bịa số liệu. Báo cáo theo cấu trúc technical paper trong Instruction.md: Abstract, Keywords, Introduction, Related Work, Problem Definition, Approach, Architecture, Network Design, Implementation, Experimental Setup, Results, Discussion, Contributions, Limitations, Future Work, Conclusion, References và Appendix khi cần.
 

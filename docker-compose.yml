@@ -1,0 +1,3 @@
+# Scaffold only — member 4 adds tested judge services/images and sandbox limits.
+# No service is configured; this file does not start the application.
+services: {}
