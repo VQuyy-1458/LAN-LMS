@@ -1,4 +1,20 @@
-// Thành viên 2: bổ sung cấu hình sau khi chốt phiên bản Next.js.
-// Proxy API/WS cùng origin được cấu hình tại scripts/nginx.conf.
-const nextConfig = {};
+import type { NextConfig } from "next";
+
+const apiUpstream = process.env.API_UPSTREAM;
+
+const nextConfig: NextConfig = {
+  async rewrites() {
+    if (!apiUpstream) {
+      return [];
+    }
+
+    return [
+      {
+        source: "/api/:path*",
+        destination: `${apiUpstream}/api/:path*`,
+      },
+    ];
+  },
+};
+
 export default nextConfig;
