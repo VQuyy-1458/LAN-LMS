@@ -159,3 +159,12 @@ Thành viên 1 sở hữu chuẩn chung và auth/WS; 3 sở hữu course/CSV/mat
 ## 12. Trạng thái triển khai thành viên 1
 
 Đã có auth, health, WS, dependency phân quyền và migration nền tảng; 11 kiểm thử tự động đã qua ngày 24/10/2026. Các API course/CSV/materials/attendance/assignment/exam/submission/gradebook ở trên vẫn là hợp đồng cho các thành viên tích hợp, chưa có implementation. Hướng dẫn chạy và giới hạn tại [MEMBER_1_HANDOFF.md](MEMBER_1_HANDOFF.md).
+
+## 13. Bổ sung nền tảng ngày 24/10/2026
+
+- GET /api/health: 200 khi kết nối DB được; GET /api/ready: 200 khi đọc được các cột/bảng auth cần thiết, 503 DATABASE_UNAVAILABLE nếu chưa migration hoặc DB lỗi. Hai endpoint không cần đăng nhập và không trả secret.
+- GET /api/auth/csrf trả token ổn định trong cùng phiên, không làm tab khác mất token. Đổi phiên tạo token mới; logout/đổi mật khẩu thu hồi phiên như trước.
+- Đăng nhập lại thành công thu hồi cookie phiên cũ đang được thay thế. Không thu hồi các phiên trên thiết bị khác khi chỉ login; đổi mật khẩu vẫn thu hồi tất cả.
+- ErrorResponse và auth response model được xuất trong OpenAPI. Lỗi validation không phản chiếu input mật khẩu. Header X-Request-ID khớp request_id trong lỗi.
+- Common Pagination nhận page >=1, page_size 1–100; response items/page/page_size/total. utc_iso yêu cầu datetime có timezone và trả UTC với Z. Các module nghiệp vụ cần dùng các tiện ích này khi triển khai.
+- SQLite URL tương đối tính từ gốc repository, không từ thư mục terminal; cấu hình origin/bool/đường dẫn được kiểm tra khi tạo app.

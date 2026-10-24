@@ -48,3 +48,6 @@ Desktop.ini
 # Generated frontend types/cache
 client/next-env.d.ts
 *.tsbuildinfo
+
+# Local proxy runtime
+.runtime/

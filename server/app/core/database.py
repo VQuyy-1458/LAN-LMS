@@ -2,6 +2,7 @@ import time
 
 from sqlalchemy import CheckConstraint, ForeignKey, String, create_engine, event
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
+from fastapi import Request
 
 
 class Base(DeclarativeBase):
@@ -43,3 +44,17 @@ def database(url):
             connection.execute('PRAGMA journal_mode=WAL')
             connection.execute('PRAGMA busy_timeout=5000')
     return engine, sessionmaker(engine, expire_on_commit=False)
+
+
+def get_db(request: Request):
+    """TV1/TV3: one unit of work per dependency invocation.
+
+    Services commit explicitly; exceptions and uncommitted work roll back on close.
+    Never share this session across requests, threads or judge processes.
+    """
+    with request.app.state.sessions() as db:
+        try:
+            yield db
+        except BaseException:
+            db.rollback()
+            raise

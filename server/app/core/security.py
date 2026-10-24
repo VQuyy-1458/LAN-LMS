@@ -64,6 +64,8 @@ def current_user(request: Request):
         with request.app.state.sessions() as db:
             session = db.get(AuthSession, principal.session_hash)
             supplied = request.headers.get('x-csrf-token', '')
+            if not session or session.expires_at <= time.time():
+                fail(401, "UNAUTHENTICATED", "Vui lòng đăng nhập")
             if not session.csrf_hash or not secrets.compare_digest(session.csrf_hash, digest(supplied)):
                 fail(403, 'INVALID_CSRF', 'CSRF token không hợp lệ')
     return principal

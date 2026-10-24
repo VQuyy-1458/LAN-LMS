@@ -6,6 +6,8 @@ Hệ thống quản lý học tập và thi lập trình trên mạng LAN theo m
 
 ## Tài liệu chính
 
+- [TV1 — công việc ngày 24/10 và kết quả kiểm chứng](docs/MEMBER_1_DAY_24.md): 27 test backend đã qua; A08/Q01 còn chờ tích hợp frontend/LAN/judge.
+
 - [Bản đặc tả và kế hoạch đầy đủ 1.1](docs/PROJECT_PLAN.md): giữ khung 19 phần của bản nhóm cung cấp; bổ sung quyết định kỹ thuật, phân công, thực nghiệm và nộp bài ở phần XX.
 - [Hợp đồng API 1.1](docs/api-specification.md): xác thực, request/response, quyền, upload, retry, phiên thi và WebSocket.
 
