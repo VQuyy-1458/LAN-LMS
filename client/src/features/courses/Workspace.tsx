@@ -1,337 +1,371 @@
 "use client";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { apiRequest } from "@/lib/api";
-type Course = { id: number; name: string; course_code: string };
-type Material = { id: number; title: string; original_filename: string };
-type Assignment = { id: number; title: string; due_at: string };
-type Submission = {
-  id: number;
-  student_id: string;
-  original_filename: string;
-  score: number | null;
-};
-type Preview = {
-  preview_id: string;
-  can_confirm: boolean;
-  valid_rows: number;
-  errors: { row: number; message: string }[];
-};
-export default function Workspace({ teacher = false }: { teacher?: boolean }) {
+import { request, type Course, type Page } from "@/lib/lms";
+import { useAction } from "@/lib/useAction";
+import Feedback from "@/components/Feedback";
+import StudentsPanel from "./StudentsPanel";
+import MaterialsPanel from "./MaterialsPanel";
+import AssignmentsPanel from "./AssignmentsPanel";
+import CalendarPanel from "./CalendarPanel";
+import AttendancePanel from "./AttendancePanel";
+import ExamsPanel from "./ExamsPanel";
+import GradebookPanel from "./GradebookPanel";
+type Tab =
+  | "overview"
+  | "students"
+  | "materials"
+  | "calendar"
+  | "attendance"
+  | "assignments"
+  | "exams"
+  | "grades";
+const tabs: [Tab, string][] = [
+  ["overview", "Tổng quan"],
+  ["students", "Sinh viên"],
+  ["materials", "Tài liệu"],
+  ["calendar", "Lịch & Thông báo"],
+  ["attendance", "Điểm danh"],
+  ["assignments", "Bài tập"],
+  ["exams", "Thi lập trình"],
+  ["grades", "Bảng điểm"],
+];
+function CourseForm({
+  course,
+  save,
+  busy,
+}: {
+  course?: Course;
+  save: (body: unknown, form: HTMLFormElement) => void;
+  busy: boolean;
+}) {
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        const f = new FormData(e.currentTarget);
+        save(
+          {
+            course_code: f.get("course_code"),
+            name: f.get("name"),
+            semester: f.get("semester"),
+            academic_year: f.get("academic_year"),
+            description: f.get("description"),
+            start_date: f.get("start_date") || null,
+            end_date: f.get("end_date") || null,
+          },
+          e.currentTarget,
+        );
+      }}
+    >
+      <div className="form-grid">
+        <label>
+          Mã khóa học
+          <input
+            name="course_code"
+            required
+            defaultValue={course?.course_code}
+            maxLength={128}
+          />
+        </label>
+        <label>
+          Tên khóa học
+          <input
+            name="name"
+            required
+            defaultValue={course?.name}
+            maxLength={200}
+          />
+        </label>
+        <label>
+          Học kỳ
+          <input
+            name="semester"
+            required
+            defaultValue={course?.semester || "1"}
+          />
+        </label>
+        <label>
+          Năm học
+          <input
+            name="academic_year"
+            required
+            defaultValue={course?.academic_year || "2026-2027"}
+          />
+        </label>
+        <label>
+          Bắt đầu
+          <input
+            type="date"
+            name="start_date"
+            defaultValue={course?.start_date || ""}
+          />
+        </label>
+        <label>
+          Kết thúc
+          <input
+            type="date"
+            name="end_date"
+            defaultValue={course?.end_date || ""}
+          />
+        </label>
+        <label className="full">
+          Mô tả
+          <textarea
+            name="description"
+            defaultValue={course?.description}
+            maxLength={10000}
+          />
+        </label>
+      </div>
+      <div className="actions">
+        <button disabled={busy}>
+          {course ? "Lưu thông tin" : "Tạo khóa học"}
+        </button>
+      </div>
+    </form>
+  );
+}
+export default function Workspace({
+  teacher = false,
+  initialTab = "overview",
+}: {
+  teacher?: boolean;
+  initialTab?: Tab;
+}) {
   const [courses, setCourses] = useState<Course[]>([]),
-    [selected, setSelected] = useState(""),
-    [materials, setMaterials] = useState<Material[]>([]),
-    [assignments, setAssignments] = useState<Assignment[]>([]),
-    [submissions, setSubmissions] = useState<Record<number, Submission[]>>({}),
-    [preview, setPreview] = useState<Preview | null>(null),
-    [message, setMessage] = useState(""),
-    [error, setError] = useState(""),
-    [busy, setBusy] = useState(false);
-  const pendingKeys=useRef<Record<number,{file:File;key:string}>>({});
-  async function loadCourses() {
-    const result = await apiRequest<{ items: Course[] }>(
-      "/api/courses?page_size=100",
-    );
-    setCourses(result.items);
-  }
-  async function loadContent(id: string) {
-    if (!id) return;
-    const [m, a] = await Promise.all([
-      apiRequest<{ items: Material[] }>(
-        `/api/courses/${id}/materials?page_size=100`,
-      ),
-      apiRequest<{ items: Assignment[] }>(
-        `/api/courses/${id}/assignments?page_size=100`,
-      ),
-    ]);
-    setMaterials(m.items);
-    setAssignments(a.items);
-    setSubmissions({});
-  }
-  useEffect(() => {
-    loadCourses().catch((e) => setError(e.message));
+    [selected, setSelected] = useState(0),
+    [tab, setTab] = useState<Tab>(initialTab),
+    [search, setSearch] = useState(""),
+    [attendance, setAttendance] = useState(0),
+    [token, setToken] = useState(""),
+    [loaded, setLoaded] = useState(false);
+  const action = useAction();
+  const load = useCallback(async () => {
+    const r = await apiRequest<Page<Course>>("/api/courses?page_size=100");
+    setCourses(r.items);
+    setLoaded(true);
   }, []);
   useEffect(() => {
-    setPreview(null);
-    loadContent(selected).catch((e) => setError(e.message));
-  }, [selected]);
-  async function act(fn: () => Promise<void>) {
-    setBusy(true);
-    setError("");
-    setMessage("");
-    try {
-      await fn();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Có lỗi xảy ra");
-    } finally {
-      setBusy(false);
+    load().catch(action.setError);
+    const q = new URLSearchParams(window.location.search);
+    if (q.get("course")) setSelected(Number(q.get("course")));
+    if (q.get("attendance")) {
+      const id = Number(q.get("attendance"));
+      setAttendance(id);
+      setToken(q.get("token") || "");
+      setTab("attendance");
+      apiRequest<{ course_id: number }>(`/api/attendance-sessions/${id}`)
+        .then((r) => setSelected(r.course_id))
+        .catch(action.setError);
     }
-  }
-  function form(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    return new FormData(e.currentTarget);
-  }
+  }, [load, action.setError]);
+  const course = courses.find((c) => c.id === selected),
+    filtered = courses.filter((c) =>
+      `${c.course_code} ${c.name}`.toLowerCase().includes(search.toLowerCase()),
+    );
+  const choose = (id: number) => {
+    setSelected(id);
+    setAttendance(0);
+    setToken("");
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${id ? `?course=${id}` : ""}`,
+    );
+  };
   return (
-    <section className="space-y-6">
-      <h1 className="text-2xl font-bold">Khóa học, tài liệu và bài tập</h1>
-      {error && (
-        <p role="alert" className="rounded bg-red-50 p-3">
-          {error}
-        </p>
-      )}
-      {message && <p role="status">{message}</p>}
-      {teacher && (
-        <details>
-          <summary>Tạo khóa học</summary>
-          <form
-            className="space-y-2"
-            onSubmit={(e) => {
-              const data = form(e);
-              void act(async () => {
-                const c = await apiRequest<Course>("/api/courses", {
-                  method: "POST",
-                  body: JSON.stringify({
-                    course_code: data.get("code"),
-                    name: data.get("name"),
-                    description: data.get("description"),
-                  }),
-                });
-                await loadCourses();
-                setSelected(String(c.id));
-                setMessage("Đã tạo khóa học");
-              });
-            }}
-          >
-            <input name="code" placeholder="Mã khóa học" required />
-            <input name="name" placeholder="Tên khóa học" required />
-            <input name="description" placeholder="Mô tả" />
-            <button disabled={busy}>Tạo khóa học</button>
-          </form>
-        </details>
-      )}
-      <label>
-        Chọn khóa học{" "}
-        <select value={selected} onChange={(e) => setSelected(e.target.value)}>
-          <option value="">Chọn…</option>
-          {courses.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.course_code} — {c.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      {!courses.length && <p>Chưa có khóa học được cấp quyền.</p>}
-      {selected && (
+    <div className="stack">
+      <div className="page-heading">
+        <div>
+          <div className="eyebrow">
+            {teacher ? "COURSE MANAGEMENT" : "MY COURSES"}
+          </div>
+          <h1>
+            {course
+              ? course.name
+              : initialTab === "overview"
+                ? "Khóa học"
+                : tabs.find(([k]) => k === initialTab)?.[1]}
+          </h1>
+          <p>
+            {course
+              ? `${course.course_code} · Học kỳ ${course.semester} · ${course.academic_year}`
+              : teacher
+                ? "Quản lý nội dung học tập và hoạt động của lớp."
+                : "Tài liệu, bài tập và hoạt động trong các khóa học của bạn."}
+          </p>
+        </div>
+        {selected > 0 && (
+          <button className="secondary" onClick={() => choose(0)}>
+            ← Danh sách khóa
+          </button>
+        )}
+      </div>
+      <Feedback error={action.error} message={action.message} />
+      {!course && (
         <>
           {teacher && (
-            <section>
-              <h2>Nhập sinh viên CSV</h2>
-              <p>
-                Các cột: student_id, full_name, date_of_birth (DDMMYYYY),
-                class_name, email.
-              </p>
-              <form
-                onSubmit={(e) => {
-                  const data = form(e);
-                  void act(async () => {
-                    setPreview(
-                      await apiRequest<Preview>(
-                        `/api/courses/${selected}/students/import-preview`,
-                        { method: "POST", body: data },
-                      ),
-                    );
-                  });
-                }}
-              >
-                <input type="file" name="file" accept=".csv" required />
-                <button disabled={busy}>Xem trước CSV</button>
-              </form>
-              {preview && (
-                <div>
-                  <p>{preview.valid_rows} dòng hợp lệ</p>
-                  {preview.errors.map((v, i) => (
-                    <p key={i}>
-                      Dòng {v.row}: {v.message}
-                    </p>
-                  ))}
-                  <button
-                    disabled={busy || !preview.can_confirm}
-                    onClick={() =>
-                      void act(async () => {
-                        await apiRequest(
-                          `/api/courses/${selected}/students/import-confirm`,
-                          {
-                            method: "POST",
-                            headers: {
-                              "Idempotency-Key": `csv-${preview.preview_id}`,
-                            },
-                            body: JSON.stringify({
-                              preview_id: preview.preview_id,
-                            }),
-                          },
-                        );
-                        setPreview(null);
-                        setMessage(
-                          "Đã nhập sinh viên. Tài khoản mới phải đổi mật khẩu.",
-                        );
-                      })
-                    }
-                  >
-                    Xác nhận import
-                  </button>
-                </div>
-              )}
+            <section className="panel">
+              <details>
+                <summary>Tạo khóa học mới</summary>
+                <CourseForm
+                  busy={action.busy}
+                  save={(body, form) =>
+                    void action.run(async () => {
+                      const c = await request<Course>(
+                        "/api/courses",
+                        "POST",
+                        body,
+                      );
+                      form.reset();
+                      await load();
+                      choose(c.id);
+                      setTab("overview");
+                    }, "Đã tạo khóa học.")
+                  }
+                />
+              </details>
             </section>
           )}
-          <section>
-            <h2>Tài liệu</h2>
-            {teacher && (
-              <form
-                onSubmit={(e) => {
-                  const data = form(e);
-                  void act(async () => {
-                    await apiRequest(`/api/courses/${selected}/materials`, {
-                      method: "POST",
-                      body: data,
-                    });
-                    await loadContent(selected);
-                    setMessage("Đã đăng tài liệu");
-                  });
-                }}
-              >
-                <input name="title" placeholder="Tên tài liệu" required />
-                <input type="file" name="file" required />
-                <button disabled={busy}>Đăng tài liệu</button>
-              </form>
-            )}
-            {materials.length ? (
-              materials.map((m) => (
-                <p key={m.id}>
-                  <a href={`/api/materials/${m.id}/download`}>
-                    {m.title} — {m.original_filename}
-                  </a>
-                </p>
-              ))
-            ) : (
-              <p>Chưa có tài liệu.</p>
-            )}
-          </section>
-          <section>
-            <h2>Bài tập file</h2>
-            {teacher && (
-              <form
-                onSubmit={(e) => {
-                  const data = form(e);
-                  void act(async () => {
-                    await apiRequest(`/api/courses/${selected}/assignments`, {
-                      method: "POST",
-                      body: JSON.stringify({
-                        title: data.get("title"),
-                        description: data.get("description"),
-                        due_at: new Date(String(data.get("due"))).toISOString(),
-                        allow_resubmit: true,
-                      }),
-                    });
-                    await loadContent(selected);
-                  });
-                }}
-              >
-                <input name="title" placeholder="Tên bài tập" required />
-                <input name="description" placeholder="Đề bài" />
-                <label>
-                  Hạn nộp <input type="datetime-local" name="due" required />
-                </label>
-                <button disabled={busy}>Tạo bài tập</button>
-              </form>
-            )}
-            {assignments.map((a) => (
-              <article className="my-4 rounded border p-4" key={a.id}>
-                <h3>{a.title}</h3>
-                <p>Hạn nộp: {new Date(a.due_at).toLocaleString("vi-VN")}</p>
-                {!teacher && (
-                  <form
-                    onSubmit={(e) => {
-                      const data = form(e);
-                      const file=data.get("file") as File;
-                      const prior=pendingKeys.current[a.id];
-                      const key=prior?.file===file?prior.key:Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,"0")).join("");
-                      pendingKeys.current[a.id]={file,key};
-                      void act(async () => {
-                        await apiRequest(
-                          `/api/assignments/${a.id}/submissions`,
-                          {
-                            method: "POST",
-                            headers: { "Idempotency-Key": key },
-                            body: data,
-                          },
-                        );
-                        delete pendingKeys.current[a.id];
-                        setMessage("Đã nộp bài");
-                      });
-                    }}
-                  >
-                    <input type="file" name="file" required />
-                    <button disabled={busy}>Nộp file</button>
-                  </form>
-                )}
+          <div className="toolbar">
+            <input
+              placeholder="Tìm tên hoặc mã khóa học…"
+              aria-label="Tìm khóa học"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <span className="muted">{courses.length} khóa học</span>
+          </div>
+          {!loaded ? (
+            <div className="loading">Đang tải khóa học…</div>
+          ) : filtered.length ? (
+            <div className="grid-3">
+              {filtered.map((c) => (
                 <button
-                  onClick={() =>
-                    void act(async () => {
-                      const result = await apiRequest<{ items: Submission[] }>(
-                        `/api/assignments/${a.id}/submissions?page_size=100`,
-                      );
-                      setSubmissions((s) => ({ ...s, [a.id]: result.items }));
-                    })
-                  }
+                  className="panel course-card"
+                  style={{ textAlign: "left" }}
+                  key={c.id}
+                  onClick={() => choose(c.id)}
                 >
-                  Xem lịch sử bài nộp
-                </button>
-                {submissions[a.id]?.map((s) => (
-                  <div key={s.id}>
-                    <a href={`/api/assignment-submissions/${s.id}/download`}>
-                      {s.student_id}: {s.original_filename}
-                    </a>
-                    <span> — điểm: {s.score ?? "Chưa công bố"}</span>
-                    {teacher && (
-                      <form
-                        onSubmit={(e) => {
-                          const data = form(e);
-                          void act(async () => {
-                            await apiRequest(
-                              `/api/assignment-submissions/${s.id}/grade`,
-                              {
-                                method: "PATCH",
-                                body: JSON.stringify({
-                                  score: Number(data.get("score")),
-                                  feedback: data.get("feedback"),
-                                }),
-                              },
-                            );
-                            setMessage(
-                              "Đã chấm bài; công bố điểm đã được thu hồi",
-                            );
-                          });
-                        }}
-                      >
-                        <input
-                          name="score"
-                          type="number"
-                          min="0"
-                          max="10"
-                          step="0.01"
-                          required
-                          aria-label="Điểm"
-                        />
-                        <input name="feedback" placeholder="Nhận xét" />
-                        <button disabled={busy}>Lưu điểm</button>
-                      </form>
-                    )}
+                  <div className="course-cover">
+                    <small>{c.course_code}</small>
+                    <h3>{c.name}</h3>
                   </div>
-                ))}
-              </article>
-            ))}
-          </section>
+                  <div className="course-body">
+                    <p>
+                      Học kỳ {c.semester} · {c.academic_year}
+                    </p>
+                    <div className="course-footer">
+                      <span>Mở khóa học</span>
+                      <span>→</span>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="empty">
+              {search
+                ? "Không có khóa học phù hợp."
+                : "Chưa có khóa học trong danh sách."}
+            </div>
+          )}
         </>
       )}
-    </section>
+      {course && (
+        <>
+          <nav className="tabs" aria-label="Nội dung khóa học">
+            {tabs
+              .filter(([k]) => teacher || k !== "students")
+              .map(([k, n]) => (
+                <button
+                  key={k}
+                  className={tab === k ? "active" : ""}
+                  onClick={() => setTab(k)}
+                >
+                  {n}
+                </button>
+              ))}
+          </nav>
+          <div key={course.id}>
+            {tab === "overview" && (
+              <section className="panel">
+                <div className="panel-title">
+                  <h2>Thông tin khóa học</h2>
+                  <span className="badge">{course.course_code}</span>
+                </div>
+                <p className="statement">
+                  {course.description || "Chưa có mô tả khóa học."}
+                </p>
+                <p className="section-note">
+                  Thời gian: {course.start_date || "Chưa đặt"} →{" "}
+                  {course.end_date || "Chưa đặt"}
+                </p>
+                {teacher && (
+                  <details style={{ marginTop: 24 }}>
+                    <summary>Sửa thông tin khóa học</summary>
+                    <CourseForm
+                      key={JSON.stringify(course)}
+                      course={course}
+                      busy={action.busy}
+                      save={(body) =>
+                        void action.run(async () => {
+                          await request(
+                            `/api/courses/${course.id}`,
+                            "PATCH",
+                            body,
+                          );
+                          await load();
+                        })
+                      }
+                    />
+                  </details>
+                )}
+                <div className="grid-3" style={{ marginTop: 24 }}>
+                  {tabs
+                    .filter(([k]) => !["overview", "students"].includes(k))
+                    .map(([k, n]) => (
+                      <button
+                        className="button-link"
+                        key={k}
+                        onClick={() => setTab(k)}
+                      >
+                        {n} →
+                      </button>
+                    ))}
+                </div>
+              </section>
+            )}
+            {tab === "students" && teacher && (
+              <StudentsPanel courseId={course.id} />
+            )}
+            {tab === "materials" && (
+              <MaterialsPanel courseId={course.id} teacher={teacher} />
+            )}
+            {tab === "calendar" && (
+              <CalendarPanel courseId={course.id} teacher={teacher} />
+            )}
+            {tab === "attendance" && (
+              <AttendancePanel
+                courseId={course.id}
+                teacher={teacher}
+                initialSession={attendance}
+                initialToken={token}
+              />
+            )}
+            {tab === "assignments" && (
+              <AssignmentsPanel courseId={course.id} teacher={teacher} />
+            )}
+            {tab === "exams" && (
+              <ExamsPanel courseId={course.id} teacher={teacher} />
+            )}
+            {tab === "grades" && (
+              <GradebookPanel courseId={course.id} teacher={teacher} />
+            )}
+          </div>
+        </>
+      )}
+    </div>
   );
 }

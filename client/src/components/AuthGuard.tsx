@@ -19,7 +19,7 @@ export default function AuthGuard({
         else if (user.role !== role) router.replace(`/${user.role}/dashboard`);
         else if (live) setAllowed(true);
       })
-      .catch(() => router.replace("/login"));
+      .catch(() => router.replace(`/login?next=${encodeURIComponent(window.location.pathname+window.location.search)}`));
     return () => {
       live = false;
     };

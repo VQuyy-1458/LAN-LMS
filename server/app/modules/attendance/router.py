@@ -1,7 +1,257 @@
-"""Thành viên 3: triển khai endpoint attendance theo hợp đồng API.
+import secrets
+import time
+from typing import Literal
+from fastapi import APIRouter, Depends, Response, Request
+from pydantic import BaseModel, Field
+from sqlalchemy import select, func
+from ...core.database import get_db
+from ...core.security import learning_user, digest, fail
+from ...models import AttendanceSessions, AttendanceRecords, Students, Courses
+from ...schemas.common import Pagination
+from ...services import access, idempotency
+from ...services.activity import iso, audit
 
-Chưa đăng ký router trong main.py; gắn dependency xác thực/phân quyền trước khi tích hợp.
-"""
-from fastapi import APIRouter
+router = APIRouter(prefix="/api", tags=["attendance"])
 
-router = APIRouter(tags=["attendance"])
+
+class Create(BaseModel):
+    title: str = Field(default="Điểm danh", min_length=1, max_length=200)
+    duration_seconds: int = Field(default=300, ge=60, le=3600)
+
+
+class Close(BaseModel):
+    status: Literal["closed"]
+
+
+class Check(BaseModel):
+    token: str = Field(min_length=1, max_length=200)
+
+
+class Correction(BaseModel):
+    student_id: str
+    status: Literal["present", "absent"]
+    reason: str = Field(min_length=3, max_length=1000)
+
+
+def session(db, user, sid, manage=False):
+    row = db.get(AttendanceSessions, sid)
+    if not row:
+        fail(404, "NOT_FOUND", "Không tìm thấy phiên điểm danh")
+    access.course(db, user, row.course_id, manage)
+    return row
+
+
+def payload(row):
+    return dict(
+        id=row.id,
+        course_id=row.course_id,
+        title=row.title,
+        status=(
+            "closed"
+            if row.status == "closed" or row.expires_at <= time.time()
+            else "open"
+        ),
+        created_at=iso(row.starts_at),
+        expires_at=iso(row.expires_at),
+    )
+
+
+def record(db, row):
+    student = db.get(Students, row.student_id)
+    return dict(
+        id=row.id,
+        session_id=row.session_id,
+        student_id=student.student_code,
+        full_name=student.full_name,
+        status=row.status,
+        checked_in_at=iso(row.checked_in_at),
+    )
+
+
+@router.get("/courses/{course_id}/attendance-sessions")
+def listing(
+    course_id: int,
+    db=Depends(get_db),
+    user=Depends(learning_user),
+    p=Depends(Pagination),
+):
+    access.course(db, user, course_id)
+    q = select(AttendanceSessions).where(AttendanceSessions.course_id == course_id)
+    items = []
+    for row in db.scalars(
+        q.order_by(AttendanceSessions.id.desc()).offset(p.offset).limit(p.page_size)
+    ):
+        item = payload(row)
+        if user.role == "student":
+            s = access.student(db, user)
+            r = db.scalar(
+                select(AttendanceRecords).where(
+                    AttendanceRecords.session_id == row.id,
+                    AttendanceRecords.student_id == s.id,
+                )
+            )
+            item["my_status"] = r.status if r else None
+        items.append(item)
+    return p.response(items, db.scalar(select(func.count()).select_from(q.subquery())))
+
+
+@router.post("/courses/{course_id}/attendance-sessions", status_code=201)
+def create(
+    course_id: int,
+    body: Create,
+    request: Request,
+    db=Depends(get_db),
+    user=Depends(learning_user),
+):
+    access.course(db, user, course_id, True)
+    t = access.teacher(db, user)
+    token = secrets.token_urlsafe(24)
+    now = time.time()
+    row = AttendanceSessions(
+        course_id=course_id,
+        created_by=t.id,
+        title=body.title,
+        token_hash=digest(token),
+        starts_at=now,
+        expires_at=now + body.duration_seconds,
+        status="open",
+    )
+    db.add(row)
+    db.flush()
+    audit(db, user.user_id, "create", "attendance", row.id)
+    db.get(Courses, course_id).grades_published = False
+    db.commit()
+    import io
+    import qrcode
+    import qrcode.image.svg
+
+    path = f"/student/courses?attendance={row.id}&token={token}"
+    qr = qrcode.make(
+        request.headers["origin"] + path, image_factory=qrcode.image.svg.SvgPathImage
+    )
+    stream = io.BytesIO()
+    qr.save(stream)
+    return {
+        **payload(row),
+        "token": token,
+        "check_in_path": path,
+        "qr_svg": stream.getvalue().decode("utf-8"),
+    }
+
+
+@router.get("/attendance-sessions/{sid}")
+def detail(sid: int, db=Depends(get_db), user=Depends(learning_user)):
+    return payload(session(db, user, sid))
+
+
+@router.patch("/attendance-sessions/{sid}")
+def close(sid: int, body: Close, db=Depends(get_db), user=Depends(learning_user)):
+    row = session(db, user, sid, True)
+    row.status = "closed"
+    db.get(Courses, row.course_id).grades_published = False
+    audit(db, user.user_id, "close", "attendance", row.id)
+    db.commit()
+    return payload(row)
+
+
+@router.post("/attendance-sessions/{sid}/check-in")
+def check_in(
+    sid: int,
+    body: Check,
+    response: Response,
+    db=Depends(get_db),
+    user=Depends(learning_user),
+):
+    idempotency.write_lock(db)
+    row = session(db, user, sid)
+    s = access.student(db, user)
+    if not secrets.compare_digest(row.token_hash, digest(body.token)):
+        fail(403, "INVALID_TOKEN", "Mã điểm danh không hợp lệ")
+    old = db.scalar(
+        select(AttendanceRecords).where(
+            AttendanceRecords.session_id == sid, AttendanceRecords.student_id == s.id
+        )
+    )
+    if old:
+        return record(db, old)
+    if row.status != "open" or row.expires_at <= time.time():
+        fail(409, "ATTENDANCE_CLOSED", "Phiên điểm danh đã đóng hoặc hết hạn")
+    r = AttendanceRecords(
+        session_id=sid, student_id=s.id, checked_in_at=time.time(), status="present"
+    )
+    db.add(r)
+    db.get(Courses, row.course_id).grades_published = False
+    db.flush()
+    response.status_code = 201
+    db.commit()
+    return record(db, r)
+
+
+@router.get("/attendance-sessions/{sid}/records")
+def records(
+    sid: int, db=Depends(get_db), user=Depends(learning_user), p=Depends(Pagination)
+):
+    session(db, user, sid, True)
+    q = select(AttendanceRecords).where(AttendanceRecords.session_id == sid)
+    return p.response(
+        [
+            record(db, r)
+            for r in db.scalars(
+                q.order_by(AttendanceRecords.id).offset(p.offset).limit(p.page_size)
+            )
+        ],
+        db.scalar(select(func.count()).select_from(q.subquery())),
+    )
+
+
+@router.patch("/attendance-sessions/{sid}/records")
+def correct(
+    sid: int, body: Correction, db=Depends(get_db), user=Depends(learning_user)
+):
+    idempotency.write_lock(db)
+    row = session(db, user, sid, True)
+    from ...models import CourseEnrollments, Courses
+
+    s = db.scalar(
+        select(Students)
+        .join(CourseEnrollments)
+        .where(
+            Students.student_code == body.student_id,
+            CourseEnrollments.course_id == row.course_id,
+            CourseEnrollments.status == "active",
+        )
+    )
+    if not s:
+        fail(404, "NOT_FOUND", "Sinh viên không thuộc khóa học")
+    r = db.scalar(
+        select(AttendanceRecords).where(
+            AttendanceRecords.session_id == sid, AttendanceRecords.student_id == s.id
+        )
+    )
+    before = r.status if r else None
+    if not r:
+        r = AttendanceRecords(
+            session_id=sid,
+            student_id=s.id,
+            checked_in_at=time.time(),
+            status=body.status,
+        )
+        db.add(r)
+    r.status = body.status
+    db.get(Courses, row.course_id).grades_published = False
+    audit(
+        db,
+        user.user_id,
+        "correct",
+        "attendance",
+        sid,
+        {
+            "student_id": body.student_id,
+            "before": before,
+            "after": body.status,
+            "reason": body.reason,
+        },
+    )
+    db.flush()
+    db.commit()
+    return record(db, r)

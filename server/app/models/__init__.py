@@ -69,6 +69,8 @@ class CalendarEvents(Base):
     course_id: Mapped[int] = mapped_column(ForeignKey("courses.id", ondelete="RESTRICT"), nullable=False, index=True)
     created_by: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True)
     title: Mapped[str] = mapped_column(Text, nullable=False)
+    description: Mapped[str] = mapped_column(Text, default="", server_default="")
+    event_type: Mapped[str] = mapped_column(Text, default="lesson", server_default="lesson")
     starts_at: Mapped[float] = mapped_column(Float, nullable=False)
     ends_at: Mapped[float] = mapped_column(Float, nullable=False)
 
@@ -77,6 +79,7 @@ class AttendanceSessions(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     course_id: Mapped[int] = mapped_column(ForeignKey("courses.id", ondelete="RESTRICT"), nullable=False, index=True)
     created_by: Mapped[int] = mapped_column(ForeignKey("teachers.id", ondelete="RESTRICT"), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(Text, default="Điểm danh", server_default="Điểm danh")
     token_hash: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
     starts_at: Mapped[float] = mapped_column(Float, nullable=False)
     expires_at: Mapped[float] = mapped_column(Float, nullable=False)
@@ -94,7 +97,7 @@ class Assignments(Base):
 
 class CodingExams(Base):
     __tablename__ = "coding_exams"
-    __table_args__ = (Index("uq_one_final_per_course", "course_id", unique=True, sqlite_where=text("grade_component = 'final'")),)
+    __table_args__ = (Index("uq_one_final_per_course", "course_id", unique=True, sqlite_where=text("grade_component = 'final'")), Index("uq_one_midterm_per_course", "course_id", unique=True, sqlite_where=text("grade_component = 'midterm'")))
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     course_id: Mapped[int] = mapped_column(ForeignKey("courses.id", ondelete="RESTRICT"), nullable=False, index=True)
     created_by: Mapped[int] = mapped_column(ForeignKey("teachers.id", ondelete="RESTRICT"), nullable=False, index=True)
@@ -104,6 +107,7 @@ class CodingExams(Base):
     ends_at: Mapped[float] = mapped_column(Float, nullable=False)
     status: Mapped[str] = mapped_column(Text, nullable=False)
     results_published: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    score_ladder_json: Mapped[str] = mapped_column(Text, default="[0,5,7,8,9,10]", server_default="[0,5,7,8,9,10]")
 
 class Problems(Base):
     __tablename__ = "problems"
@@ -257,6 +261,10 @@ class JudgeJobs(Base):
     attempt_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     lease_until: Mapped[float | None] = mapped_column(Float, nullable=True)
     worker_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    started_at: Mapped[float | None] = mapped_column(Float, nullable=True)
+    finished_at: Mapped[float | None] = mapped_column(Float, nullable=True)
+    compile_ms: Mapped[float | None] = mapped_column(Float, nullable=True)
+    run_ms: Mapped[float | None] = mapped_column(Float, nullable=True)
     attempt_count: Mapped[int] = mapped_column(Integer, nullable=False)
     created_at: Mapped[float] = mapped_column(Float, nullable=False)
 
@@ -284,3 +292,14 @@ class Grades(Base):
     graded_by: Mapped[int | None] = mapped_column(ForeignKey("teachers.id", ondelete="RESTRICT"), nullable=True, index=True)
 
 __all__ = ['Base', 'User', 'AuthSession', 'LoginAttempt', 'Classes', 'Courses', 'CourseClasses', 'Teachers', 'CsvImportPreviews', 'CourseMaterials', 'CalendarEvents', 'AttendanceSessions', 'Assignments', 'CodingExams', 'Problems', 'TestCases', 'IdempotencyKeys', 'GradeComponents', 'AuditLogs', 'Students', 'CourseTeachers', 'CourseEnrollments', 'AttendanceRecords', 'AssignmentSubmissions', 'ExamRegistrations', 'ExamSessions', 'CodeSubmissions', 'JudgeJobs', 'JudgeResults', 'Grades']
+
+
+class RealtimeEvents(Base):
+    """Durable notification handoff; REST remains authoritative after reconnect."""
+    __tablename__ = "realtime_events"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    event_type: Mapped[str] = mapped_column(Text, nullable=False)
+    course_id: Mapped[int] = mapped_column(ForeignKey("courses.id"), nullable=False, index=True)
+    owner_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    data_json: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[float] = mapped_column(Float, nullable=False)

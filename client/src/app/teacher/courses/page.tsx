@@ -1,4 +1,2 @@
 import Workspace from "@/features/courses/Workspace";
-export default function Page() {
-  return <Workspace teacher />;
-}
+export default function Page(){return <Workspace teacher initialTab="overview"/>;}

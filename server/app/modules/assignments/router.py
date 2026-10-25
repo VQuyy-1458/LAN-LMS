@@ -79,6 +79,7 @@ def create(
         allow_resubmit=body.allow_resubmit,
     )
     db.add(r)
+    access.course(db, user, course_id, True).grades_published = False
     db.commit()
     return assignment_view(r)
 
@@ -115,6 +116,7 @@ def patch(
     r.description = merged.description
     r.due_at = merged.due_at.timestamp()
     r.allow_resubmit = merged.allow_resubmit
+    access.course(db, user, r.course_id, True).grades_published = False
     db.commit()
     return assignment_view(r)
 

@@ -146,6 +146,7 @@ class DockerJudge:
         input_filename="input.txt",
         output_filename="output.txt",
         comparator="exact",
+        progress=None,
     ):
         limits = limits or Limits()
         limits.validate()
@@ -201,6 +202,8 @@ class DockerJudge:
                     .replace("/source/", "")
                 )
                 return Result("Compile Error", 0, maximum, message)
+            if progress:
+                progress("Running")
             score = 0
             first = None
             for test in cases:

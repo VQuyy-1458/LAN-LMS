@@ -1,3 +1,4 @@
+import anyio
 import asyncio
 import json
 import secrets
@@ -34,6 +35,8 @@ async def websocket_endpoint(ws: WebSocket):
         await ws.close(1008)
         return
     await ws.accept()
+    from ..services.notifications import touch
+    await asyncio.to_thread(touch, app, user.user_id)
     queue = asyncio.Queue(maxsize=100)
     app.state.hub.connections[ws] = (user.user_id, queue)
     heartbeat_id = None
@@ -61,6 +64,7 @@ async def websocket_endpoint(ws: WebSocket):
                 if not isinstance(message, dict) or not heartbeat_id or message.get('type') != 'heartbeat.ack' or message.get('id') != heartbeat_id:
                     await ws.close(1008)
                     return
+                await asyncio.to_thread(touch, app, user.user_id)
                 heartbeat_id = None
                 deadline = asyncio.get_running_loop().time() + app.state.settings.heartbeat_seconds
                 receive = asyncio.create_task(ws.receive_text())
@@ -74,7 +78,8 @@ async def websocket_endpoint(ws: WebSocket):
                 heartbeat_id = secrets.token_urlsafe(12)
                 await ws.send_json({'type': 'heartbeat', 'id': heartbeat_id})
                 deadline = asyncio.get_running_loop().time() + app.state.settings.heartbeat_timeout
-    except WebSocketDisconnect:
+    except (WebSocketDisconnect, asyncio.CancelledError):
+        # Peer closure / ASGI shutdown may cancel a heartbeat DB touch in flight.
         pass
     except (RuntimeError, OSError):
         pass
@@ -82,4 +87,5 @@ async def websocket_endpoint(ws: WebSocket):
         app.state.hub.connections.pop(ws, None)
         for task in (receive, outgoing):
             task.cancel()
-        await asyncio.gather(receive, outgoing, return_exceptions=True)
+        with anyio.CancelScope(shield=True):
+            await asyncio.gather(receive, outgoing, return_exceptions=True)

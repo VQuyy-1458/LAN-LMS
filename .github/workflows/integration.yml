@@ -1,7 +1,7 @@
 name: Integration tests
 on:
   push:
-    branches: [develop, 'codex/**']
+    branches: [main, develop, 'codex/**']
   pull_request:
     branches: [develop, main]
 permissions:
@@ -9,7 +9,7 @@ permissions:
 jobs:
   integration:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -31,3 +31,13 @@ jobs:
         working-directory: client
         env:
           NEXT_TELEMETRY_DISABLED: '1'
+      - name: Measure real Docker judge throughput when explicitly requested
+        if: contains(github.event.head_commit.message, '[benchmark]')
+        run: python -m experiments.run_judge --output experiments/results/ci-linux --trials 3 --jobs 20
+      - name: Upload measured judge data
+        if: contains(github.event.head_commit.message, '[benchmark]') && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: judge-measurements
+          path: experiments/results/ci-linux
+          if-no-files-found: warn

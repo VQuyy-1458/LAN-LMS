@@ -1,0 +1,713 @@
+"use client";
+import { useCallback, useEffect, useState } from "react";
+import { apiRequest } from "@/lib/api";
+import {
+  date,
+  localInput,
+  localISO,
+  request,
+  statusLabel,
+  type Exam,
+  type Page,
+  type Problem,
+  type ExamSession,
+  type Submission,
+} from "@/lib/lms";
+import { useAction } from "@/lib/useAction";
+import Feedback from "@/components/Feedback";
+export function ExamForm({
+  exam,
+  save,
+  busy,
+}: {
+  exam?: Exam;
+  save: (body: unknown) => void;
+  busy: boolean;
+}) {
+  const [defaults] = useState(() => ({
+    start: localInput(
+      exam?.starts_at || new Date(Date.now() + 3600000).toISOString(),
+    ),
+    end: localInput(
+      exam?.ends_at || new Date(Date.now() + 10800000).toISOString(),
+    ),
+  }));
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        const f = new FormData(e.currentTarget);
+        save({
+          title: f.get("title"),
+          starts_at: localISO(String(f.get("starts_at"))),
+          ends_at: localISO(String(f.get("ends_at"))),
+          ...(exam ? {} : { grade_component: f.get("grade_component") }),
+          score_ladder: String(f.get("score_ladder"))
+            .split(",")
+            .map((x) => Number(x.trim())),
+        });
+      }}
+    >
+      <div className="form-grid">
+        <label>
+          Tên kỳ thi
+          <input
+            name="title"
+            defaultValue={exam?.title}
+            required
+            maxLength={200}
+          />
+        </label>
+        {!exam && (
+          <label>
+            Thành phần điểm
+            <select name="grade_component">
+              <option value="midterm">Giữa kỳ</option>
+              <option value="final">Cuối kỳ</option>
+            </select>
+          </label>
+        )}
+        <label>
+          Bắt đầu
+          <input
+            type="datetime-local"
+            name="starts_at"
+            defaultValue={defaults.start}
+            required
+          />
+        </label>
+        <label>
+          Kết thúc
+          <input
+            type="datetime-local"
+            name="ends_at"
+            defaultValue={defaults.end}
+            required
+          />
+        </label>
+        <label className="full">
+          Bảng quy đổi số bài AC → điểm
+          <input
+            name="score_ladder"
+            defaultValue={exam?.score_ladder.join(", ") || "0, 5, 7, 8, 9, 10"}
+            required
+          />
+          <small>
+            Các mức điểm ứng với 0, 1, 2… bài AC. Ví dụ trên yêu cầu đề có 5
+            bài; bảng phải tăng dần từ 0 tới 10.
+          </small>
+        </label>
+      </div>
+      <div className="actions">
+        <button disabled={busy}>
+          {exam ? "Lưu kỳ thi" : "Tạo đề thi nháp"}
+        </button>
+      </div>
+    </form>
+  );
+}
+function ProblemForm({
+  problem,
+  save,
+  busy,
+}: {
+  problem?: Problem;
+  save: (body: unknown) => void;
+  busy: boolean;
+}) {
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        const f = new FormData(e.currentTarget);
+        save({
+          title: f.get("title"),
+          statement: f.get("statement"),
+          languages: f.getAll("languages"),
+          io_mode: f.get("io_mode"),
+          input_filename: f.get("input_filename") || null,
+          output_filename: f.get("output_filename") || null,
+          time_limit_ms: Number(f.get("time_limit_ms")),
+          memory_limit_mib: Number(f.get("memory_limit_mib")),
+          max_score: Number(f.get("max_score")),
+          comparator: f.get("comparator"),
+        });
+      }}
+    >
+      <div className="form-grid">
+        <label className="full">
+          Tên bài
+          <input
+            name="title"
+            defaultValue={problem?.title}
+            required
+            maxLength={200}
+          />
+        </label>
+        <label className="full">
+          Đề bài và ví dụ input/output
+          <textarea
+            name="statement"
+            defaultValue={problem?.statement}
+            required
+            maxLength={50000}
+            rows={8}
+          />
+        </label>
+        <label>
+          Thời gian (ms)
+          <input
+            name="time_limit_ms"
+            type="number"
+            defaultValue={problem?.time_limit_ms || 2000}
+            min={100}
+            max={10000}
+            required
+          />
+        </label>
+        <label>
+          Bộ nhớ (MiB)
+          <input
+            name="memory_limit_mib"
+            type="number"
+            defaultValue={problem?.memory_limit_mib || 256}
+            min={64}
+            max={1024}
+            required
+          />
+        </label>
+        <label>
+          Chế độ I/O
+          <select name="io_mode" defaultValue={problem?.io_mode || "stdio"}>
+            <option value="stdio">Standard input/output</option>
+            <option value="file">File input/output</option>
+          </select>
+        </label>
+        <label>
+          So sánh output
+          <select
+            name="comparator"
+            defaultValue={problem?.comparator || "normalized"}
+          >
+            <option value="normalized">Chuẩn hóa đầu/cuối và xuống dòng</option>
+            <option value="exact">Khớp chính xác</option>
+          </select>
+        </label>
+        <label>
+          Tên file input (file mode)
+          <input
+            name="input_filename"
+            defaultValue={problem?.input_filename || "input.txt"}
+          />
+        </label>
+        <label>
+          Tên file output (file mode)
+          <input
+            name="output_filename"
+            defaultValue={problem?.output_filename || "output.txt"}
+          />
+        </label>
+        <label>
+          Tổng trọng số test
+          <input
+            type="number"
+            name="max_score"
+            min="0.01"
+            max={10000}
+            step="0.01"
+            required
+            defaultValue={problem?.max_score || 100}
+          />
+          <small>
+            Chỉ AC mới tính bài giải đúng, không cộng điểm test lẻ vào điểm thi.
+          </small>
+        </label>
+        <div>
+          <label>Ngôn ngữ cho phép</label>
+          <div className="actions">
+            {["c", "cpp", "java"].map((l) => (
+              <label className="check-label" key={l}>
+                <input
+                  name="languages"
+                  type="checkbox"
+                  value={l}
+                  defaultChecked={
+                    problem ? problem.languages.includes(l) : true
+                  }
+                />
+                {{ c: "C17", cpp: "C++17", java: "Java 17" }[l]}
+              </label>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="actions">
+        <button disabled={busy}>
+          {problem ? "Lưu cấu hình bài" : "Thêm bài"}
+        </button>
+      </div>
+    </form>
+  );
+}
+type Test = { id: number; points: number; is_hidden: boolean; ordinal: number };
+function TestEditor({
+  problemId,
+  editable,
+}: {
+  problemId: number;
+  editable: boolean;
+}) {
+  const [rows, setRows] = useState<Test[]>([]);
+  const action = useAction();
+  const load = useCallback(
+    async () =>
+      setRows(
+        (
+          await apiRequest<Page<Test>>(
+            `/api/problems/${problemId}/test-cases?page_size=100`,
+          )
+        ).items,
+      ),
+    [problemId],
+  );
+  useEffect(() => {
+    load().catch(action.setError);
+  }, [load, action.setError]);
+  return (
+    <div className="details-box">
+      <h3>
+        Test case · {rows.length} test · tổng{" "}
+        {rows.reduce((s, r) => s + r.points, 0)} trọng số
+      </h3>
+      <Feedback error={action.error} message={action.message} />
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Thứ tự</th>
+              <th>Trọng số</th>
+              <th>Loại</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.id}>
+                <td>{r.ordinal}</td>
+                <td>{r.points}</td>
+                <td>{r.is_hidden ? "Ẩn" : "Ví dụ"}</td>
+                <td>
+                  {editable && (
+                    <button
+                      className="danger"
+                      disabled={action.busy}
+                      onClick={() => {
+                        if (confirm("Xóa test case này?"))
+                          void action.run(async () => {
+                            await request(`/api/test-cases/${r.id}`, "DELETE");
+                            await load();
+                          }, "Đã xóa test.");
+                      }}
+                    >
+                      Xóa
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {editable && (
+        <form
+          style={{ marginTop: 18 }}
+          onSubmit={(e) => {
+            e.preventDefault();
+            const form = e.currentTarget,
+              f = new FormData(form);
+            if (!f.has("is_hidden")) f.set("is_hidden", "false");
+            else f.set("is_hidden", "true");
+            void action.run(async () => {
+              await apiRequest(`/api/problems/${problemId}/test-cases`, {
+                method: "POST",
+                body: f,
+              });
+              form.reset();
+              await load();
+            }, "Đã thêm test.");
+          }}
+        >
+          <div className="form-grid">
+            <label>
+              Input (.in/.txt)
+              <input
+                name="input_file"
+                type="file"
+                accept=".in,.txt,.out"
+                required
+              />
+            </label>
+            <label>
+              Expected output (.out/.txt)
+              <input
+                name="expected_output_file"
+                type="file"
+                accept=".in,.txt,.out"
+                required
+              />
+            </label>
+            <label>
+              Trọng số
+              <input
+                name="points"
+                type="number"
+                min={0}
+                max={10000}
+                step="0.01"
+                defaultValue={100}
+                required
+              />
+            </label>
+            <label>
+              Thứ tự
+              <input
+                name="ordinal"
+                type="number"
+                min={0}
+                defaultValue={rows.length + 1}
+                required
+              />
+            </label>
+            <label className="check-label">
+              <input name="is_hidden" type="checkbox" defaultChecked />
+              Test ẩn
+            </label>
+          </div>
+          <p className="section-note">
+            Tối đa 1 MiB/file, 100 test/bài. Tổng trọng số phải khớp cấu hình
+            bài trước khi mở thi. Nội dung test không trả về sinh viên.
+          </p>
+          <div className="actions">
+            <button disabled={action.busy}>Thêm test case</button>
+          </div>
+        </form>
+      )}
+    </div>
+  );
+}
+export default function ExamEditor({
+  exam,
+  onChange,
+}: {
+  exam: Exam;
+  onChange: () => Promise<void>;
+}) {
+  const [problems, setProblems] = useState<Problem[]>([]),
+    [sessions, setSessions] = useState<ExamSession[]>([]),
+    [selectedProblem, setSelectedProblem] = useState(0),
+    [submissions, setSubmissions] = useState<Submission[]>([]),
+    [source, setSource] = useState<Submission | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const action = useAction();
+  const editable =
+    ["draft", "upcoming"].includes(exam.status) &&
+    new Date(exam.starts_at).getTime() > now;
+  const load = useCallback(async () => {
+    const [p, s] = await Promise.all([
+      apiRequest<Page<Problem>>(
+        `/api/coding-exams/${exam.id}/problems?page_size=100`,
+      ),
+      apiRequest<Page<ExamSession>>(
+        `/api/coding-exams/${exam.id}/sessions?page_size=100`,
+      ),
+    ]);
+    setProblems(p.items);
+    setSessions(s.items);
+  }, [exam.id]);
+  const loadSubs = useCallback(async () => {
+    if (selectedProblem)
+      setSubmissions(
+        (
+          await apiRequest<Page<Submission>>(
+            `/api/problems/${selectedProblem}/submissions?page_size=100`,
+          )
+        ).items,
+      );
+  }, [selectedProblem]);
+  useEffect(() => {
+    load().catch(action.setError);
+    const t = setInterval(() => load().catch(() => {}), 5000);
+    return () => clearInterval(t);
+  }, [load, action.setError]);
+  useEffect(() => {
+    loadSubs().catch(action.setError);
+    const t = setInterval(() => loadSubs().catch(() => {}), 5000);
+    return () => clearInterval(t);
+  }, [loadSubs, action.setError]);
+  return (
+    <div className="stack">
+      <Feedback error={action.error} message={action.message} />
+      <section className="panel">
+        <div className="panel-title">
+          <div>
+            <h2>{exam.title}</h2>
+            <p className="section-note">
+              {date(exam.starts_at)} → {date(exam.ends_at)} ·{" "}
+              {exam.problem_count} bài
+            </p>
+          </div>
+          <span className={`badge ${exam.status}`}>
+            {statusLabel[exam.status]}
+          </span>
+        </div>
+        <p className="section-note">
+          Bảng điểm theo số bài AC:{" "}
+          {exam.score_ladder.map((n, i) => `${i} bài = ${n}`).join(" · ")}
+        </p>
+        <div className="actions">
+          {editable && (
+            <button
+              disabled={action.busy}
+              onClick={() =>
+                void action.run(async () => {
+                  await request(`/api/coding-exams/${exam.id}`, "PATCH", {
+                    status: "scheduled",
+                  });
+                  await onChange();
+                }, "Đã kiểm tra bộ đề và lên lịch mở thi.")
+              }
+            >
+              Kiểm tra đề & Lên lịch mở
+            </button>
+          )}
+          {["upcoming", "open"].includes(exam.status) && (
+            <button
+              className="danger"
+              disabled={action.busy}
+              onClick={() => {
+                if (
+                  confirm(
+                    "Đóng kỳ thi ngay? Sinh viên sẽ không gửi thêm bài được.",
+                  )
+                )
+                  void action.run(async () => {
+                    await request(`/api/coding-exams/${exam.id}`, "PATCH", {
+                      status: "closed",
+                    });
+                    await onChange();
+                  }, "Đã đóng kỳ thi.");
+              }}
+            >
+              Đóng kỳ thi
+            </button>
+          )}
+        </div>
+        {editable && (
+          <details style={{ marginTop: 18 }}>
+            <summary>Chỉnh sửa thông tin kỳ thi</summary>
+            <ExamForm
+              exam={exam}
+              busy={action.busy}
+              save={(body) =>
+                void action.run(async () => {
+                  await request(`/api/coding-exams/${exam.id}`, "PATCH", body);
+                  await onChange();
+                })
+              }
+            />
+          </details>
+        )}
+      </section>
+      {editable && (
+        <section className="panel">
+          <details>
+            <summary>
+              Thêm bài lập trình ({problems.length}/{exam.problem_count})
+            </summary>
+            <ProblemForm
+              busy={action.busy}
+              save={(body) =>
+                void action.run(async () => {
+                  await request(
+                    `/api/coding-exams/${exam.id}/problems`,
+                    "POST",
+                    body,
+                  );
+                  await load();
+                }, "Đã thêm bài. Tiếp theo hãy thêm test case.")
+              }
+            />
+          </details>
+        </section>
+      )}
+      {problems.map((p, i) => (
+        <section className="panel" key={p.id}>
+          <h2>
+            Bài {i + 1}. {p.title}
+          </h2>
+          <p className="section-note">
+            {p.time_limit_ms} ms · {p.memory_limit_mib} MiB ·{" "}
+            {p.io_mode === "file"
+              ? `${p.input_filename} → ${p.output_filename}`
+              : "stdin / stdout"}
+          </p>
+          <details style={{ marginTop: 15 }}>
+            <summary>
+              {editable ? "Xem / Sửa nội dung bài" : "Xem nội dung"}
+            </summary>
+            {editable ? (
+              <ProblemForm
+                problem={p}
+                busy={action.busy}
+                save={(body) =>
+                  void action.run(async () => {
+                    await request(`/api/problems/${p.id}`, "PATCH", body);
+                    await load();
+                  })
+                }
+              />
+            ) : (
+              <p className="statement">{p.statement}</p>
+            )}
+          </details>
+          <details style={{ marginTop: 15 }}>
+            <summary>Quản lý test case</summary>
+            <TestEditor problemId={p.id} editable={editable} />
+          </details>
+        </section>
+      ))}
+      <section className="panel">
+        <div className="panel-title">
+          <h2>Theo dõi phiên thi</h2>
+          <span className="badge">
+            {sessions.length} phiên · cập nhật mỗi 5 giây
+          </span>
+        </div>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Sinh viên</th>
+                <th>Trạng thái</th>
+                <th>Kết nối</th>
+                <th>AC / Tổng bài</th>
+                <th>Điểm</th>
+                <th>Chờ chấm</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sessions.map((s) => (
+                <tr key={s.id}>
+                  <td>
+                    {s.student_id}
+                    <p className="section-note">{s.full_name}</p>
+                  </td>
+                  <td>{statusLabel[s.status]}</td>
+                  <td>
+                    <span className={`badge ${s.connection_status}`}>
+                      {s.connection_status === "connected"
+                        ? "Đang kết nối"
+                        : "Mất kết nối"}
+                    </span>
+                    <p className="section-note">{date(s.last_seen_at)}</p>
+                  </td>
+                  <td>
+                    {s.accepted_count}/{s.problem_count}
+                  </td>
+                  <td>{s.total_score}/10</td>
+                  <td>{s.pending_count}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {!sessions.length && (
+          <div className="empty">Chưa có sinh viên bắt đầu phiên thi.</div>
+        )}
+      </section>
+      <section className="panel">
+        <h2>Lịch sử chấm của lớp</h2>
+        <select
+          aria-label="Bài cần xem lịch sử"
+          value={selectedProblem || ""}
+          onChange={(e) => setSelectedProblem(Number(e.target.value))}
+          style={{ marginTop: 15 }}
+        >
+          <option value="">Chọn bài lập trình</option>
+          {problems.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.title}
+            </option>
+          ))}
+        </select>
+        <div className="table-wrap" style={{ marginTop: 15 }}>
+          <table>
+            <thead>
+              <tr>
+                <th>Mã</th>
+                <th>Sinh viên</th>
+                <th>Ngôn ngữ</th>
+                <th>Thời gian</th>
+                <th>Kết quả</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {submissions.map((s) => (
+                <tr key={s.id}>
+                  <td>#{s.id}</td>
+                  <td>{s.student_id}</td>
+                  <td>{s.language}</td>
+                  <td>{date(s.received_at)}</td>
+                  <td>
+                    <span className={`badge ${s.verdict_code}`}>
+                      {statusLabel[s.verdict_code]}
+                    </span>
+                  </td>
+                  <td>
+                    <button
+                      className="secondary"
+                      onClick={() =>
+                        void action.run(
+                          async () =>
+                            setSource(
+                              await apiRequest<Submission>(
+                                `/api/submissions/${s.id}`,
+                              ),
+                            ),
+                          "",
+                        )
+                      }
+                    >
+                      Xem source
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {source && (
+          <div className="details-box">
+            <div className="panel-title">
+              <h3>
+                Source #{source.id} · {source.student_id}
+              </h3>
+              <button className="ghost" onClick={() => setSource(null)}>
+                Đóng
+              </button>
+            </div>
+            <pre className="source-output">{source.source_code}</pre>
+            {source.compile_message && (
+              <pre className="source-output">{source.compile_message}</pre>
+            )}
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}

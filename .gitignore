@@ -51,3 +51,15 @@ client/next-env.d.ts
 
 # Local proxy runtime
 .runtime/
+
+# SQLite WAL/SHM and new private judge storage
+*.db-wal
+*.db-shm
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite3-wal
+*.sqlite3-shm
+storage/code_submissions/*
+storage/test_cases/*
+!storage/code_submissions/.gitkeep
+!storage/test_cases/.gitkeep

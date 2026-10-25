@@ -7,3 +7,4 @@ python-dotenv==1.2.4
 websockets==17.3
 
 python-multipart==0.0.32
+qrcode==8.2

@@ -1,0 +1,134 @@
+{
+  "measured_at": "2026-10-25T14:07:09.310515+00:00",
+  "environment": {
+    "os": "Windows-11-10.0.26300-SP0",
+    "python": "3.12.14",
+    "cpu": "Intel64 Family 6 Model 154 Stepping 3, GenuineIntel",
+    "logical_cpus": 16,
+    "transport": "HTTP TCP loopback, direct Uvicorn; synthetic clients on one physical machine",
+    "judge_workers": 0,
+    "warmup": "login, CSRF, session start and health excluded from measured requests"
+  },
+  "runs": [
+    {
+      "concurrency": 1,
+      "trial": 1,
+      "requests": 3,
+      "elapsed_seconds": 0.04210869999951683,
+      "p50_ms": 7.2395,
+      "p95_ms": 27.8917,
+      "throughput_requests_per_second": 71.24418469424188,
+      "error_rate": 0.0
+    },
+    {
+      "concurrency": 5,
+      "trial": 1,
+      "requests": 15,
+      "elapsed_seconds": 0.13896889999978157,
+      "p50_ms": 32.0522,
+      "p95_ms": 72.2402,
+      "throughput_requests_per_second": 107.9378191812958,
+      "error_rate": 0.0
+    },
+    {
+      "concurrency": 10,
+      "trial": 1,
+      "requests": 30,
+      "elapsed_seconds": 0.2955984999998691,
+      "p50_ms": 53.6857,
+      "p95_ms": 145.6017,
+      "throughput_requests_per_second": 101.48901296864932,
+      "error_rate": 0.0
+    },
+    {
+      "concurrency": 20,
+      "trial": 1,
+      "requests": 60,
+      "elapsed_seconds": 1.281594099999893,
+      "p50_ms": 122.7141,
+      "p95_ms": 694.6858,
+      "throughput_requests_per_second": 46.81669492704828,
+      "error_rate": 0.0
+    },
+    {
+      "concurrency": 1,
+      "trial": 2,
+      "requests": 3,
+      "elapsed_seconds": 0.03723730000001524,
+      "p50_ms": 9.3925,
+      "p95_ms": 19.3496,
+      "throughput_requests_per_second": 80.56438033903565,
+      "error_rate": 0.0
+    },
+    {
+      "concurrency": 5,
+      "trial": 2,
+      "requests": 15,
+      "elapsed_seconds": 0.13424080000004324,
+      "p50_ms": 36.2332,
+      "p95_ms": 65.7971,
+      "throughput_requests_per_second": 111.73950095645414,
+      "error_rate": 0.0
+    },
+    {
+      "concurrency": 10,
+      "trial": 2,
+      "requests": 30,
+      "elapsed_seconds": 0.40467590000025666,
+      "p50_ms": 100.1318,
+      "p95_ms": 188.9103,
+      "throughput_requests_per_second": 74.13339909784835,
+      "error_rate": 0.0
+    },
+    {
+      "concurrency": 20,
+      "trial": 2,
+      "requests": 60,
+      "elapsed_seconds": 0.6626976999996259,
+      "p50_ms": 137.3904,
+      "p95_ms": 276.1334,
+      "throughput_requests_per_second": 90.53901952584695,
+      "error_rate": 0.0
+    },
+    {
+      "concurrency": 1,
+      "trial": 3,
+      "requests": 3,
+      "elapsed_seconds": 0.02773720000004687,
+      "p50_ms": 7.3585,
+      "p95_ms": 13.9149,
+      "throughput_requests_per_second": 108.15799720213037,
+      "error_rate": 0.0
+    },
+    {
+      "concurrency": 5,
+      "trial": 3,
+      "requests": 15,
+      "elapsed_seconds": 0.1398871000001236,
+      "p50_ms": 35.5576,
+      "p95_ms": 60.31,
+      "throughput_requests_per_second": 107.2293299381197,
+      "error_rate": 0.0
+    },
+    {
+      "concurrency": 10,
+      "trial": 3,
+      "requests": 30,
+      "elapsed_seconds": 0.34538049999991927,
+      "p50_ms": 66.21385000000001,
+      "p95_ms": 187.702,
+      "throughput_requests_per_second": 86.86072317344787,
+      "error_rate": 0.0
+    },
+    {
+      "concurrency": 20,
+      "trial": 3,
+      "requests": 60,
+      "elapsed_seconds": 0.6852388999996037,
+      "p50_ms": 167.16084999999998,
+      "p95_ms": 327.1658,
+      "throughput_requests_per_second": 87.56070328178201,
+      "error_rate": 0.0
+    }
+  ]
+}

@@ -80,3 +80,41 @@ def test_wa_partial_ce_tle_runtime_output_and_oom():
         ).verdict
         == "Memory Limit Exceeded"
     )
+
+@pytest.mark.skipif(os.getenv('RUN_DOCKER_TESTS') != '1', reason='Real Docker required')
+def test_real_sandbox_filesystem_and_network_isolation(tmp_path):
+    import json
+    from judge.runners.container import DockerJudge, TestCase
+    from judge.limits import Limits
+    secret=tmp_path/'host-private-secret.txt'
+    secret.write_text('HOST_PRIVATE_CANARY',encoding='utf-8')
+    source=r'''
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <arpa/inet.h>
+int main(void) {
+    FILE *f=fopen(HOST_SECRET,"r");
+    if(f){fclose(f);puts("HOST_VISIBLE");return 0;}
+    f=fopen("/case/expected","r");
+    if(f){fclose(f);puts("EXPECTED_VISIBLE");return 0;}
+    f=fopen("/etc/lan_lms_write_probe","w");
+    if(f){fclose(f);puts("ROOT_WRITABLE");return 0;}
+    f=fopen("/proc/net/dev","r");
+    if(!f){puts("NO_NETWORK_EVIDENCE");return 0;}
+    char line[512];int devices=0;
+    while(fgets(line,sizeof(line),f)){char *colon=strchr(line,':');if(colon){*colon=0;char *name=line;while(*name==' ')name++;if(strcmp(name,"lo")){puts("EXTERNAL_INTERFACE");fclose(f);return 0;}devices++;}}
+    fclose(f);
+    int sock=socket(AF_INET,SOCK_STREAM,0);
+    struct timeval tv={1,0};setsockopt(sock,SOL_SOCKET,SO_SNDTIMEO,&tv,sizeof(tv));
+    struct sockaddr_in address={0};address.sin_family=AF_INET;address.sin_port=htons(53);inet_pton(AF_INET,"1.1.1.1",&address.sin_addr);
+    int result=connect(sock,(struct sockaddr*)&address,sizeof(address));int reason=errno;close(sock);
+    if(result==0 || (reason!=ENETUNREACH && reason!=EHOSTUNREACH)){puts("NETWORK_NOT_ISOLATED");return 0;}
+    if(getuid()==0){puts("ROOT_USER");return 0;}
+    puts("ISOLATED");return 0;
+}'''.replace('HOST_SECRET',json.dumps(str(secret)))
+    result=DockerJudge().grade(source,'c',[TestCase(b'',b'ISOLATED\n',1)],Limits(time_ms=4000),comparator='normalized')
+    assert result.verdict=='Accepted',result
