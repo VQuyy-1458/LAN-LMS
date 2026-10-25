@@ -6,7 +6,7 @@ export default function LogoutButton() {
   const router = useRouter();
   const [error, setError] = useState("");
   return (
-    <div>
+    <div className="logout-control">
       <button
         onClick={async () => {
           try {

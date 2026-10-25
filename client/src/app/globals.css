@@ -769,7 +769,7 @@ details[open] > summary {
   .brand small {
     font-size: 7px;
   }
-  .header-account > div {
+  .header-account > div:not(.logout-control) {
     display: none;
   }
   .app-frame {

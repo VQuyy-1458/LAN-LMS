@@ -41,3 +41,26 @@ jobs:
           name: judge-measurements
           path: experiments/results/ci-linux
           if-no-files-found: warn
+  report:
+    if: contains(github.event.head_commit.message, '[report]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install isolated report conversion tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libreoffice-writer poppler-utils fonts-liberation
+          python -m pip install pdf2image==1.17.0
+      - name: Render committed report for page-by-page review
+        run: |
+          python scripts/report_tools/render_docx.py REPORT/NhomXX_LANLMS_Report.docx --output_dir .runtime/report-render --emit_pdf --verbose
+          python -c "import hashlib,json,os,pathlib; p=pathlib.Path('REPORT/NhomXX_LANLMS_Report.docx'); pathlib.Path('.runtime/report-render/provenance.json').write_text(json.dumps({'commit':os.environ['GITHUB_SHA'],'docx_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'run_id':os.environ['GITHUB_RUN_ID']},indent=2))"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: report-render
+          path: .runtime/report-render
+          if-no-files-found: error
