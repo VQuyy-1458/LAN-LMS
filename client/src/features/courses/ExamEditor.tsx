@@ -549,6 +549,23 @@ export default function ExamEditor({
           <h2>
             Bài {i + 1}. {p.title}
           </h2>
+          {editable && (
+            <div className="actions">
+              <button
+                className="danger"
+                disabled={action.busy}
+                onClick={() => {
+                  if (confirm("Xóa bài này và các test trước khi thi?"))
+                    void action.run(async () => {
+                      await request(`/api/problems/${p.id}`, "DELETE");
+                      await load();
+                    }, "Đã xóa bài khỏi đề.");
+                }}
+              >
+                Xóa bài khỏi đề
+              </button>
+            </div>
+          )}
           <p className="section-note">
             {p.time_limit_ms} ms · {p.memory_limit_mib} MiB ·{" "}
             {p.io_mode === "file"

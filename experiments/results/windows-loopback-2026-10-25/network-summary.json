@@ -7,7 +7,9 @@
     "logical_cpus": 16,
     "transport": "HTTP TCP loopback, direct Uvicorn; synthetic clients on one physical machine",
     "judge_workers": 0,
-    "warmup": "login, CSRF, session start and health excluded from measured requests"
+    "warmup": "login, CSRF, session start and health excluded from measured requests",
+    "ram_gib": 15.73,
+    "ram_source": "Win32_ComputerSystem TotalPhysicalMemory on the measurement host"
   },
   "runs": [
     {

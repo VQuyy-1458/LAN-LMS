@@ -379,3 +379,17 @@ def test_worker_event_reaches_authenticated_websocket(context):
                     break
             assert found
     assert c["s"].get(f"/api/submissions/{sub['id']}").json()["verdict_code"] == "AC"
+
+
+def test_synthetic_content_seed_is_idempotent(context):
+    from database.seed.seed_content import seed_content
+    from server.app.models import Courses,Problems,TestCases as Cases
+    app,c,cid=context
+    with app.state.sessions.begin() as db:
+        db.get(Courses,cid).course_code='DEMO-LTM'
+        seed_content(db,'t',app.state.storage_root)
+    with app.state.sessions.begin() as db:seed_content(db,'t',app.state.storage_root)
+    with app.state.sessions() as db:
+        assert db.scalar(select(func.count(CodingExams.id)))==2
+        assert db.scalar(select(func.count(Problems.id)))==10
+        assert db.scalar(select(func.count(Cases.id)))==20

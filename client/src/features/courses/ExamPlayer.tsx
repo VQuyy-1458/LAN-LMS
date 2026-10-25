@@ -42,25 +42,27 @@ function Solver({
     pending = useRef<{ body: string; key: string } | null>(null),
     { revision } = useRealtime();
   const storageKey = `lan-lms-draft-${session.id}-${p.id}`;
+  const languageList = p.languages.join(",");
   useEffect(() => {
+    const languages = languageList.split(",");
     try {
       const draft = JSON.parse(localStorage.getItem(storageKey) || "null");
       if (
         draft &&
         typeof draft.source === "string" &&
-        p.languages.includes(draft.language)
+        languages.includes(draft.language)
       ) {
         setSource(draft.source);
         setLanguage(draft.language);
       } else {
-        setSource(template[p.languages[0]]);
-        setLanguage(p.languages[0]);
+        setSource(template[languages[0]]);
+        setLanguage(languages[0]);
       }
     } catch {
-      setSource(template[p.languages[0]]);
+      setSource(template[languages[0]]);
     }
     setLoaded(true);
-  }, [storageKey, p.languages]);
+  }, [storageKey, languageList]);
   useEffect(() => {
     if (loaded)
       try {
@@ -85,6 +87,14 @@ function Solver({
     }, 3000);
     return () => clearInterval(timer);
   }, [load]);
+  const detailId = detail?.id;
+  const detailStatus = rows.find((r) => r.id === detailId)?.status;
+  useEffect(() => {
+    if (detailId)
+      apiRequest<Submission>(`/api/submissions/${detailId}`)
+        .then(setDetail)
+        .catch(action.setError);
+  }, [detailId, detailStatus, revision, action.setError]);
   const accepted = rows.some((s) => s.verdict_code === "AC");
   return (
     <div className="stack">

@@ -277,7 +277,10 @@ def main():
                 "environment": {
                     "os": platform.platform(),
                     "python": platform.python_version(),
-                    "cpu": platform.processor(),
+                    "cpu": next((line.split(":",1)[1].strip() for line in Path("/proc/cpuinfo").read_text().splitlines() if line.startswith("model name")),platform.processor()) if Path("/proc/cpuinfo").exists() else platform.processor(),
+                    "ram_gib": (os.sysconf("SC_PHYS_PAGES") * os.sysconf("SC_PAGE_SIZE") / 1024**3) if hasattr(os,"sysconf") else None,
+                    "docker_version": subprocess.run(["docker","version","--format","{{.Server.Version}}"],capture_output=True,text=True,check=True).stdout.strip(),
+                    "image_id": subprocess.run(["docker","image","inspect",os.getenv("JUDGE_IMAGE","lan-lms-judge:day25"),"--format","{{.Id}}"],capture_output=True,text=True,check=True).stdout.strip(),
                     "logical_cpus": os.cpu_count(),
                     "image": os.getenv("JUDGE_IMAGE", "lan-lms-judge:day25"),
                     "dataset": "20 isolated C/C++/Java sum programs, one test, every fourth program sleeps 1s, 3000ms/256MiB, fresh database per trial",

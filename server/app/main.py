@@ -159,6 +159,9 @@ def create_app(settings=None):
                 )
             )
             db.execute(text("SELECT id, ip, created_at FROM login_attempts LIMIT 0"))
+            db.execute(text("SELECT id, score_ladder_json FROM coding_exams LIMIT 0"))
+            db.execute(text("SELECT id, event_type, data_json FROM realtime_events LIMIT 0"))
+            db.execute(text("SELECT id, title FROM attendance_sessions LIMIT 0"))
         return {"status": "ready"}
 
     app.include_router(router)
