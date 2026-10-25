@@ -409,7 +409,9 @@ def make_docx(source, destination):
             p.alignment = WD_ALIGN_PARAGRAPH.CENTER
             continue
         if line.startswith("# "):
-            p = doc.add_paragraph(line[2:], style="Title")
+            p = doc.add_paragraph(
+                line[2:].replace(" trong mạng LAN", "\ntrong mạng LAN"), style="Title"
+            )
             p.alignment = WD_ALIGN_PARAGRAPH.CENTER
             continue
         if line.startswith("## "):
