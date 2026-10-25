@@ -45,3 +45,4 @@ textarea {
 button {
   border: 0;
 }
+input,select,textarea { border:1px solid #cbd5e1; border-radius:6px; padding:8px; margin:4px; } button { background:#cc0d00; color:white; padding:8px 14px; border-radius:6px; margin:4px; } button:disabled { opacity:.5; } h2 {font-size:1.2rem;font-weight:600;}

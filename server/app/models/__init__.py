@@ -16,6 +16,9 @@ class Courses(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     course_code: Mapped[str] = mapped_column(Text, nullable=False)
     course_name: Mapped[str] = mapped_column(Text, nullable=False)
+    description: Mapped[str] = mapped_column(Text, default="", server_default="")
+    start_date: Mapped[str | None] = mapped_column(Text, nullable=True)
+    end_date: Mapped[str | None] = mapped_column(Text, nullable=True)
     semester: Mapped[str] = mapped_column(Text, nullable=False)
     academic_year: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(Text, nullable=False)
@@ -58,6 +61,7 @@ class CourseMaterials(Base):
     storage_path: Mapped[str] = mapped_column(Text, nullable=False)
     original_filename: Mapped[str] = mapped_column(Text, nullable=False)
     size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    uploaded_at: Mapped[float] = mapped_column(Float, default=0, server_default="0")
 
 class CalendarEvents(Base):
     __tablename__ = "calendar_events"
@@ -84,6 +88,7 @@ class Assignments(Base):
     course_id: Mapped[int] = mapped_column(ForeignKey("courses.id", ondelete="RESTRICT"), nullable=False, index=True)
     created_by: Mapped[int] = mapped_column(ForeignKey("teachers.id", ondelete="RESTRICT"), nullable=False, index=True)
     title: Mapped[str] = mapped_column(Text, nullable=False)
+    description: Mapped[str] = mapped_column(Text, default="", server_default="")
     due_at: Mapped[float] = mapped_column(Float, nullable=False)
     allow_resubmit: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
@@ -124,12 +129,13 @@ class IdempotencyKeys(Base):
     __tablename__ = "idempotency_keys"
     __table_args__ = (UniqueConstraint('user_id', 'method', 'path', 'key', name="uq_idempotency_keys_user_id_method_path_key"),)
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, unique=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True)
     method: Mapped[str] = mapped_column(Text, nullable=False)
     path: Mapped[str] = mapped_column(Text, nullable=False)
     key: Mapped[str] = mapped_column(Text, nullable=False)
     request_hash: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(Text, nullable=False)
+    response_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     response_status: Mapped[int | None] = mapped_column(Integer, nullable=True)
     resource_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     expires_at: Mapped[float] = mapped_column(Float, nullable=False)
@@ -156,7 +162,7 @@ class AuditLogs(Base):
 class Students(Base):
     __tablename__ = "students"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, unique=True, index=True)
     class_id: Mapped[int | None] = mapped_column(ForeignKey("classes.id", ondelete="RESTRICT"), nullable=True, index=True)
     student_code: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
     full_name: Mapped[str] = mapped_column(Text, nullable=False)
@@ -195,6 +201,8 @@ class AssignmentSubmissions(Base):
     assignment_id: Mapped[int] = mapped_column(ForeignKey("assignments.id", ondelete="RESTRICT"), nullable=False, index=True)
     student_id: Mapped[int] = mapped_column(ForeignKey("students.id", ondelete="RESTRICT"), nullable=False, index=True)
     attempt_no: Mapped[int] = mapped_column(Integer, nullable=False)
+    original_filename: Mapped[str] = mapped_column(Text, default="submission", server_default="submission")
+    size_bytes: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     storage_path: Mapped[str] = mapped_column(Text, nullable=False)
     received_at: Mapped[float] = mapped_column(Float, nullable=False)
     score: Mapped[float | None] = mapped_column(Float, nullable=True)

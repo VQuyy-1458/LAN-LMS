@@ -2,6 +2,7 @@
 
 import {
   type FormEvent,
+  useCallback,
   useEffect,
   useState,
 } from "react";
@@ -136,6 +137,23 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] =
     useState(false);
 
+  const redirectUser = useCallback((user: {
+    role: "teacher" | "student";
+    must_change_password: boolean;
+  }) => {
+    if (user.must_change_password) {
+      router.replace("/change-password");
+      return;
+    }
+
+    if (user.role === "teacher") {
+      router.replace("/teacher/dashboard");
+      return;
+    }
+
+    router.replace("/student/dashboard");
+  }, [router]);
+
   useEffect(() => {
     async function checkSession() {
       try {
@@ -149,24 +167,7 @@ export default function LoginPage() {
     }
 
     void checkSession();
-  }, []);
-
-  function redirectUser(user: {
-    role: "teacher" | "student";
-    must_change_password: boolean;
-  }) {
-    if (user.must_change_password) {
-      router.replace("/change-password");
-      return;
-    }
-
-    if (user.role === "teacher") {
-      router.replace("/teacher/dashboard");
-      return;
-    }
-
-    router.replace("/student/dashboard");
-  }
+  }, [redirectUser]);
 
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>,

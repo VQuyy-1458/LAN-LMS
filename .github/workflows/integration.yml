@@ -1,0 +1,33 @@
+name: Integration tests
+on:
+  push:
+    branches: [develop, 'codex/**']
+  pull_request:
+    branches: [develop, main]
+permissions:
+  contents: read
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - run: pip install -r server/requirements.lock
+      - run: docker build -t lan-lms-judge:day25 judge
+      - run: python -m pytest -q --tb=short
+        env:
+          RUN_DOCKER_TESTS: '1'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+        working-directory: client
+      - run: npm run typecheck && npm run lint && npm run build
+        working-directory: client
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'

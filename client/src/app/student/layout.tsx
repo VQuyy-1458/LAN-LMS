@@ -1,5 +1,8 @@
 import type { ReactNode } from "react";
 
+import AuthGuard from "@/components/AuthGuard";
+import LogoutButton from "@/components/LogoutButton";
+
 import AppSidebar from "@/components/AppSidebar";
 
 const studentNavigation = [
@@ -25,14 +28,14 @@ export default function StudentLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
   return (
-    <div className="flex min-h-screen bg-[#F7F8FB]">
+    <AuthGuard role="student"><div className="flex min-h-screen bg-[#F7F8FB]">
       <AppSidebar
         items={studentNavigation}
       />
 
       <main className="min-w-0 flex-1 p-6">
-        {children}
+        <LogoutButton />{children}
       </main>
-    </div>
+    </div></AuthGuard>
   );
 }

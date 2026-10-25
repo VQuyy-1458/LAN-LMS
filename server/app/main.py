@@ -14,6 +14,12 @@ from .core.database import database
 from .core.realtime import EventHub, websocket_endpoint
 from .modules.auth import router
 from .schemas.common import ErrorResponse
+from .core.config import PROJECT_ROOT
+from .modules.courses.router import router as courses_router
+from .modules.students.router import router as students_router
+from .modules.materials.router import router as materials_router
+from .modules.assignments.router import router as assignments_router
+from .services import access
 
 logger = logging.getLogger('lan_lms')
 
@@ -35,7 +41,15 @@ def create_app(settings=None):
     app.state.engine = engine
     app.state.sessions = sessions
     app.state.hub = EventHub()
-    app.state.course_access = None
+    app.state.storage_root = PROJECT_ROOT / 'storage'
+    def course_policy(user, course_id):
+        with sessions() as db:
+            try:
+                access.course(db,user,course_id)
+                return True
+            except StarletteHTTPException:
+                return False
+    app.state.course_access = course_policy
 
     def error(request, status, code, detail, errors=None):
         return JSONResponse(status_code=status, content={'detail': detail, 'code': code,
@@ -94,6 +108,8 @@ def create_app(settings=None):
         return {'status': 'ready'}
 
     app.include_router(router)
+    for module_router in (courses_router,students_router,materials_router,assignments_router):
+        app.include_router(module_router)
     app.websocket('/ws')(websocket_endpoint)
     return app
 
