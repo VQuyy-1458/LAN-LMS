@@ -60,6 +60,7 @@ export type ExamSession = {
   last_seen_at: string | null;
   connection_status: string;
   accepted_count: number;
+  accepted_problem_ids: number[];
   problem_count: number;
   total_score: number;
   pending_count: number;

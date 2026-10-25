@@ -1,3 +1,5 @@
+> Nhật ký mốc trước bản hoàn thiện. Trạng thái hiện hành xem README, PROJECT_PLAN 1.2 và API 1.2.
+
 # TV1 — nghiệm thu công việc ngày 24/10/2026
 
 Nguồn: bảng Google Sheets do người dùng cung cấp, tab Cong viec và Chi tiet; ngày làm việc theo giờ Việt Nam. Không sửa tiến độ/dấu tích trên Google Sheets vì yêu cầu hiện tại là thực hiện code và push. Bảng dưới phân biệt phần backend đã kiểm chứng với nghiệm thu chung còn chờ người khác.

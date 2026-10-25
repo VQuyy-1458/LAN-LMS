@@ -1,3 +1,5 @@
+> Nhật ký mốc trước bản hoàn thiện. Trạng thái hiện hành xem README, PROJECT_PLAN 1.2 và API 1.2.
+
 # Tích hợp TV1/TV4 ngày 24–25/10/2026
 
 ## Quyết định trực tiếp của người dùng ngày 25/10

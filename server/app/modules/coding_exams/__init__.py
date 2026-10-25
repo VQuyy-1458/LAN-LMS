@@ -1,1 +1,1 @@
-"""Module coding_exams: scaffold for member 4; not registered yet."""
+"""coding_exams module; routers are registered by server.app.main.create_app."""

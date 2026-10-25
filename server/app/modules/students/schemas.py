@@ -1,1 +1,5 @@
-"""Thành viên 3: request/response Pydantic cho students; chưa triển khai."""
+from pydantic import BaseModel
+
+
+class Confirm(BaseModel):
+    preview_id: str

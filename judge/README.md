@@ -1,7 +1,9 @@
-# Judge — nhiệm vụ TV4 ngày 24–25
+# Judge LAN-LMS
 
-Đã có Dockerfile, limits.py, languages/config.py, comparators/output.py, sandbox_entry.py, runners/container.py và cli.py. Compiler C17/C++17/JDK17; stdio và file I/O; chấm tất cả test trong container mới từng test, chỉ trả tổng bài. Biên dịch một lần vào thư mục artifact riêng; expected output chỉ ở orchestrator.
+Build: docker build -t lan-lms-judge:day25 judge. Chạy worker từ gốc repo bằng python -m judge.worker --worker-id worker-1; tiến trình thứ hai dùng worker-2. API và worker dùng cùng DATABASE_URL/STORAGE_ROOT; .env server được nạp bởi Settings. Chỉ dựng image bằng docker compose --profile judge build; Compose hiện không điều phối toàn bộ web/API.
 
-Build/run/test và manifest: docs/INTEGRATION_24_25.md. Test Docker thật được chạy trên GitHub CI. CPU/RAM/pids/time/output/file/network được giới hạn; không chạy code sinh viên trực tiếp trên máy chủ. Docker socket chỉ orchestrator tin cậy dùng qua CLI, không mount vào container.
+worker.py nhận job bền vững qua job_queue.py, heartbeat và fenced completion; runners/container.py biên dịch/chạy Docker, sandbox_entry.py là supervisor trong container; limits.py, languages/config.py và comparators/output.py định nghĩa runtime. Không chạy code trong API.
 
-worker.py và job_queue.py vẫn là khung cho ngày 26; CLI runner không phải hàng đợi tự động đã tích hợp API. Docker Desktop Windows trên máy làm việc hiện lỗi khởi động; CI Linux đã kiểm chứng compiler/sandbox. Chưa tuyên bố môi trường nào an toàn tuyệt đối.
+Chấm độc lập: python -m judge.cli --language cpp --source Main.cpp --manifest problem.json. Manifest có time_limit_ms,memory_limit_mib,io_mode,comparator,tests; mỗi test có input/expected là path tương đối manifest và points. File mode có input_filename/output_filename là basename khác nhau. Không nhận đường dẫn thoát thư mục hoặc lệnh compiler tùy ý.
+
+RUN_DOCKER_TESTS=1 python -m pytest tests/integration/test_judge_docker.py tests/integration/test_completion.py -q. Chỉ bật khi Docker Linux engine và image sẵn sàng. Docker giới hạn quyền/tài nguyên, không được mô tả an toàn tuyệt đối. Xem docs/coding-judge.md và README gốc.

@@ -1,3 +1,4 @@
+from .schemas import Confirm
 import hashlib
 import json
 import time
@@ -14,10 +15,6 @@ from ...services.files import read_upload
 from .service import inspect_rows
 
 router = APIRouter(prefix="/api", tags=["csv"])
-
-
-class Confirm(BaseModel):
-    preview_id: str
 
 
 @router.post("/courses/{course_id}/students/import-preview")

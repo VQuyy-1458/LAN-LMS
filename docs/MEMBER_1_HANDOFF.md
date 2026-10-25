@@ -1,3 +1,5 @@
+> Nhật ký mốc trước bản hoàn thiện. Trạng thái hiện hành xem README, PROJECT_PLAN 1.2 và API 1.2.
+
 # Thành viên 1 — Backend nền tảng
 
 Triển khai ngày 24/10/2026 trên nhánh `codex/member-1-backend`. Không bao gồm code nghiệp vụ thuộc thành viên 2/3/4 và không khai báo toàn bộ sản phẩm đã hoàn thành.

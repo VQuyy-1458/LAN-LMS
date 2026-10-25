@@ -189,7 +189,7 @@ function ProblemForm({
             name="comparator"
             defaultValue={problem?.comparator || "normalized"}
           >
-            <option value="normalized">Chuẩn hóa đầu/cuối và xuống dòng</option>
+            <option value="normalized">Bỏ trắng cuối dòng và chuẩn hóa xuống dòng</option>
             <option value="exact">Khớp chính xác</option>
           </select>
         </label>

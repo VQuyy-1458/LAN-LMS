@@ -95,7 +95,7 @@ function Solver({
         .then(setDetail)
         .catch(action.setError);
   }, [detailId, detailStatus, revision, action.setError]);
-  const accepted = rows.some((s) => s.verdict_code === "AC");
+  const accepted = session.accepted_problem_ids.includes(p.id);
   return (
     <div className="stack">
       <Feedback error={action.error} message={action.message} />
@@ -115,7 +115,7 @@ function Solver({
             ·{" "}
             {p.comparator === "exact"
               ? "So sánh chính xác"
-              : "Chuẩn hóa đầu/cuối và xuống dòng"}
+              : "Bỏ trắng cuối dòng và chuẩn hóa xuống dòng"}
           </p>
           <hr
             style={{

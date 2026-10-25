@@ -1,1 +1,1 @@
-"""Module attendance: scaffold for member 3; not registered yet."""
+"""attendance module; routers are registered by server.app.main.create_app."""

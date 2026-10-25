@@ -6,7 +6,7 @@ from ...core.security import learning_user
 from ...models import *
 from ...services import access
 from ...services.activity import iso
-from .router import serialize
+from .service import serialize
 from ..coding_exams.service import exam_payload
 
 router = APIRouter(prefix="/api", tags=["dashboard"])

@@ -63,3 +63,6 @@ storage/code_submissions/*
 storage/test_cases/*
 !storage/code_submissions/.gitkeep
 !storage/test_cases/.gitkeep
+
+# Temporary Microsoft Office lock files
+~$*

@@ -43,19 +43,6 @@ def exam_score(db, cid, sid, kind):
         or (e.status != "closed" and e.ends_at > time.time())
     ):
         return None
-    pending = db.scalar(
-        select(func.count(CodeSubmissions.id))
-        .join(Problems, CodeSubmissions.problem_id == Problems.id)
-        .where(
-            Problems.exam_id == e.id,
-            CodeSubmissions.student_id == sid,
-            CodeSubmissions.status.in_(
-                ["Pending", "Compiling", "Running", "System Error"]
-            ),
-        )
-    )
-    if pending:
-        return None
     accepted = set(
         db.scalars(
             select(CodeSubmissions.problem_id)
@@ -67,6 +54,20 @@ def exam_score(db, cid, sid, kind):
             )
         )
     )
+    pending = db.scalar(
+        select(func.count(CodeSubmissions.id))
+        .join(Problems, CodeSubmissions.problem_id == Problems.id)
+        .where(
+            Problems.exam_id == e.id,
+            CodeSubmissions.student_id == sid,
+            CodeSubmissions.problem_id.not_in(accepted),
+            CodeSubmissions.status.in_(
+                ["Pending", "Compiling", "Running", "System Error"]
+            ),
+        )
+    )
+    if pending:
+        return None
     ladder = json.loads(e.score_ladder_json)
     return ladder[min(len(accepted), len(ladder) - 1)]
 

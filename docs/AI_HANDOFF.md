@@ -1,17 +1,11 @@
-# Bàn giao dự án
+# Handoff bản hoàn thiện
 
-Phụ trách: 1.
+Nguồn quyết định: yêu cầu trực tiếp ngày 25/10, PROJECT_PLAN 1.2, API 1.2, README và REQUIREMENTS_MATRIX. Tài liệu MEMBER_1/INTEGRATION_24_25 là lịch sử.
 
-Nền tảng thành viên 1: MEMBER_1_HANDOFF.md. Các thư mục còn lại mới là file khung. Đọc PROJECT_PLAN.md, api-specification.md, REPOSITORY_GUIDE.md trước khi làm; không coi TODO là đã triển khai. Không ghi secret trong bàn giao.
+Có một giữa kỳ và một cuối kỳ/course. Mỗi bài có bất kỳ AC hợp lệ được tính một lần; lỗi hoặc SE sau AC không xóa bài giải. Giảng viên chọn số bài và bảng quy đổi, mặc định 5 bài với ladder [0,5,7,8,9,10]. Trọng số đủ bốn thành phần, tổng 100%. Không lưu kết quả từng test. Không áp dụng lại policy nhiều final/MAX hoặc điểm test lẻ từ bản cũ.
 
-Cần cập nhật khi triển khai: đường dẫn mã nguồn, lệnh chạy đã thử, kiểm thử thực tế và hạn chế còn lại.
+Đã có mã cho auth, LMS, lịch, QR, bài tập, thi, phiên, submission, queue/worker, bảng điểm, WebSocket và backup. README có lệnh chạy; experiments/RESULTS có bằng chứng. Chỉ một API process; judge workers độc lập. SQLite và storage cùng host, không expose Docker ra web.
 
+Người dùng tự điền thông tin nhóm và đã cho phép push/merge main sau kiểm thử. Thư mục gốc D:/Projects/LAN-LMS có thay đổi đang dở của công việc khác; không reset, ghi đè hoặc stage các file đó. Dùng managed checkout của chat này để làm việc.
 
-## TV1 ngày 24/10/2026
-
-Xem [MEMBER_1_DAY_24.md](MEMBER_1_DAY_24.md): hoàn thiện phần backend A01–A05 và công cụ A08; 27 test qua. A08/Q01 còn phụ thuộc frontend/LMS/thiết bị LAN và compiler. Không gộp file phân công chưa commit từ checkout gốc.
-
-
-## Cập nhật tích hợp ngày 25/10/2026
-
-Xem [INTEGRATION_24_25.md](INTEGRATION_24_25.md) để biết phần đã triển khai, CI Docker, lệnh chạy và giới hạn môi trường. Chỉ lưu kết quả tổng bài và một kỳ thi cuối kỳ/course. Frontend auth/LMS/bài tập và Docker runner đã có code thật; worker tự động/QR/gradebook chưa hoàn thành.
+Ghi đúng giới hạn: Docker Desktop Windows lỗi khởi động; CI Linux không thay nghiệm thu Windows. Loopback không phải hai máy LAN vật lý. Compilatio/bàn giao cần tài khoản và xác nhận thật. Không tạo verdict, số liệu, tỷ lệ đóng góp hoặc kết quả Compilatio giả.

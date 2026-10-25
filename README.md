@@ -1,95 +1,340 @@
-# LAN-LMS
+# LAN-LMS — Hệ thống học tập và thi lập trình trong mạng LAN
 
-Hệ thống quản lý học tập và thi lập trình trên mạng LAN theo mô hình Client–Server, dành cho nhóm 4 thành viên.
+## 1. Project Information
 
-**Trạng thái ngày 24/10/2026:** đã triển khai nền tảng backend thành viên 1 (auth, session, CSRF, quyền dùng chung, WebSocket, migration và kiểm thử). Đã tích hợp frontend auth/LMS, khóa học/CSV/tài liệu/bài tập và Docker judge CLI mẫu; các phần thi/queue tự động/QR/gradebook còn theo lịch sau. Xem [hướng dẫn chạy và bàn giao](docs/MEMBER_1_HANDOFF.md).
+- **Đề tài:** Thiết kế và xây dựng hệ thống LMS và thi lập trình trên mạng LAN theo mô hình Client–Server.
+- **Topic:** Chủ đề 3 — Ứng dụng mạng; kết hợp hướng Networked Auto-Grader và hệ thống thi qua mạng.
+- **Học phần:** Lập trình mạng, năm học 2026–2027.
+- **Nhóm:** `[Điền số nhóm]`; **Giảng viên:** `[Điền họ tên]`.
+- Bốn yêu cầu gốc: [Instruction](docs/requirements/Instruction.md), [README mẫu](docs/requirements/README_TEMPLATE.md), [Submission](docs/requirements/Submission.md), [Topics](docs/requirements/Topics.md).
 
-## Tài liệu chính
+| TV | Họ tên | MSSV | Email | Phần phụ trách |
+|---|---|---|---|---|
+| 1 | [Điền] | [Điền] | [Điền] | Backend nền tảng và tích hợp |
+| 2 | [Điền] | [Điền] | [Điền] | Frontend và trải nghiệm người dùng |
+| 3 | [Điền] | [Điền] | [Điền] | Database và nghiệp vụ LMS |
+| 4 | [Điền] | [Điền] | [Điền] | Thi lập trình và judge |
 
-- [Tích hợp TV1/TV4 ngày 24–25](docs/INTEGRATION_24_25.md): phạm vi, lệnh chạy, CI và giới hạn kiểm chứng mới nhất.
+## 2. Project Summary
 
-- [TV1 — công việc ngày 24/10 và kết quả kiểm chứng](docs/MEMBER_1_DAY_24.md): 27 test backend đã qua; A08/Q01 còn chờ tích hợp frontend/LAN/judge.
+**Problem:** Trong lớp thực hành, tài liệu, bài nộp, điểm danh và kết quả thi thường phân tán. Chấm chương trình ngay trong API còn khiến request bị chặn và khó phục hồi khi xử lý lỗi.
 
-- [Bản đặc tả và kế hoạch đầy đủ 1.1](docs/PROJECT_PLAN.md): giữ khung 19 phần của bản nhóm cung cấp; bổ sung quyết định kỹ thuật, phân công, thực nghiệm và nộp bài ở phần XX.
-- [Hợp đồng API 1.1](docs/api-specification.md): xác thực, request/response, quyền, upload, retry, phiên thi và WebSocket.
+**Objectives:** Tập trung dữ liệu trên một máy chủ; phục vụ nhiều trình duyệt trong LAN; nhận bài bền vững; chấm C/C++/Java ngoài tiến trình API; trả trạng thái qua WebSocket và phục hồi bằng REST.
 
-## Mục tiêu và phạm vi
+**Scope:** Khóa học, CSV tạo tài khoản, tài liệu, lịch/thông báo, điểm danh QR, bài tập file, giữa kỳ/cuối kỳ, test case, phiên thi, hàng đợi/worker, bảng điểm và backup/restore. Không gồm webcam/ghi màn hình, phát hiện đạo văn code, bài nhiều file/project hoặc triển khai đa máy chủ.
 
-Giảng viên tạo khóa học, import CSV để cấp tài khoản, upload tài liệu, giao bài, tổ chức thi C/C++/Java, điểm danh QR và quản lý bảng điểm. Sinh viên dùng trình duyệt trên máy trong LAN để đăng nhập, đổi mật khẩu lần đầu, học và nộp bài.
+## 3. System Overview
 
-Luồng nghiệm thu: giảng viên đăng nhập → tạo khóa học → import CSV → sinh viên đăng nhập/đổi mật khẩu → tải tài liệu → nộp file/code → nhận kết quả → điểm danh → xem điểm đã công bố → xuất CSV.
+Giảng viên và sinh viên dùng trình duyệt. Máy chủ chạy Next.js, FastAPI, SQLite và private storage. Worker là tiến trình riêng; mỗi lần biên dịch/chạy chương trình dùng Docker Linux. Cài đặt lần đầu cần Internet; chạy trong LAN không dùng CDN hay dịch vụ QR bên ngoài sau khi đã có dependency và image.
 
-Lịch/sự kiện độc lập, thông báo nâng cao, bài nhiều file/project và PostgreSQL là phần mở rộng. Các chức năng trên là mục tiêu, chưa đánh dấu hoàn thành.
+| Vai trò | Chức năng |
+|---|---|
+| Giảng viên | Khóa học, sinh viên, import, tài liệu, lịch, QR, bài tập/chấm tay, đề/test, theo dõi thi, trọng số/công bố/xuất điểm |
+| Sinh viên | Đổi mật khẩu, học liệu/lịch, điểm danh, nộp file, thi code, xem lịch sử và điểm riêng |
+| Worker | Nhận job qua SQLite, biên dịch/chạy sandbox, ghi aggregate result và sự kiện |
 
-## Kiến trúc và công nghệ
+## 4. System Architecture
 
-```text
-Trình duyệt trên các máy LAN
-           | HTTP REST / WebSocket cùng origin
-           v
-Web frontend / proxy (Next.js, TypeScript, Tailwind)
-           |
-           v
-FastAPI ---- SQLite (SQLAlchemy, Alembic)
-   |             | submission + judge_jobs bền vững
-File storage     v
-            Judge Worker riêng
-                 |
-            Docker Linux trên WSL2
-            C17 / C++17 / Java
+```mermaid
+flowchart LR
+    B[Trình duyệt 1 đến N] <-->|HTTP REST và WebSocket| N[Nginx cùng origin]
+    N --> F[Next.js]
+    N --> A[FastAPI một tiến trình]
+    A <--> D[(SQLite)]
+    A <--> S[Private storage]
+    W[Judge Worker 1 đến 2] <--> D
+    W --> S
+    W --> C[Docker compile và container riêng từng test]
+    D --> O[Outbox sự kiện]
+    O --> A
 ```
 
-Máy chủ mục tiêu Windows. Browser không truy cập DB/worker. Auth dùng session cookie HttpOnly và CSRF; password hash Argon2id. Job có lease và phục hồi khi worker lỗi; chỉ báo qua WebSocket sau khi trạng thái được lưu. Mất WS lấy lại trạng thái qua REST. Cấu hình container, concurrency và quyền phải được kiểm thử thực tế.
+API và worker cùng máy, cùng DB/storage; không đặt SQLite WAL trên network share. [Kiến trúc](docs/architecture.md) và [giao thức API](docs/api-specification.md) mô tả chi tiết.
 
-HTTP/REST và hướng ứng dụng mạng phù hợp tài liệu học phần đã cung cấp; không có yêu cầu bắt buộc tự viết TCP Socket thuần trong các file đó. Nhóm phải giải thích được message flow, concurrency và error handling.
+## 5. Network Communication Design
 
-## Phân công
+- Browser → proxy: HTTP/1.1 REST, JSON hoặc multipart; cookie HttpOnly quản lý phiên. `/ws` nâng cấp WebSocket qua proxy.
+- Ghi dữ liệu cần Origin hợp lệ và `X-CSRF-Token` từ `/api/auth/csrf`. Không có đăng ký công khai.
+- `Idempotency-Key` bắt buộc cho confirm CSV/nộp file/gửi code: cùng key và body trả lại resource đã nhận; body khác trả 409.
+- Submission và job được commit cùng transaction. Worker nhận job bằng khóa ghi ngắn, lease 60 giây, gia hạn mỗi 10 giây; attempt cũ không được ghi kết quả.
+- Worker ghi sự kiện trong cùng transaction kết quả. API đọc outbox và gửi đúng chủ bài/giảng viên; mất WS thì REST là trạng thái chuẩn.
+- Heartbeat 15 giây, ACK trong 10 giây. Frontend reconnect có backoff/jitter; bài chưa xong được kiểm tra lại mỗi 3 giây. Logout/đổi mật khẩu đóng kết nối đã thu hồi.
+- Lỗi JSON gồm `detail`, `code`, `request_id`, `errors`; DB busy trả 503, dữ liệu sai 422/400, thiếu quyền 403, sai trạng thái/hết hạn 409.
 
-| Thành viên | Phụ trách |
+Ví dụ kết quả:
+
+```json
+{"id":1,"status":"Accepted","verdict_code":"AC","score":100,"max_score":100,"version":4}
+```
+
+`score` trên submission là kết quả tổng của bài, **không phải điểm thi thang 10**. Điểm thi quy đổi từ số bài AC ở mục 12. Không lưu/trả kết quả từng test ẩn.
+
+## 6. Technology Stack
+
+| Thành phần | Công nghệ |
 |---|---|
-| 1 | Auth, chuẩn API, WebSocket, cấu hình web, tích hợp và tổng hợp bàn giao |
-| 2 | Frontend hai vai trò, REST/WS, kiểm thử luồng trên nhiều máy |
-| 3 | Database/migration, khóa học, CSV, tài liệu, QR, điểm và backup |
-| 4 | Bài tập, kỳ thi, submission, queue/worker/sandbox và benchmark |
+| Client | Next.js 16, React 19, TypeScript 6, Tailwind CSS 4 |
+| API | Python 3.12, FastAPI, Pydantic, Uvicorn |
+| DB | SQLite, SQLAlchemy 2.0.46, Alembic |
+| Xác thực | Argon2id, server session, cookie HttpOnly, CSRF/Origin |
+| Judge | Docker Linux, GCC/G++ C17/C++17, OpenJDK 17 |
+| QR | qrcode 8.2, SVG tạo trên server |
+| Kiểm thử | pytest, httpx/TestClient, Docker thật, ESLint, TypeScript, production build |
+| Tài liệu | Markdown, DOCX/PDF và biểu đồ từ số liệu thực nghiệm |
 
-Tên/MSSV và tỷ lệ đóng góp thực tế sẽ được nhóm bổ sung; không mặc định ai cũng 25%. Mỗi người có code, test và tài liệu của mình.
+Phiên bản chính xác nằm trong `server/requirements.lock` và `client/package-lock.json`. Thư viện ngoài được khai báo trong các file này; không yêu cầu nhóm tự triển khai lại framework, compiler hoặc thuật toán hash.
 
-## Cấu trúc hiện tại và kế hoạch
+## 7. Novelty and Contributions
 
-Hiện có `server/app/`, `database/migrations/`, `scripts/`, `tests/` và tài liệu. Xem [bàn giao thành viên 1](docs/MEMBER_1_HANDOFF.md) để chạy backend và tích hợp.
+Baseline thực nghiệm là **cùng pipeline với một worker**; phương án so sánh dùng **hai worker**. Đóng góp ở mức tích hợp: nhận bài và job nguyên tử, idempotency, lease và fencing khi phục hồi worker, kết hợp outbox/WebSocket với REST recovery. Không tuyên bố các cơ chế này là thuật toán mới trên thế giới.
 
-Đã tạo sẵn `client/`, `server/`, `judge/`, `database/`, `storage/`, `scripts/`, `tests/`, `experiments/`, `REPORT/`. Xem [quy ước thư mục](docs/REPOSITORY_GUIDE.md). Frontend/LMS/bài tập và judge CLI đã có implementation; module thi/worker/QR/gradebook còn là khung, xem báo cáo tích hợp để phân biệt.
+| Nội dung | Bằng chứng |
+|---|---|
+| Retry không tạo bài trùng | Test API cùng/khác key và yêu cầu đồng thời |
+| Worker lỗi không ghi đè kết quả mới | Test mất lease, attempt cũ, retry hết giới hạn |
+| Tách xử lý nặng khỏi request | `judge/worker.py`, Docker và thực nghiệm 1/2 worker |
+| Phục hồi trạng thái | REST snapshot và test thông báo worker → WS |
 
-## Cài đặt, cấu hình và chạy
+Giao diện được cải thiện để dễ sử dụng; không tính đổi màu/bố cục là đóng góp kỹ thuật.
 
-Backend đã có dependency lockfile, migration và lệnh chạy trong [hướng dẫn thành viên 1](docs/MEMBER_1_HANDOFF.md). Trước bàn giao toàn hệ thống vẫn cần:
+## 8. Project Structure
 
-1. Phiên bản Python, Node, compiler/JDK, Docker/WSL2 đã thử.
-2. Dependency/lockfile, build image judge và `.env.example` không có secret.
-3. Migration, seed giả lập và cách tạo teacher tương tác.
-4. Lệnh chạy web, backend, proxy WS và worker; IP LAN, firewall, cookie/origin.
-5. Kiểm thử trên máy sạch và ít nhất hai máy LAN; backup nhất quán DB/storage và restore thật.
+```text
+LAN-LMS/
+├── client/                 # Next.js, giao diện teacher/student
+├── server/app/             # API, auth, services và ORM
+├── judge/                  # Queue, worker, compiler/sandbox
+├── database/migrations/    # Alembic 0001–0004
+├── database/seed/          # Dữ liệu giả lập tùy chọn
+├── storage/                # File riêng tư; nội dung bị Git ignore
+├── scripts/                # Cài/chạy, backup/restore, export, đóng gói
+├── tests/                  # Unit và integration; Docker opt-in
+├── experiments/            # Script đo, log thô và kết quả
+├── statics/                # Sơ đồ, biểu đồ và dataset mẫu
+├── docs/                   # Đặc tả, API, vận hành và yêu cầu gốc
+└── REPORT/                 # Báo cáo DOCX/PDF và nguồn tạo
+```
 
-Demo cốt lõi dự kiến chạy không cần Internet sau cài đặt. Cài dependency/image lần đầu có thể cần Internet; nếu bàn giao offline phải chuẩn bị gói cần thiết. Không tải font/CDN trong luồng bắt buộc.
+Giữ cấu trúc đã thống nhất của nhóm. Instruction.md cho phép thay đổi cây thư mục mẫu nếu dễ đọc và dễ chạy.
 
-## Kiểm thử, thực nghiệm và đóng góp
+## 9. Requirements
 
-Chưa có kết quả đo. Kế hoạch kiểm thử gồm quyền, CSV trùng/lỗi, hạn thi, gửi bài lặp, C/C++/Java, file I/O, sandbox, mất WS và worker dừng. Thực nghiệm so sánh một/hai worker cùng bộ submission, đo queue wait, thời gian chấm và throughput; thử 1/5/10/20 client mô phỏng. Lưu dữ liệu thô, cấu hình và script tái lập; không bịa số liệu.
+- Python 3.12; Node.js 22 và npm.
+- Windows với Docker Desktop dùng Linux engine/WSL2, hoặc Linux có Docker Engine.
+- Nginx cho cùng origin trong LAN. Backend chỉ nghe loopback theo script mặc định.
+- Database và storage nằm trên ổ đĩa cục bộ của máy chủ, đủ dung lượng bài nộp.
+- Compiler container có giới hạn 768 MiB; run container theo cấu hình 64–1024 MiB. Số worker phải phù hợp RAM/CPU của máy.
+- Docker phải báo được server khi chạy `docker info`; chỉ cài Docker CLI chưa đủ.
 
-Đóng góp dự kiến là tích hợp hàng đợi bền vững, chấm tách API và khôi phục trạng thái qua REST/WS. Chỉ xác nhận đóng góp có bằng chứng triển khai/thực nghiệm, không tuyên bố thuật toán mới.
+Môi trường đo và giới hạn kiểm chứng được ghi tại mục 13–16, không suy ra số máy vật lý từ số client mô phỏng.
 
-## Hạn chế và an toàn
+## 10. Installation
 
-SQLite một máy chủ cần kiểm thử ghi đồng thời. Docker/WSL2 cần thiết lập đúng và không bảo đảm an toàn tự động. Ngày sinh chỉ dùng làm mật khẩu khởi tạo theo phạm vi nhóm, buộc đổi trước khi học. QR/IP không chứng minh tuyệt đối sự có mặt/danh tính. Demo HTTP LAN không bảo mật đường truyền như HTTPS.
+Từ PowerShell tại thư mục repo:
 
-## Làm việc và nộp bài
+```powershell
+git clone https://github.com/VQuyy-1458/LAN-LMS.git
+cd LAN-LMS
+.\scripts\setup_windows.ps1
+cd client
+npm ci
+npm run build
+cd ..
+docker build -t lan-lms-judge:day25 judge
+.\.venv\Scripts\python.exe -m server.app.seed
+```
 
-Không commit trực tiếp main; nhánh tính năng tích hợp vào develop, kiểm tra trước khi đưa vào main. Không commit secret hoặc dữ liệu cá nhân thật. API/schema thay đổi phải cập nhật tài liệu và thông báo nhóm.
+Seed teacher hỏi mật khẩu tương tác, không có mật khẩu mặc định. `setup_windows.ps1` tạo `.venv`, cài lockfile, tạo `server/.env` nếu chưa có và chạy migration.
 
-Hạn cuối **23:59 ngày 31/10/2026, giờ Việt Nam**. Theo Submission.md: một báo cáo Compilatio, tên `NhomXX_LANLMS_Report.docx` (khuyến nghị DOCX), source đầy đủ và chạy được; bàn giao `NhomXX_LANLMS/Source/` và `Report/` qua lớp trưởng/USB. Instruction.md/README mẫu còn nhắc Drive; theo dõi thông báo cuối để thống nhất phương thức. Kiểm tra Compilatio theo ngưỡng ≤20%, trích dẫn nguồn và lưu phiên bản báo cáo cuối.
+Cài thủ công trên Linux:
 
-## Nguồn yêu cầu và tham khảo
+```bash
+python3.12 -m venv .venv
+.venv/bin/python -m pip install -r server/requirements.lock
+cp server/.env.example server/.env
+.venv/bin/python -m alembic -c server/alembic.ini upgrade head
+.venv/bin/python -m server.app.seed
+cd client && npm ci && npm run build
+cd ..
+docker build -t lan-lms-judge:day25 judge
+```
 
-Nguồn học phần người dùng cung cấp: Instruction.md, Topics.md, README.md mẫu và Submission.md. Báo cáo cuối phải trích dẫn tài liệu kỹ thuật thực sự sử dụng, gồm framework, compiler, runtime và các nguồn liên quan; chưa có mục Related Work hay kết quả thực nghiệm hoàn chỉnh.
+**Configuration:** Sửa `server/.env`, đặc biệt `ALLOWED_ORIGINS` thành origin web thật, ví dụ `http://192.168.1.10:8080`. `DATABASE_URL` là SQLite URL; đường dẫn tương đối tính từ gốc repo. `STORAGE_ROOT` tùy chọn, mặc định `storage/`; dùng đường dẫn tuyệt đối khi chạy nhiều tiến trình. `JUDGE_IMAGE` tùy chọn, mặc định `lan-lms-judge:day25`. Cookie Secure chỉ bật khi web chạy HTTPS.
 
-- [Next.js — Route Groups](https://nextjs.org/docs/app/api-reference/file-conventions/route-groups): nhóm trong ngoặc không tạo URL prefix; dùng student/teacher để tách đường dẫn.
+Dữ liệu giả lập tùy chọn, **chỉ dùng DB demo**:
+
+```powershell
+.\.venv\Scripts\python.exe -m database.seed.seed_demo --teacher-username TEN_TAI_KHOAN_VUA_TAO
+.\.venv\Scripts\python.exe -m database.seed.seed_content --teacher-username TEN_TAI_KHOAN_VUA_TAO
+```
+
+Seed đầu hỏi mật khẩu sinh viên giả lập; không thay mật khẩu tài khoản cũ. Seed nội dung thêm lịch/tài liệu/bài tập và hai đề nháp 5 bài, không tự mở thi. Giảng viên xem lại giờ thi/test trước khi lên lịch. CSV mẫu tải được ở màn import hoặc `client/public/samples/students.csv`.
+
+## 11. Running the Project
+
+Mở các terminal riêng từ gốc repo trên Windows:
+
+```powershell
+# 1 — API
+.\scripts\start_server.ps1
+# 2 — Frontend production
+.\scripts\start_client.ps1
+# 3 — Judge worker
+.\scripts\start_worker.ps1
+# 4 — Proxy, đường dẫn tới nginx.exe đã cài
+.\scripts\start_proxy.ps1 -NginxPath 'C:\tools\nginx\nginx.exe'
+```
+
+`start_client.ps1` mặc định chạy production sau khi đã build; khi phát triển dùng `scripts/start_client.ps1 -Dev`. Proxy mặc định cổng 8080, API 8000, client 3000. Có thể mở terminal worker thứ hai với `--worker-id worker-2`. Chỉ chạy **một Uvicorn worker** vì hub WS nằm trong tiến trình; judge workers độc lập.
+
+Trên Linux, dùng venv tương ứng và chạy:
+
+```bash
+.venv/bin/python -m uvicorn server.app.main:app --host 127.0.0.1 --port 8000 --workers 1 --proxy-headers --forwarded-allow-ips 127.0.0.1 --ws-max-size 4096
+npm --prefix client run start
+.venv/bin/python -m judge.worker --worker-id worker-1
+nginx -c /absolute/path/to/LAN-LMS/scripts/nginx.conf
+```
+
+**Multiple clients:** Các máy cùng LAN mở `http://IP_MAY_CHU:8080`, dùng tài khoản riêng. Không điền localhost của máy sinh viên vào địa chỉ máy chủ. Kiểm tra từ mỗi máy:
+
+```powershell
+.\.venv\Scripts\python.exe -m scripts.check_lan --base-url http://IP_MAY_CHU:8080 --username MA_SINH_VIEN
+```
+
+**Tests:**
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest -q
+$env:RUN_DOCKER_TESTS='1'
+.\.venv\Scripts\python.exe -m pytest -q
+npm --prefix client run typecheck
+npm --prefix client run lint
+npm --prefix client run build
+```
+
+Không đặt `RUN_DOCKER_TESTS=1` khi engine/image chưa sẵn sàng. Các test Docker không chạy sẽ được báo skipped; skipped không đồng nghĩa đã nghiệm thu Docker Windows. [CI thật](https://github.com/VQuyy-1458/LAN-LMS/actions) chạy image và toàn bộ test trên Linux.
+
+## 12. Main Features
+
+- Teacher tạo/sửa khóa, import CSV UTF-8/BOM theo preview → confirm, tạo tài khoản mới với mật khẩu DOB DDMMYYYY và bắt buộc đổi; giữ mật khẩu tài khoản cũ.
+- Tài liệu riêng tư; file/ZIP tối đa 20 MiB, tên lưu UUID, không giải nén/thực thi file upload.
+- Lịch học, hạn nộp, lịch thi và thông báo; dashboard đọc dữ liệu thật.
+- Điểm danh QR/nhập mã, token ngẫu nhiên 60–3600 giây; chống trùng; chỉnh sửa có lý do/audit. Token chỉ trả khi tạo phiên, DB chỉ lưu hash.
+- Bài tập file có deadline, cho phép nộp lại theo cấu hình, lưu lịch sử và chấm tay 0–10/feedback. Bản nộp cuối hợp lệ là bản hiệu lực để tính homework.
+- Mỗi khóa tối đa một giữa kỳ và một cuối kỳ. Giảng viên cấu hình số bài qua bảng quy đổi, mặc định `[0,5,7,8,9,10]` cho đề 5 bài.
+- Thi code có Pending/Compiling/Running rồi **AC, WA, CE, TLE, MLE, RTE, SE**. C17/C++17/Java17, stdin/stdout hoặc file I/O. Java dùng public class Main, không package.
+- Chỉ bài **AC toàn bộ test** được tính là đã giải; một bài có nhiều AC vẫn tính một lần. Lần sai sau AC không làm mất bài đã giải. Mặc định 0/1/2/3/4/5 bài AC → 0/5/7/8/9/10 điểm thi. Không cộng điểm test lẻ vào điểm thi.
+- Chuyên cần = 10 × số phiên có mặt / số phiên đã đóng; homework trung bình bản nộp cuối của các bài đã hết hạn, thiếu bài nộp tính 0 sau hạn, chưa chấm thì null. Không có phiên/bài đã đóng thì null.
+- Trọng số mặc định 10/20/30/40 cho chuyên cần/bài tập/giữa kỳ/cuối kỳ; teacher sửa, tổng phải 100. Thành phần trọng số 0 được bỏ qua; thiếu điểm ở thành phần trọng số dương thì tổng null. Làm tròn cuối cùng hai chữ số.
+- Sửa điểm cần lý do, ghi audit và thu hồi công bố; điểm override để trống trả về tính tự động. Student chỉ xem dòng của mình khi đã công bố. Xuất CSV BOM có chống công thức; import cột mã dạng Text để giữ số 0 đầu.
+
+## 13. Experimental Setup
+
+Thực nghiệm HTTP dùng Windows, Intel Core i5-12500H, 16 CPU logic, 15,73 GiB RAM; client mô phỏng trên cùng máy, HTTP trực tiếp Uvicorn qua loopback. Không gồm Nginx/TLS/Wi-Fi hoặc thời gian chấm. Mỗi client có tài khoản/session riêng, thực hiện xem course → xem đề → gửi code; login/CSRF/session-start/warm-up không nằm trong latency được báo cáo.
+
+Thực nghiệm judge chạy trong một GitHub Actions Linux runner; cùng image/dataset và fresh DB cho từng lần chạy; 20 bài C/C++/Java, một test/bài, mỗi bài thứ tư chờ 1 giây, giới hạn 3000 ms/256 MiB. Một/hai worker, mỗi cấu hình ba lần. Wall time compile/run gồm overhead Docker; `busy_time_ratio` là độ bận theo thời gian, không phải CPU utilization.
+
+```powershell
+.\.venv\Scripts\python.exe -m experiments.run_network --output .runtime/network-measurements
+.\.venv\Scripts\python.exe -m experiments.run_judge --output .runtime/judge-measurements --trials 3 --jobs 20
+```
+
+Script tự tạo dữ liệu giả lập biệt lập và dọn tiến trình của nó. Lệnh thứ hai cần Docker thật. Log đã đo nằm trong [experiments/results](experiments/results/); xem [phân tích kết quả](experiments/RESULTS.md).
+
+## 14. Experimental Results
+
+Kết quả chức năng, hiệu năng, raw CSV/JSON và nguồn CI được ghi tại [experiments/RESULTS.md](experiments/RESULTS.md). Chỉ sử dụng số đo thật. Không đổi lỗi hệ thống judge thành AC hoặc số liệu giả để demo.
+
+## 15. Discussion
+
+Hai worker giảm hàng đợi và tăng throughput trên bộ bài mẫu đã đo, nhưng không chứng minh khả năng tăng tuyến tính trên mọi đề/máy. Request đồng thời vẫn tranh khóa ghi SQLite; p95 tăng khi tải cao. Thử nghiệm HTTP loopback không đại diện độ trễ Wi-Fi hay nhiều máy vật lý. Compiler/container startup là phần đáng kể của wall time.
+
+## 16. Limitations
+
+- Chưa có bằng chứng nghiệm thu **hai máy vật lý LAN** trong phiên làm việc này.
+- Docker Desktop Windows trên máy phát triển bị lỗi khởi động; CI Linux chứng minh pipeline/sandbox trên Linux, không thay cho nghiệm thu Docker Windows.
+- Một API process, SQLite một writer; không phải kiến trúc phân tán hay triển khai production Internet nhiều node.
+- Docker giảm quyền và giới hạn tài nguyên nhưng không được mô tả an toàn tuyệt đối. API/worker không dành cho môi trường hostile multi-tenant quy mô lớn.
+- HTTP LAN demo không mã hóa nội dung truyền; HTTPS cần được cấu hình khi dùng dữ liệu thật ngoài môi trường thử tin cậy.
+- QR có thể được chia sẻ; không chứng minh vị trí tuyệt đối. Camera trong HTTP LAN tùy trình duyệt; nhập mã luôn có sẵn.
+- Không có cơ chế kiểm tra đạo văn code, giám sát màn hình, bài nhiều file hoặc khôi phục bản nháp từ thiết bị khác.
+- Thông tin nhóm, đóng góp cá nhân và Compilatio do nhóm hoàn thiện bằng dữ liệu thật.
+
+## 17. Future Work
+
+Đo trên LAN nhiều máy thực, HTTPS, mở rộng storage/DB khi tải tăng, pub/sub cho nhiều API process, tối ưu độ trễ chấm, tăng bộ thử sandbox và hỗ trợ project nhiều file theo một đặc tả riêng.
+
+## 18. Report
+
+Báo cáo trong `REPORT/`, gồm `NhomXX_LANLMS_Report.docx` và bản PDF để đọc. Cấu trúc technical paper theo Instruction.md. Nguồn tạo và số liệu đi cùng repo. Thay XX và điền thông tin nhóm trước khi nộp; nhóm cần đọc, kiểm chứng và giải thích được mã nguồn.
+
+Kiểm tra Compilatio bằng tài khoản học phần, sử dụng kết quả thật; không tự ghi đã đạt ngưỡng khi chưa kiểm tra.
+
+## 19. References
+
+1. [FastAPI WebSockets](https://fastapi.tiangolo.com/advanced/websockets/).
+2. [SQLite Write Ahead Logging](https://www.sqlite.org/wal.html) và [Backup API](https://www.sqlite.org/backup.html).
+3. [Docker resource constraints](https://docs.docker.com/engine/containers/resource_constraints/).
+4. [DOMjudge manual](https://www.domjudge.org/docs/manual/main/index.html), tham khảo kiến trúc server/judgehost và luồng submission; không kế thừa mã nguồn DOMjudge.
+5. [Tài liệu giảng viên](docs/requirements/), đặc tả [PROJECT_PLAN.md](docs/PROJECT_PLAN.md) và [API](docs/api-specification.md).
+
+## 20. Team Contribution
+
+| Thành viên | Nội dung thực tế cần nhóm xác nhận | Tỷ lệ |
+|---|---|---|
+| 1 | Auth, network, tích hợp và đóng gói | [Điền]% |
+| 2 | Frontend, UI/REST/WS và nghiệm thu | [Điền]% |
+| 3 | Database, LMS, điểm và backup | [Điền]% |
+| 4 | Exam, queue/worker và sandbox | [Điền]% |
+| Tổng cần đạt | Ghi theo đóng góp thực tế, không chỉ dựa vào kế hoạch | 100% |
+
+Có dùng AI hỗ trợ thiết kế, lập trình, kiểm thử và tài liệu. Nhóm chịu trách nhiệm kiểm chứng, trích dẫn, khai báo đóng góp và giải trình phần nộp; không tự coi công cụ AI là đóng góp cá nhân của một sinh viên.
+
+## 21. Demo
+
+1. Khởi động API/client/worker/proxy; mở cùng origin ở teacher và student.
+2. Teacher tạo khóa, preview/confirm CSV; student mới đăng nhập và đổi mật khẩu.
+3. Teacher đăng tài liệu/lịch; mở QR; student tải tài liệu, điểm danh, nộp file.
+4. Teacher tạo giữa kỳ/cuối kỳ, đặt bảng quy đổi, thêm đủ bài và test; kiểm tra/lên lịch mở.
+5. Student vào phiên, gửi code đúng/sai/lỗi; quan sát Pending → chấm → AC/WA/… và lịch sử. Ngắt/kết nối lại browser rồi lấy trạng thái đã lưu.
+6. Teacher theo dõi phiên, chấm file, cấu hình trọng số và công bố; student chỉ thấy điểm của mình. Xuất CSV.
+7. Chạy test retry/lease và xem benchmark; trình bày backup/restore trên bản sao.
+
+## 22. Submission
+
+Theo Submission.md: báo cáo Compilatio tên `NhomXX_LANLMS_Report.docx`, source tên `NhomXX_LANLMS_Source`, thư mục bàn giao `NhomXX_LANLMS/Source/` và `Report/`. Hạn ghi trong yêu cầu: **23:59 ngày 31/10/2026 giờ Việt Nam**. Submission.md hướng dẫn bàn giao USB qua lớp trưởng; Instruction/README mẫu còn nhắc Drive, nhóm xác nhận thông báo nộp cuối cùng của giảng viên. GitHub phục vụ quản lý phiên bản, không thay thế hình thức nộp.
+
+```powershell
+.\.venv\Scripts\python.exe -m scripts.package_submission --group XX --output .runtime/delivery
+```
+
+Thay XX bằng số nhóm thật khi đã có. Gói chỉ lấy file đã commit, không lấy `.env`, `.git`, `.venv`, `node_modules`, `.next`, DB/upload/log/backup riêng tư. Sau khi sửa thông tin báo cáo, commit lại trước khi đóng gói.
+
+Backup và restore (nên dừng API/worker trước):
+
+```powershell
+.\.venv\Scripts\python.exe -m scripts.backup_database backup --database database/lan_lms.db --storage storage --output .runtime/backups/snapshot-01
+.\.venv\Scripts\python.exe -m scripts.backup_database verify .runtime/backups/snapshot-01
+.\.venv\Scripts\python.exe -m scripts.backup_database restore .runtime/backups/snapshot-01 --database .runtime/restored/lan_lms.db --storage .runtime/restored/storage
+```
+
+Restore yêu cầu đích mới, kiểm tra checksum/integrity/FK, thu hồi session và trả job đang chạy về pending. Không tự ghi đè DB/storage đang dùng. Trỏ `DATABASE_URL`/`STORAGE_ROOT` sang đích phục hồi rồi chạy migration/kiểm tra trước khi dùng; backup có dữ liệu riêng tư, không đẩy lên Git.
+
+## 23. Final Verification
+
+- [x] Có mã nguồn client/server/queue/worker và private storage.
+- [x] Có auth, quyền, retry, error handling và test tự động.
+- [x] Có Docker CI thật và production frontend build.
+- [x] Có thực nghiệm và raw logs tái lập, không bịa số liệu.
+- [x] Có README theo cấu trúc mẫu và báo cáo theo technical paper.
+- [ ] Điền số nhóm, thành viên, giảng viên, tỷ lệ đóng góp thực tế.
+- [ ] Nghiệm thu Docker Windows và ít nhất hai máy LAN vật lý.
+- [ ] Kiểm tra Compilatio theo quy định, lưu kết quả thật.
+- [ ] Đọc lại bản cuối, thử cài trên máy demo và xác nhận nơi nộp.
+
+Các ô chưa tick là bước nghiệm thu/hành chính cần bằng chứng, không được suy ra từ code hoặc CI.
+
+## 24. Contact
+
+Nhóm tự điền đầu mối liên hệ và giảng viên ở mục 1. Không có hotline/thông tin tổ chức giả được cấu hình trong ứng dụng.

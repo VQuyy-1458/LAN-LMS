@@ -422,15 +422,25 @@ def my_session(
         svc.session_payload(db, row, reg, e, s, request.app.state.hub) if row else None
     )
 
+
 @router.delete("/problems/{pid}", status_code=204)
-def delete_problem(pid:int,request:Request,db=Depends(get_db),user=Depends(learning_user)):
+def delete_problem(
+    pid: int, request: Request, db=Depends(get_db), user=Depends(learning_user)
+):
     idempotency.write_lock(db)
-    p,e=svc.problem(db,user,pid,True);svc.editable(db,e)
-    tests=list(db.scalars(select(TestCases).where(TestCases.problem_id==pid)))
-    paths=[path for t in tests for path in (t.input_path,t.expected_output_path)]
-    for t in tests:db.delete(t)
-    db.flush();db.delete(p);audit(db,user.user_id,"delete","problem",pid);db.commit()
+    p, e = svc.problem(db, user, pid, True)
+    svc.editable(db, e)
+    tests = list(db.scalars(select(TestCases).where(TestCases.problem_id == pid)))
+    paths = [path for t in tests for path in (t.input_path, t.expected_output_path)]
+    for t in tests:
+        db.delete(t)
+    db.flush()
+    db.delete(p)
+    audit(db, user.user_id, "delete", "problem", pid)
+    db.commit()
     for path in paths:
-        try:files.resolve(request.app.state.storage_root,path).unlink(missing_ok=True)
-        except OSError:pass
+        try:
+            files.resolve(request.app.state.storage_root, path).unlink(missing_ok=True)
+        except OSError:
+            pass
     return Response(status_code=204)

@@ -1,8 +1,8 @@
 {
   "name": "lan-lms-client",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
-  "description": "Scaffold only. Member 2 must select and lock Next.js/React/TypeScript/Tailwind dependencies before running.",
+  "description": "LAN-LMS student and teacher portal with REST, WebSocket and programming exams",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

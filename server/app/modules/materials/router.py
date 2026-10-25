@@ -1,3 +1,6 @@
+from .service import view
+from .schemas import MaterialResponse
+from ...schemas.common import Page
 import time
 from pathlib import Path
 from fastapi import APIRouter, Depends, UploadFile, File, Form, Request
@@ -13,20 +16,7 @@ from ...schemas.common import Pagination
 router = APIRouter(prefix="/api", tags=["materials"])
 
 
-def view(r):
-    from datetime import datetime, timezone
-
-    return dict(
-        id=r.id,
-        course_id=r.course_id,
-        title=r.title,
-        original_filename=r.original_filename,
-        size_bytes=r.size_bytes,
-        uploaded_at=datetime.fromtimestamp(r.uploaded_at, timezone.utc).isoformat(),
-    )
-
-
-@router.get("/courses/{course_id}/materials")
+@router.get("/courses/{course_id}/materials", response_model=Page[MaterialResponse])
 def listing(
     course_id: int,
     db=Depends(get_db),
@@ -46,7 +36,9 @@ def listing(
     )
 
 
-@router.post("/courses/{course_id}/materials", status_code=201)
+@router.post(
+    "/courses/{course_id}/materials", status_code=201, response_model=MaterialResponse
+)
 async def upload(
     course_id: int,
     request: Request,

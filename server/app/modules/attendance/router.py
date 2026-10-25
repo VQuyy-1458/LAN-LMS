@@ -1,3 +1,5 @@
+from .service import session, payload, record
+from .schemas import Create, Close, Check, Correction
 import secrets
 import time
 from typing import Literal
@@ -12,60 +14,6 @@ from ...services import access, idempotency
 from ...services.activity import iso, audit
 
 router = APIRouter(prefix="/api", tags=["attendance"])
-
-
-class Create(BaseModel):
-    title: str = Field(default="Điểm danh", min_length=1, max_length=200)
-    duration_seconds: int = Field(default=300, ge=60, le=3600)
-
-
-class Close(BaseModel):
-    status: Literal["closed"]
-
-
-class Check(BaseModel):
-    token: str = Field(min_length=1, max_length=200)
-
-
-class Correction(BaseModel):
-    student_id: str
-    status: Literal["present", "absent"]
-    reason: str = Field(min_length=3, max_length=1000)
-
-
-def session(db, user, sid, manage=False):
-    row = db.get(AttendanceSessions, sid)
-    if not row:
-        fail(404, "NOT_FOUND", "Không tìm thấy phiên điểm danh")
-    access.course(db, user, row.course_id, manage)
-    return row
-
-
-def payload(row):
-    return dict(
-        id=row.id,
-        course_id=row.course_id,
-        title=row.title,
-        status=(
-            "closed"
-            if row.status == "closed" or row.expires_at <= time.time()
-            else "open"
-        ),
-        created_at=iso(row.starts_at),
-        expires_at=iso(row.expires_at),
-    )
-
-
-def record(db, row):
-    student = db.get(Students, row.student_id)
-    return dict(
-        id=row.id,
-        session_id=row.session_id,
-        student_id=student.student_code,
-        full_name=student.full_name,
-        status=row.status,
-        checked_in_at=iso(row.checked_in_at),
-    )
 
 
 @router.get("/courses/{course_id}/attendance-sessions")

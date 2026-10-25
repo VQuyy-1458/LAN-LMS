@@ -1,1 +1,1 @@
-"""Module submissions: scaffold for member 4; not registered yet."""
+"""submissions module; routers are registered by server.app.main.create_app."""

@@ -1,1 +1,1 @@
-"""Judge package — member 4; scaffold only."""
+"""Durable judge queue, isolated Docker runner and independent worker CLI."""

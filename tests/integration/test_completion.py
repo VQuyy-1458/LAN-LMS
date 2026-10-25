@@ -259,6 +259,12 @@ def test_accepted_count_ladder_and_grades_publish(context):
     job_queue.complete(app.state.sessions, claim, Result("Wrong Answer", 0, 100), 1, 1)
     assert c["s"].get(f"/api/exam-sessions/{sid}").json()["total_score"] == 10
     assert c["s"].get(f"/api/courses/{cid}/gradebook").json()["items"] == []
+    # A later infrastructure error on an already solved problem cannot erase an AC.
+    submit(c, pids[0], sid, key="system-error-after-ac")
+    claim = job_queue.claim(app.state.sessions, "infrastructure")
+    job_queue.complete(
+        app.state.sessions, claim, Result("System Error", None, 100), 1, 1
+    )
     weights = {"attendance": 0, "homework": 0, "midterm": 0, "final": 100}
     assert (
         c["t"]
@@ -383,13 +389,15 @@ def test_worker_event_reaches_authenticated_websocket(context):
 
 def test_synthetic_content_seed_is_idempotent(context):
     from database.seed.seed_content import seed_content
-    from server.app.models import Courses,Problems,TestCases as Cases
-    app,c,cid=context
+    from server.app.models import Courses, Problems, TestCases as Cases
+
+    app, c, cid = context
     with app.state.sessions.begin() as db:
-        db.get(Courses,cid).course_code='DEMO-LTM'
-        seed_content(db,'t',app.state.storage_root)
-    with app.state.sessions.begin() as db:seed_content(db,'t',app.state.storage_root)
+        db.get(Courses, cid).course_code = "DEMO-LTM"
+        seed_content(db, "t", app.state.storage_root)
+    with app.state.sessions.begin() as db:
+        seed_content(db, "t", app.state.storage_root)
     with app.state.sessions() as db:
-        assert db.scalar(select(func.count(CodingExams.id)))==2
-        assert db.scalar(select(func.count(Problems.id)))==10
-        assert db.scalar(select(func.count(Cases.id)))==20
+        assert db.scalar(select(func.count(CodingExams.id))) == 2
+        assert db.scalar(select(func.count(Problems.id))) == 10
+        assert db.scalar(select(func.count(Cases.id))) == 20

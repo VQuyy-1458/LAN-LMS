@@ -167,6 +167,7 @@ def session_payload(db, row, reg, e, s, hub=None):
         last_seen_at=iso(row.last_seen_at),
         connection_status="connected" if connected else "disconnected",
         accepted_count=len(accepted),
+        accepted_problem_ids=sorted(accepted),
         problem_count=len(ladder) - 1,
         total_score=ladder[min(len(accepted), len(ladder) - 1)],
         pending_count=pending,
