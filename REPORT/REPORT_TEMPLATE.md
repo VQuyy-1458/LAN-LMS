@@ -194,7 +194,7 @@ LAN-LMS cung cấp ứng dụng học tập và thi lập trình Client–Server
 
 [5] DOMjudge. Manual. https://www.domjudge.org/docs/manual/main/index.html . Truy cập 25/10/2026.
 
-[6] LAN-LMS repository. Đặc tả 1.2, API, tests và raw experiments. https://github.com/VQuyy-1458/LAN-LMS .
+[6] LAN-LMS repository. Đặc tả 1.2, API, tests và raw experiments. https://github.com/VQuyy-1458/LAN-LMS/tree/develop .
 
 ## 18 Appendix
 

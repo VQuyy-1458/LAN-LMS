@@ -133,7 +133,7 @@ Môi trường đo và giới hạn kiểm chứng được ghi tại mục 13�
 Từ PowerShell tại thư mục repo:
 
 ```powershell
-git clone https://github.com/VQuyy-1458/LAN-LMS.git
+git clone --branch develop https://github.com/VQuyy-1458/LAN-LMS.git
 cd LAN-LMS
 .\scripts\setup_windows.ps1
 cd client

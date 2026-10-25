@@ -286,7 +286,15 @@ def make_docx(source, destination):
         style = doc.styles[name]
         style.font.name = "Times New Roman"
         style.font.color.rgb = RGBColor(0, 0, 0)
-        style.element.get_or_add_rPr().rFonts.set(qn("w:eastAsia"), "Times New Roman")
+        fonts = style.element.get_or_add_rPr().rFonts
+        for attribute in list(fonts.attrib):
+            if "theme" in attribute.lower():
+                del fonts.attrib[attribute]
+        fonts.set(qn("w:eastAsia"), "Times New Roman")
+        paragraph_properties = style.element.find(qn("w:pPr"))
+        if paragraph_properties is not None:
+            for border in list(paragraph_properties.findall(qn("w:pBdr"))):
+                paragraph_properties.remove(border)
     normal = doc.styles["Normal"]
     normal.font.size = Pt(12)
     normal.paragraph_format.line_spacing = 1.18

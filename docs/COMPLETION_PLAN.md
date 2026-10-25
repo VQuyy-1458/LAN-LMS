@@ -105,7 +105,7 @@ Hạn nộp ghi trong tài liệu: 23:59 ngày 31/10/2026, giờ Việt Nam. Sub
 ## 7. Những việc cần xác nhận hoặc thao tác ngoài code
 
 - Đã chốt: giữa kỳ và một cuối kỳ/course; chỉ bài AC được tính. Một bài đã AC không mất kết quả vì lần sau sai. Giảng viên chọn số bài và bảng quy đổi; mặc định 5 bài: 0/1/2/3/4/5 AC = 0/5/7/8/9/10. Trọng số do giảng viên cấu hình, tổng 100%.
-- Người dùng tự điền thông tin nhóm; đã cho phép push và merge vào main sau hoàn thiện/kiểm thử.
+- Người dùng tự điền thông tin nhóm; đã chốt push và merge vào develop sau hoàn thiện/kiểm thử, giữ nguyên main (cập nhật 26/10/2026).
 - Số nhóm, họ tên/MSSV/email, giảng viên, đóng góp cá nhân: cần thông tin thật.
 - Docker Desktop Windows trước đó bị treo; phải kiểm tra lại engine trước nghiệm thu trên máy này.
 - Nghiệm thu hai máy LAN cần hai máy thực; có thể chuẩn bị script/hướng dẫn nhưng không khai đã chạy khi chưa có bằng chứng.
