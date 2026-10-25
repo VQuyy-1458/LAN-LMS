@@ -1,5 +1,5 @@
 """D01 shared ORM models. Auth models are owned by member 1."""
-from sqlalchemy import Boolean, Float, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, Float, ForeignKey, Integer, String, Text, UniqueConstraint, Index, text
 from sqlalchemy.orm import Mapped, mapped_column
 from server.app.core.database import Base, User, AuthSession, LoginAttempt
 
@@ -94,6 +94,7 @@ class Assignments(Base):
 
 class CodingExams(Base):
     __tablename__ = "coding_exams"
+    __table_args__ = (Index("uq_one_final_per_course", "course_id", unique=True, sqlite_where=text("grade_component = 'final'")),)
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     course_id: Mapped[int] = mapped_column(ForeignKey("courses.id", ondelete="RESTRICT"), nullable=False, index=True)
     created_by: Mapped[int] = mapped_column(ForeignKey("teachers.id", ondelete="RESTRICT"), nullable=False, index=True)
@@ -165,8 +166,9 @@ class AuditLogs(Base):
 
 class Students(Base):
     __tablename__ = "students"
+    __table_args__ = (Index("uq_students_user_id", "user_id", unique=True),)
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, unique=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True)
     class_id: Mapped[int | None] = mapped_column(ForeignKey("classes.id", ondelete="RESTRICT"), nullable=True, index=True)
     student_code: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
     full_name: Mapped[str] = mapped_column(Text, nullable=False)
