@@ -1,5 +1,7 @@
-# Judge — thành viên 4
+# Judge — nhiệm vụ TV4 ngày 24–25
 
-File khung, chưa có worker chạy được. worker.py điều phối; job_queue.py quản lý claim/lease/retry; limits.py giới hạn tài nguyên; runners/ biên dịch và thực thi cô lập; languages/ cấu hình C/C++/Java; comparators/ so sánh output. Không đặt tên queue.py để tránh trùng module chuẩn Python.
+Đã có Dockerfile, limits.py, languages/config.py, comparators/output.py, sandbox_entry.py, runners/container.py và cli.py. Compiler C17/C++17/JDK17; stdio và file I/O; chấm tất cả test trong container mới từng test, chỉ trả tổng bài. Biên dịch một lần vào thư mục artifact riêng; expected output chỉ ở orchestrator.
 
-Tuân theo PROJECT_PLAN.md mục 60.2–60.4. Không chạy bài sinh viên trực tiếp trong API. Tạo migration judge_jobs cùng thành viên 3, rồi phối hợp API/submission với thành viên 1. docker-compose.yml hiện là placeholder; chưa có image hoặc sandbox. Không trả kết quả chấm giả.
+Build/run/test và manifest: docs/INTEGRATION_24_25.md. Test Docker thật được chạy trên GitHub CI. CPU/RAM/pids/time/output/file/network được giới hạn; không chạy code sinh viên trực tiếp trên máy chủ. Docker socket chỉ orchestrator tin cậy dùng qua CLI, không mount vào container.
+
+worker.py và job_queue.py vẫn là khung cho ngày 26; CLI runner không phải hàng đợi tự động đã tích hợp API. Docker Desktop Windows trên máy làm việc hiện lỗi khởi động; CI Linux đã kiểm chứng compiler/sandbox. Chưa tuyên bố môi trường nào an toàn tuyệt đối.

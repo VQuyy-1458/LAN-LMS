@@ -1,3 +1,4 @@
+import Workspace from "@/features/courses/Workspace";
 export default function Page() {
-  return <div>Khóa học</div>;
+  return <Workspace teacher />;
 }

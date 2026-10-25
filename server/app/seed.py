@@ -6,6 +6,7 @@ from sqlalchemy import select
 from .core.database import User
 from .core.security import hasher
 from .main import app
+from .models import Teachers
 
 
 def main():
@@ -17,7 +18,9 @@ def main():
     with app.state.sessions() as db:
         if db.scalar(select(User).where(User.username == username)):
             raise SystemExit('Username already exists; no password changed')
-        db.add(User(username=username, password_hash=hasher.hash(password), role='teacher'))
+        user=User(username=username, password_hash=hasher.hash(password), role='teacher')
+        db.add(user);db.flush()
+        db.add(Teachers(user_id=user.id,teacher_code=username,full_name=username))
         db.commit()
     print('Teacher created')
 

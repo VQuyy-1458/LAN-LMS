@@ -3,7 +3,7 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path $PSScriptRoot -Parent
 $configPath = Join-Path $PSScriptRoot 'nginx.conf'
 $runtimePath = Join-Path $repoRoot '.runtime/nginx'
-New-Item -ItemType Directory -Force (Join-Path $runtimePath 'logs') | Out-Null
+New-Item -ItemType Directory -Force (Join-Path $runtimePath 'logs'),(Join-Path $runtimePath 'temp') | Out-Null
 $nginxExe = (Resolve-Path -LiteralPath $NginxPath).Path
 $prefix = $runtimePath.Replace('\', '/') + '/'
 & $nginxExe -p $prefix -c $configPath -t

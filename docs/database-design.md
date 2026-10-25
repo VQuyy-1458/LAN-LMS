@@ -55,3 +55,7 @@ Các cột được định nghĩa cụ thể trong `server/app/models/__init__.
 ## Kiểm chứng
 
 Kiểm thử tối thiểu: Alembic upgrade từ `0001_auth` đến `0002_database_base`, downgrade về `0001_auth`; `PRAGMA foreign_key_check`; insert duplicate enrollment/session/attempt bị từ chối; bảo toàn bảng auth; kiểm tra thiếu FK; pytest TV1 không hồi quy. Chưa có xác nhận chạy trên môi trường Python 3.12/SQLAlchemy 2.1.6 của nhóm cho đến khi chạy lệnh thực tế.
+
+## Quyết định mới đã được người dùng chốt trực tiếp ngày 25/10
+
+Mô tả nhiều final lấy MAX trong D01 ở trên đã được thay bằng single_final_exam: một final/course. Không tạo bảng kết quả từng test; giữ JudgeResults tổng hợp. Migration 0003_day25 tích hợp trường LMS/file/IO, response_json cho replay, sửa unique user_id sai của idempotency và ràng buộc profile student/user. Chi tiết và giới hạn downgrade tại INTEGRATION_24_25.md. Metadata 0002 đã được đóng băng trong schema_0002.py để không phụ thuộc ORM hiện tại.

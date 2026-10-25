@@ -4,12 +4,12 @@
   "private": true,
   "description": "Scaffold only. Member 2 must select and lock Next.js/React/TypeScript/Tailwind dependencies before running.",
   "scripts": {
-  "dev": "next dev",
-  "build": "next build",
-  "start": "next start",
-  "typecheck": "tsc --noEmit",
-  "lint": "eslint ."
-},
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
   "dependencies": {
     "next": "^16.4.3",
     "react": "^19.3.1",
@@ -24,6 +24,6 @@
     "eslint-config-next": "^16.4.3",
     "postcss": "^8.5.31",
     "tailwindcss": "^4.3.3",
-    "typescript": "^7.0.2"
+    "typescript": "6.0.3"
   }
 }

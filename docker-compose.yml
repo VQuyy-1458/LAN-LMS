@@ -1,3 +1,16 @@
-# Scaffold only — member 4 adds tested judge services/images and sandbox limits.
-# No service is configured; this file does not start the application.
-services: {}
+services:
+  judge-image:
+    build:
+      context: ./judge
+    image: lan-lms-judge:day25
+    profiles: [judge]
+    network_mode: none
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 64
+    mem_limit: 256m
+    cpus: 1
+    tmpfs:
+      - /work:rw,nosuid,size=64m,mode=1777
+      - /tmp:rw,noexec,nosuid,size=32m,mode=1777

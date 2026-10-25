@@ -65,7 +65,7 @@ def seed(session, teacher_username):
         {"course_code": "DEMO-LTM", "semester": "1", "academic_year": "2026-2027"},
         {"course_code": "DEMO-LTM", "course_name": "Lap trinh mang - Demo", "semester": "1",
          "academic_year": "2026-2027", "status": "active", "grades_published": False,
-         "final_grade_policy": "highest_published_final_exam"},
+         "final_grade_policy": "single_final_exam"},
     )
     existing_or_add(
         session, CourseTeachers, {"course_id": course.id, "teacher_id": teacher.id},

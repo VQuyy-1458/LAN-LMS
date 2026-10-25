@@ -1,17 +1,10 @@
 "use client";
 
-import {
-  type FormEvent,
-  useEffect,
-  useState,
-} from "react";
+import { type FormEvent, useCallback, useEffect, useState } from "react";
 
 import { useRouter } from "next/navigation";
 
-import {
-  getCurrentUser,
-  login,
-} from "@/lib/auth";
+import { getCurrentUser, login } from "@/lib/auth";
 
 import { ApiError } from "@/lib/api";
 
@@ -49,10 +42,7 @@ function GraduationCapIcon() {
       fill="none"
       aria-hidden="true"
     >
-      <path
-        d="M2.5 8.5L12 4L21.5 8.5L12 13L2.5 8.5Z"
-        fill="#CC0D00"
-      />
+      <path d="M2.5 8.5L12 4L21.5 8.5L12 13L2.5 8.5Z" fill="#CC0D00" />
       <path
         d="M6.5 10.4V14.8C6.5 16.4 9 18 12 18C15 18 17.5 16.4 17.5 14.8V10.4L12 13L6.5 10.4Z"
         fill="#CC0D00"
@@ -76,13 +66,7 @@ function UserIcon() {
       fill="none"
       aria-hidden="true"
     >
-      <circle
-        cx="12"
-        cy="8"
-        r="4"
-        stroke="#94A3B8"
-        strokeWidth="1.8"
-      />
+      <circle cx="12" cy="8" r="4" stroke="#94A3B8" strokeWidth="1.8" />
       <path
         d="M4.5 20C5.2 15.8 8 14 12 14C16 14 18.8 15.8 19.5 20"
         stroke="#94A3B8"
@@ -124,23 +108,35 @@ function LockIcon() {
 export default function LoginPage() {
   const router = useRouter();
 
-  const [username, setUsername] =
-    useState("");
+  const [username, setUsername] = useState("");
 
-  const [password, setPassword] =
-    useState("");
+  const [password, setPassword] = useState("");
 
-  const [error, setError] =
-    useState("");
+  const [error, setError] = useState("");
 
-  const [isSubmitting, setIsSubmitting] =
-    useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const redirectUser = useCallback(
+    (user: { role: "teacher" | "student"; must_change_password: boolean }) => {
+      if (user.must_change_password) {
+        router.replace("/change-password");
+        return;
+      }
+
+      if (user.role === "teacher") {
+        router.replace("/teacher/dashboard");
+        return;
+      }
+
+      router.replace("/student/dashboard");
+    },
+    [router],
+  );
 
   useEffect(() => {
     async function checkSession() {
       try {
-        const user =
-          await getCurrentUser();
+        const user = await getCurrentUser();
 
         redirectUser(user);
       } catch {
@@ -149,28 +145,9 @@ export default function LoginPage() {
     }
 
     void checkSession();
-  }, []);
+  }, [redirectUser]);
 
-  function redirectUser(user: {
-    role: "teacher" | "student";
-    must_change_password: boolean;
-  }) {
-    if (user.must_change_password) {
-      router.replace("/change-password");
-      return;
-    }
-
-    if (user.role === "teacher") {
-      router.replace("/teacher/dashboard");
-      return;
-    }
-
-    router.replace("/student/dashboard");
-  }
-
-  async function handleSubmit(
-    event: FormEvent<HTMLFormElement>,
-  ) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     setError("");
@@ -193,8 +170,7 @@ export default function LoginPage() {
         password,
       });
 
-      const user =
-        await getCurrentUser();
+      const user = await getCurrentUser();
 
       redirectUser(user);
     } catch (err) {
@@ -250,9 +226,7 @@ export default function LoginPage() {
                   id="username"
                   name="username"
                   value={username}
-                  onChange={(event) =>
-                    setUsername(event.target.value)
-                  }
+                  onChange={(event) => setUsername(event.target.value)}
                   autoComplete="username"
                   placeholder="Nhập mã sinh viên"
                   className="ml-3 min-w-0 flex-1 bg-transparent text-[16px] text-[#334155] outline-none placeholder:text-[#9EACC0]"
@@ -276,9 +250,7 @@ export default function LoginPage() {
                   id="password"
                   name="password"
                   value={password}
-                  onChange={(event) =>
-                    setPassword(event.target.value)
-                  }
+                  onChange={(event) => setPassword(event.target.value)}
                   type="password"
                   autoComplete="current-password"
                   placeholder="Nhập mật khẩu"
@@ -300,9 +272,7 @@ export default function LoginPage() {
               disabled={isSubmitting}
               className="mt-[28px] h-[64px] w-full cursor-pointer rounded-[13px] bg-[#CC0D00] text-[20px] font-extrabold text-white shadow-[0_13px_25px_rgba(204,13,0,0.20)] transition hover:bg-[#B90C00] disabled:cursor-wait disabled:opacity-75"
             >
-              {isSubmitting
-                ? "Đang đăng nhập..."
-                : "Đăng nhập"}
+              {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
             </button>
 
             {/* DIVIDER */}
@@ -318,9 +288,7 @@ export default function LoginPage() {
                   Thông tin
                 </span>{" "}
                 hoặc Hotline{" "}
-                <span className="font-bold text-[#475569]">
-                  1900 6868
-                </span>
+                <span className="font-bold text-[#475569]">1900 6868</span>
               </p>
             </div>
           </form>

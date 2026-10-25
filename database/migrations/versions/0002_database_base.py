@@ -1,7 +1,6 @@
 """D01 shared LMS/Judge schema; member 1 auth migration remains unchanged."""
 from alembic import op
-from server.app.core.database import Base
-import server.app.models  # noqa: F401 - register shared tables
+from database.migrations.schema_0002 import Base  # frozen historical schema
 
 revision = "0002_database_base"
 down_revision = "0001_auth"

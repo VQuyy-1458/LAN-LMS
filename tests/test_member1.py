@@ -84,6 +84,7 @@ def test_origin_validation_and_errors(app):
 def test_expiry_inactive_and_course_policy(app):
     with TestClient(app) as c:
         login(c)
+        app.state.course_access = None  # explicit unintegrated-policy fallback
         assert c.get('/course/1').status_code == 503
         app.state.course_access = lambda user, course_id: user.role == 'teacher' and course_id == 1
         assert c.get('/course/1').status_code == 200

@@ -1,4 +1,4 @@
-// Thành viên 2: thay file khung này bằng giao diện tích hợp API thật.
+import Workspace from "@/features/courses/Workspace";
 export default function Page() {
-  return <main><h1>Khóa học sinh viên</h1><p>Chưa triển khai chức năng.</p></main>;
+  return <Workspace />;
 }
