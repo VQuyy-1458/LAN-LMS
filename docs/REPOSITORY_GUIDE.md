@@ -46,3 +46,8 @@ Judge worker.py/job_queue.py/limits.py chưa triển khai, chạy trực tiếp 
 3. Viết vào file khung tương ứng; thư mục con theo tính năng được phép khi cần, cập nhật tài liệu nếu thay đổi cấu trúc cấp cao. Không ép mọi logic vào một file chỉ để giữ nguyên số file.
 4. Không commit .venv, node_modules, .env, DB thật, upload hay dữ liệu cá nhân.
 5. Test module và các test backend đang có trước khi merge. Cấu trúc khung không đồng nghĩa toàn hệ thống đã chạy.
+
+
+## Cập nhật tích hợp ngày 25/10/2026
+
+Xem [INTEGRATION_24_25.md](INTEGRATION_24_25.md) để biết phần đã triển khai, CI Docker, lệnh chạy và giới hạn môi trường. Chỉ lưu kết quả tổng bài và một kỳ thi cuối kỳ/course. Frontend auth/LMS/bài tập và Docker runner đã có code thật; worker tự động/QR/gradebook chưa hoàn thành.

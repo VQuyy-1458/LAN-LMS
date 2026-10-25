@@ -1,12 +1,9 @@
-# Frontend — thành viên 2
+# Frontend LAN-LMS
 
-Đã có file khung cho các trang và cấu hình TypeScript; chưa có chức năng hoặc dependencies. `package.json` cố ý chưa có scripts/dependencies, không phải ứng dụng chạy được. Chọn phiên bản Next.js/React/TypeScript/Tailwind tương thích, bổ sung scripts dev/build/typecheck, tạo và commit package-lock.json khi bắt đầu triển khai. Không chạy create-next-app thành thư mục client lồng bên trong client.
+Đã có Next.js/React/TypeScript/Tailwind và lockfile. Node 22 hoặc phiên bản tương thích Next.js đã chốt. Chạy từ client/: npm ci; npm run dev. Kiểm tra: npm run typecheck; npm run lint; npm run build. Không dùng create-next-app ghi đè thư mục hiện tại.
 
-- src/app: routing/layout/page; public/login ra URL /login, student/* và teacher/* có prefix riêng.
-- src/components: thành phần giao diện tái sử dụng.
-- src/features: logic/giao diện theo tính năng.
-- src/lib: HTTP client, auth/CSRF, WebSocket và tiện ích dùng chung.
-- src/types: kiểu dữ liệu API thống nhất với docs/api-specification.md.
-- public: tài nguyên tĩnh công khai, không đặt bài nộp/tài liệu riêng tư ở đây.
+Đã nối API thật: login/me, đổi mật khẩu/logout với CSRF, chặn giao diện sai vai trò, khóa học, CSV preview/confirm, tài liệu, bài tập file và chấm tay. Màn exams/attendance/gradebook chưa phải chức năng hoàn chỉnh. Sidebar có các đường dẫn tương lai, không coi tất cả đã xong.
 
-Thay nội dung placeholder khi triển khai, kiểm tra auth ở backend; không coi việc ẩn trang là phân quyền. Theo docs/MEMBER_1_HANDOFF.md để kết nối auth. Gọi /api và /ws cùng origin, không hard-code localhost/IP trong trang. next-env.d.ts được Next.js sinh khi môi trường đã thiết lập; không tự tạo kiểu giả.
+Copy .env.example thành .env.local để dùng API_UPSTREAM trong development; restart Next khi đổi. API gọi /api cùng origin. LAN dùng Nginx chuyển /api và /ws; thêm đúng web origin vào server/.env. Xem docs/INTEGRATION_24_25.md và MEMBER_1_HANDOFF.md.
+
+src/components/: UI chung; src/features/courses/Workspace.tsx: luồng ghép LMS/bài tập; src/lib/api.ts: lỗi/CSRF/multipart; src/types/api.ts: auth types. Backend là nơi kiểm tra quyền thật, không tin chỉ ẩn trang frontend. Tài nguyên giao diện không tải font/CDN bắt buộc từ Internet.

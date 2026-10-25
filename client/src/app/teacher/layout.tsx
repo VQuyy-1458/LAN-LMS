@@ -36,14 +36,15 @@ export default function TeacherLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
   return (
-    <AuthGuard role="teacher"><div className="flex min-h-screen bg-[#F7F8FB]">
-      <AppSidebar
-        items={teacherNavigation}
-      />
+    <AuthGuard role="teacher">
+      <div className="flex min-h-screen bg-[#F7F8FB]">
+        <AppSidebar items={teacherNavigation} />
 
-      <main className="min-w-0 flex-1 p-6">
-        <LogoutButton />{children}
-      </main>
-    </div></AuthGuard>
+        <main className="min-w-0 flex-1 p-6">
+          <LogoutButton />
+          {children}
+        </main>
+      </div>
+    </AuthGuard>
   );
 }

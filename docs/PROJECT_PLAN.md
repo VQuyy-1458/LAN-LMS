@@ -1633,3 +1633,7 @@ Không bịa số liệu. Báo cáo theo cấu trúc technical paper trong Instr
 ## 65. Ghi nhận thay đổi phiên bản 1.1
 
 Giữ khung 19 phần và nghiệp vụ chính từ bản nhóm cung cấp; sửa đường dẫn Next.js trùng URL, bỏ cảnh báo TCP không có căn cứ trong yêu cầu hiện có, chốt session/CSRF và triển khai cùng origin, bổ sung queue/lease và sandbox cụ thể, quy tắc CSV/thi/điểm, ranh giới phân công, thực nghiệm, lịch cập nhật và quy định nộp bài. Các mục 59–64 cụ thể hóa lựa chọn còn để mở ở các phần trước; khi có cách diễn đạt chung, áp dụng quyết định cụ thể tại các mục này và hợp đồng API 1.1.
+
+## 66. Cập nhật tích hợp tạm ngày 25/10/2026
+
+Theo chỉ đạo trực tiếp mới nhất: chỉ lưu kết quả tổng bài, không tạo submission_test_results; vẫn chạy test để tính tổng điểm. Chỉ một kỳ thi cuối kỳ/course, không áp dụng nhiều đợt lấy MAX. Bản triển khai ngày 24–25 và phụ thuộc được mô tả tại [INTEGRATION_24_25.md](INTEGRATION_24_25.md), cùng hợp đồng API mục 14. Các mô tả trái với hai quyết định này ở tài liệu cũ không còn áp dụng trong phiên bản hiện tại. Việc nghiệm thu LAN hai máy và Docker Desktop Windows cần bằng chứng riêng, không được suy ra từ CI Linux.

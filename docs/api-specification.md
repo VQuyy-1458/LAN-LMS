@@ -168,3 +168,17 @@ Thành viên 1 sở hữu chuẩn chung và auth/WS; 3 sở hữu course/CSV/mat
 - ErrorResponse và auth response model được xuất trong OpenAPI. Lỗi validation không phản chiếu input mật khẩu. Header X-Request-ID khớp request_id trong lỗi.
 - Common Pagination nhận page >=1, page_size 1–100; response items/page/page_size/total. utc_iso yêu cầu datetime có timezone và trả UTC với Z. Các module nghiệp vụ cần dùng các tiện ích này khi triển khai.
 - SQLite URL tương đối tính từ gốc repository, không từ thư mục terminal; cấu hình origin/bool/đường dẫn được kiểm tra khi tạo app.
+
+## 14. Hợp đồng tích hợp tạm ngày 25/10/2026 (ưu tiên khi khác mô tả cũ)
+
+Theo người dùng: chỉ lưu/trả kết quả tổng bài, không lưu kết quả từng test; một final/course, không lấy MAX nhiều đợt final. Giữ test case cấu hình để chấm nhưng input/expected ẩn không trả sinh viên.
+
+Course create có thêm semester (mặc định 1), academic_year (2026-2027); schema DB course_name được ánh xạ thành JSON name. PATCH course/assignment nhận trường thay đổi và kiểm tra lại trạng thái sau merge, không bắt frontend gửi lại toàn bộ.
+
+Đã triển khai các endpoint course/list/detail/students, CSV preview/confirm, materials upload/download, assignments create/list/detail/patch/submit/history/download/grade. Idempotency bắt buộc cho CSV confirm và file submission; same key+body replay kết quả, khác body 409. Kiểm tra lại quyền trước khi replay; không coi key là giấy phép truy cập dữ liệu.
+
+Giá trị student_id trong JSON LMS là mã sinh viên; DB foreign key student_id là ID profile Students, không được nhầm user_id. Teacher profile tương tự. Tiện ích access.py là nguồn kiểm tra course role/enrollment.
+
+Upload file tối đa 20 MiB; proxy cho body 21 MiB để chứa multipart envelope, backend vẫn kiểm tra đúng 20 MiB bytes file. File không giải nén, không thực thi. Điểm bài tập chỉ hiển thị cho sinh viên khi khóa học đã công bố; chấm/nộp lại thu hồi công bố.
+
+Runner CLI chấm mẫu không tạo API kỳ thi/queue trước hạn. Những endpoint thi/QR/gradebook trong phần trước vẫn là hợp đồng cần triển khai sau. Schema 0003 bổ sung language/io mode/filenames vào Problems và compile_message/reason_code vào JudgeResults cho TV4 tiếp tục.

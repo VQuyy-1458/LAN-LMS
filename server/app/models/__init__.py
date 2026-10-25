@@ -110,6 +110,10 @@ class Problems(Base):
     exam_id: Mapped[int] = mapped_column(ForeignKey("coding_exams.id", ondelete="RESTRICT"), nullable=False, index=True)
     title: Mapped[str] = mapped_column(Text, nullable=False)
     statement: Mapped[str] = mapped_column(Text, nullable=False)
+    languages_json: Mapped[str] = mapped_column(Text, default='["c","cpp","java"]',server_default='["c","cpp","java"]')
+    io_mode: Mapped[str] = mapped_column(Text,default='stdio',server_default='stdio')
+    input_filename: Mapped[str | None] = mapped_column(Text,nullable=True)
+    output_filename: Mapped[str | None] = mapped_column(Text,nullable=True)
     max_score: Mapped[float] = mapped_column(Float, nullable=False)
     time_limit_ms: Mapped[int] = mapped_column(Integer, nullable=False)
     memory_limit_mib: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -261,6 +265,8 @@ class JudgeResults(Base):
     is_correct: Mapped[bool] = mapped_column(Boolean, nullable=False)
     verdict: Mapped[str] = mapped_column(Text, nullable=False)
     score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    compile_message: Mapped[str] = mapped_column(Text,default="",server_default="")
+    reason_code: Mapped[str | None] = mapped_column(Text,nullable=True)
     judged_at: Mapped[float] = mapped_column(Float, nullable=False)
 
 class Grades(Base):
