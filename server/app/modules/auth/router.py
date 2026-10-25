@@ -1,3 +1,4 @@
+import anyio
 import secrets
 import hmac
 import hashlib
@@ -86,6 +87,7 @@ def logout(request: Request, user=Depends(current_user)):
     with request.app.state.sessions() as db:
         db.execute(delete(AuthSession).where(AuthSession.token_hash == user.session_hash))
         db.commit()
+    anyio.from_thread.run(request.app.state.hub.revoke, user.user_id, user.session_hash)
     response = Response(status_code=204)
     response.delete_cookie(COOKIE, path='/')
     return response
@@ -107,6 +109,7 @@ def change_password(body: ChangePassword, request: Request, user=Depends(current
             fail(409, 'PASSWORD_CHANGED', 'Mật khẩu vừa thay đổi, vui lòng đăng nhập lại')
         db.execute(delete(AuthSession).where(AuthSession.user_id == user.user_id))
         db.commit()
+    anyio.from_thread.run(request.app.state.hub.revoke, user.user_id)
     response = Response(status_code=204)
     response.delete_cookie(COOKIE, path='/')
     return response

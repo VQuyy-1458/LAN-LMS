@@ -6,13 +6,22 @@ from datetime import datetime, timezone
 
 from fastapi import WebSocket, WebSocketDisconnect
 
-from .security import COOKIE, lookup
+from .security import COOKIE, lookup, digest
 
 
 class EventHub:
     """Single-process delivery. Modules pass DB-derived recipients, never browser subscriptions."""
     def __init__(self):
         self.connections = {}
+
+    async def revoke(self, user_id, session_hash=None):
+        for ws, (uid, _) in list(self.connections.items()):
+            if uid == user_id and (session_hash is None or digest(ws.cookies.get(COOKIE, "")) == session_hash):
+                self.connections.pop(ws, None)
+                try:
+                    await ws.close(1008)
+                except (RuntimeError, OSError):
+                    pass
 
     async def publish(self, event_type, data, recipient_ids):
         if event_type not in {'submission.updated', 'exam.updated', 'session.updated'}:
