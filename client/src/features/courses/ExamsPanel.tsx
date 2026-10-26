@@ -37,29 +37,23 @@ export default function ExamsPanel({
   return (
     <div className="stack">
       <Feedback error={action.error} message={action.message} />
-      <section className="panel judge-status" aria-live="polite">
+      <section className="exam-service-bar" aria-live="polite">
         <div>
-          <h2>
+          <strong>
             {judge?.ready ? "Bộ chấm đang hoạt động" : "Bộ chấm chưa sẵn sàng"}
-          </h2>
+          </strong>
           <p className="section-note">
             {judge?.ready
               ? `${judge.workers} worker · ${judge.pending_jobs} bài trong hàng đợi`
-              : "Docker Engine hoặc worker chưa hoạt động. Bài nộp được lưu và chờ bộ chấm; chưa thể trả kết quả."}
+              : "Bài nộp vẫn được lưu an toàn và chờ chấm. Vui lòng liên hệ giảng viên nếu cần hỗ trợ."}
           </p>
         </div>
-        <p className="section-note">
-          Nộp qua HTTP → hàng đợi trên máy chủ → chấm test trong Docker → cập
-          nhật kết quả qua WebSocket.
-        </p>
-      </section>
-      {chosen && (
-        <div className="panel-title">
+        {chosen && (
           <button className="secondary" onClick={() => setSelected(0)}>
             ← Danh sách kỳ thi
           </button>
-        </div>
-      )}
+        )}
+      </section>
       {teacher && !chosen && (
         <section className="panel">
           <details>

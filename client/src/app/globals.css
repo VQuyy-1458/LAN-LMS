@@ -1,4 +1,6 @@
 @import "tailwindcss";
+.exam-service-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; background: white; border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; }
+.exam-service-bar p { margin: 3px 0 0; }
 .public-main {
   max-width: 1200px;
   margin: 32px auto;
