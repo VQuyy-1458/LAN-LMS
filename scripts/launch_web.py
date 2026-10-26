@@ -212,7 +212,8 @@ def make_environment(root, address=None, tls=None):
         origins.append(f"http://{private_ipv4(address)}:8080")
     if tls:
         origins.append(tls["origin"])
-        env["PUBLIC_ORIGIN"] = tls["origin"]
+        env["PUBLIC_ORIGIN"] = f"http://{private_ipv4(address)}:8080"
+        env["HTTPS_ORIGIN"] = tls["origin"]
         env["LAN_CA_CERTIFICATE"] = tls["ca"]
     env["ALLOWED_ORIGINS"] = ",".join(origins)
     demo = root / ".runtime" / "web" / "demo.db"
@@ -511,8 +512,10 @@ def start(address=None, open_browser=True):
 def show(state, open_browser=False):
     print("\nWEB ĐÃ SẴN SÀNG: " + state["url"])
     if state.get("lan_ip"):
-        print("Máy khác cùng LAN mở: " + (state.get("lan_url") or "http://" + state["lan_ip"] + ":8080"))
-        print("Cài camera điện thoại lần đầu: http://" + state["lan_ip"] + ":8080/setup")
+        print("Máy khác cùng LAN mở: http://" + state["lan_ip"] + ":8080")
+        print("Điểm danh: Chụp QR để mở camera hệ thống; không cần cài chứng chỉ.")
+        print("Tùy chọn quét liên tục HTTPS: " + str(state.get("lan_url") or "chưa bật"))
+        print("Cài HTTPS (tùy chọn): http://" + state["lan_ip"] + ":8080/setup")
         if state.get("tls_fingerprint"):
             print("Chứng chỉ CA SHA-256: " + state["tls_fingerprint"])
         print("Nếu máy khác chưa vào được, kiểm tra quyền firewall TCP 8080/8443 cho LAN.")

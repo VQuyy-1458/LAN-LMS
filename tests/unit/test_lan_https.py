@@ -15,7 +15,8 @@ def test_https_configuration_is_scoped_to_selected_lan(tmp_path):
     assert config.count("proxy_pass http://127.0.0.1:3000") == 2
     assert "ssl_certificate_key" in config and "ssl_protocols TLSv1.2 TLSv1.3" in config
     env = make_environment(tmp_path,"192.168.1.100",tls)
-    assert env["PUBLIC_ORIGIN"] == tls["origin"]
+    assert env["PUBLIC_ORIGIN"] == "http://192.168.1.100:8080"
+    assert env["HTTPS_ORIGIN"] == tls["origin"]
     assert tls["origin"] in env["ALLOWED_ORIGINS"].split(",")
     assert env["LAN_CA_CERTIFICATE"] == tls["ca"]
     with pytest.raises(ValueError):

@@ -26,7 +26,7 @@ def public_connection(request: Request):
     settings = request.app.state.settings
     ca = Path(settings.lan_ca_certificate) if settings.lan_ca_certificate else None
     fingerprint = hashlib.sha256(ca.read_bytes()).hexdigest().upper() if ca and ca.is_file() else None
-    return {"origin": settings.public_origin,
+    return {"origin": settings.https_origin or settings.public_origin,
             "certificate_available": fingerprint is not None,
             "fingerprint": ":".join(fingerprint[i:i+2] for i in range(0, len(fingerprint), 2)) if fingerprint else None}
 

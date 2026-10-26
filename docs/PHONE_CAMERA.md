@@ -1,5 +1,11 @@
 # Camera điểm danh trên Android và iPhone
 
+## Cách thông thường — không cài chứng chỉ
+
+Mở địa chỉ HTTP LAN do CHAY_LAN.cmd in ra, ví dụ http://192.168.1.100:8080. Đăng nhập → chọn khóa học → Điểm danh → **Chụp QR để điểm danh**. Điện thoại mở camera hệ thống (nếu hiện bảng lựa chọn, chọn Camera); chụp QR và dùng ảnh đó. Web tự đọc ảnh tại máy và ghi nhận Có mặt, không có bước xác nhận thêm trên web. Có nút Chọn ảnh QR có sẵn cho ảnh đã chụp. Cách này không cần Internet hoặc cài CA. Trên desktop, nút chụp có thể mở hộp chọn ảnh.
+
+Đây là HTML Media Capture của trình duyệt; giao diện chụp tùy Android/iOS. Nếu muốn giữ video camera mở liên tục để đọc QR trong trang, dùng cách HTTPS tùy chọn bên dưới.
+
 ## Trên máy chủ
 
 Nhấp đúp CHAY_LAN.cmd. Giữ máy chủ hoạt động. Cửa sổ in:

@@ -10,6 +10,8 @@ export default function AttendanceScanner({
   disabled: boolean;
 }) {
   const video = useRef<HTMLVideoElement>(null);
+  const photoInput = useRef<HTMLInputElement>(null);
+  const galleryInput = useRef<HTMLInputElement>(null);
   const controls = useRef<IScannerControls | null>(null);
   const generation = useRef(0);
   const [active, setActive] = useState(false),
@@ -32,7 +34,7 @@ export default function AttendanceScanner({
     setError("");
     if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
       setError(
-        "Camera trực tiếp cần HTTPS hoặc localhost. Với địa chỉ LAN HTTP, hãy dùng nút Chụp / chọn ảnh QR bên dưới.",
+        "Quét liên tục cần HTTPS hoặc localhost. Với LAN HTTP, dùng nút Chụp QR để điểm danh ở trên; không cần cài chứng chỉ.",
       );
       return;
     }
@@ -97,8 +99,9 @@ export default function AttendanceScanner({
     <div className="details-box">
       <h3>Quét QR điểm danh</h3>
       <p className="section-note">
-        Hướng camera vào QR giảng viên đang hiển thị. Đọc được mã sẽ tự gửi điểm
-        danh cho tài khoản đang đăng nhập.
+        Bấm Chụp QR để mở camera điện thoại, chụp rõ mã giảng viên đang hiển thị
+        rồi dùng ảnh đó. Hệ thống tự đọc mã và cập nhật Có mặt, không cần nhập
+        mã hay xác nhận thêm trên web.
       </p>
       <video
         ref={video}
@@ -117,30 +120,65 @@ export default function AttendanceScanner({
         <button
           type="button"
           disabled={disabled || active}
-          onClick={() => void start()}
+          onClick={() => photoInput.current?.click()}
         >
-          Mở camera quét QR
+          Chụp QR để điểm danh
         </button>
-        {active && (
-          <button type="button" className="secondary" onClick={stop}>
-            Tắt camera
-          </button>
-        )}
-      </div>
-      <label style={{ marginTop: 16 }}>
-        Chụp / chọn ảnh QR
-        <input
-          type="file"
-          accept="image/*"
-          capture="environment"
+        <button
+          type="button"
+          className="secondary"
           disabled={disabled || active}
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            e.target.value = "";
-            void readImage(file);
-          }}
-        />
-      </label>
+          onClick={() => galleryInput.current?.click()}
+        >
+          Chọn ảnh QR có sẵn
+        </button>
+      </div>
+      <p className="section-note">
+        Dùng được trên LAN HTTP, không cần cài chứng chỉ. Tùy điện thoại, chọn
+        Camera nếu hiện bảng lựa chọn; trên máy tính có thể chọn ảnh QR.
+      </p>
+      <input
+        ref={photoInput}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        hidden
+        disabled={disabled || active}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          e.target.value = "";
+          void readImage(file);
+        }}
+      />
+      <input
+        ref={galleryInput}
+        type="file"
+        accept="image/*"
+        hidden
+        disabled={disabled || active}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          e.target.value = "";
+          void readImage(file);
+        }}
+      />
+      <details style={{ marginTop: 16 }}>
+        <summary>Quét liên tục bằng camera trong web (HTTPS)</summary>
+        <div className="actions">
+          <button
+            type="button"
+            disabled={disabled || active}
+            onClick={() => void start()}
+          >
+            Mở camera quét liên tục
+          </button>
+          {active && (
+            <button type="button" className="secondary" onClick={stop}>
+              Tắt camera
+            </button>
+          )}
+        </div>
+      </details>
       {error && (
         <p className="alert error" role="alert">
           {error}

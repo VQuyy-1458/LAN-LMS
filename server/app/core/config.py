@@ -26,6 +26,7 @@ class Settings:
         part.strip() for part in os.getenv('ALLOWED_ORIGINS', 'http://localhost:3000').split(',') if part.strip()))
     secure_cookie: bool = field(default_factory=lambda: env_bool('SECURE_COOKIE'))
     public_origin: str | None = field(default_factory=lambda: os.getenv('PUBLIC_ORIGIN') or None)
+    https_origin: str | None = field(default_factory=lambda: os.getenv('HTTPS_ORIGIN') or None)
     lan_ca_certificate: str | None = field(default_factory=lambda: os.getenv('LAN_CA_CERTIFICATE') or None)
     session_seconds: int = 8 * 60 * 60
     heartbeat_seconds: float = 15
@@ -34,7 +35,7 @@ class Settings:
     def __post_init__(self):
         if not self.allowed_origins:
             raise ValueError('ALLOWED_ORIGINS must contain at least one exact web origin')
-        for origin in (*self.allowed_origins, *((self.public_origin,) if self.public_origin else ())):
+        for origin in (*self.allowed_origins, *((self.public_origin,) if self.public_origin else ()), *((self.https_origin,) if self.https_origin else ())):
             parsed = urlsplit(origin)
             try:
                 parsed.port

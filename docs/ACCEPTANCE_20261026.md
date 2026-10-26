@@ -20,13 +20,13 @@ Trên Windows, bộ kiểm thử hồi quy trước khi bật Docker gồm 79 pa
 
 ## Môi trường còn cần xác nhận
 
-- **Camera vật lý Android/iPhone:** cần cài và bật tin cậy CA theo trang /setup rồi truy cập HTTPS. Chưa có xác nhận từ điện thoại thật trong lần rà soát này. Ảnh QR trên web và HTTPS đã được kiểm tra riêng thành công.
+- **Camera vật lý Android/iPhone:** mặc định dùng Chụp QR để mở camera hệ thống trên HTTP, không cần CA. Chế độ quét video liên tục là tùy chọn HTTPS cần CA tin cậy. Chưa có xác nhận chụp từ điện thoại thật trong lần rà soát này; đọc ảnh QR trên web và HTTPS đã kiểm tra riêng thành công.
 - **Docker Desktop Windows:** engine treo tại init /ping; khởi động lại Docker và riêng distro docker-desktop vẫn chưa đưa được Linux Engine lên trạng thái sẵn sàng. Không factory reset, không xóa image/volume. Giao diện báo bộ chấm chưa sẵn sàng; worker chờ và không nhận job khi engine chưa chạy.
 - Chưa lấy kết quả loopback/CI thay cho phép đo nhiều máy vật lý trong LAN.
 
 ## Dùng bản demo
 
-CHAY_LAN.cmd chạy web; mở http://IP:8080/setup để chuẩn bị camera và https://IP:8443 để dùng trên điện thoại. Chọn khóa **Lập trình mạng — Phòng thực hành thi trực tuyến**. Tài khoản teacher/student demo hiện có được giữ nguyên mật khẩu.
+CHAY_LAN.cmd chạy web; điện thoại mở http://IP:8080 và dùng Chụp QR trong khóa học, không cài CA. /setup và HTTPS 8443 chỉ dành cho tùy chọn quét video liên tục. Chọn khóa **Lập trình mạng — Phòng thực hành thi trực tuyến**. Tài khoản teacher/student demo hiện có được giữ nguyên mật khẩu.
 
 Khóa mới có lịch học, tài liệu hướng dẫn, bài tập phân tích HTTP/WebSocket, hai đề đang mở trong 7 ngày từ lúc seed. Đề demo có thang 0/5/7/8/9/10 và hỗ trợ C17/C++17/Java 17. Không tạo kết quả chấm giả trong dữ liệu ứng dụng.
 

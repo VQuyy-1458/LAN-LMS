@@ -1,6 +1,6 @@
 # Chạy LAN và chuyển máy
 
-Máy Windows có thể nhấp CHAY_LAN.cmd: localhost HTTP 8080 cho máy chủ, HTTPS 8443 cho điện thoại. Trang http://IP:8080/setup hướng dẫn cài CA một lần cho Android và iPhone; xem [PHONE_CAMERA](PHONE_CAMERA.md). Cần OpenSSL của Git for Windows hoặc OPENSSL_PATH. Không đổi firewall/trust tự động. QR tạo từ localhost vẫn chứa PUBLIC_ORIGIN HTTPS đúng của LAN.
+Máy Windows có thể nhấp CHAY_LAN.cmd: localhost HTTP 8080 cho máy chủ, HTTPS 8443 cho điện thoại. Trang http://IP:8080/setup hướng dẫn cài CA một lần cho Android và iPhone; xem [PHONE_CAMERA](PHONE_CAMERA.md). Cần OpenSSL của Git for Windows hoặc OPENSSL_PATH. Không đổi firewall/trust tự động. QR tạo từ localhost vẫn chứa PUBLIC_ORIGIN HTTP đúng của LAN. Điểm danh mặc định dùng Chụp QR mở camera hệ thống, không cần chứng chỉ; HTTPS chỉ cần cho video quét liên tục.
 
 Sau khi Docker Linux Engine chạy, nhấp BAT_BO_CHAM.cmd để tạo image. Worker nền chờ Engine/image sẵn sàng mới nhận job, có heartbeat cho mục Thi lập trình. Xem [bộ đề thực hành cụ thể](../demo/README.md).
 Dùng README gốc mục 10–11. Máy chủ cần Python 3.12, Node.js 22, Docker Linux và Nginx. Tạo venv, cài lockfile, chạy migration, `npm ci` và build frontend, build image judge rồi seed teacher tương tác. Máy sinh viên chỉ cần trình duyệt cùng LAN.

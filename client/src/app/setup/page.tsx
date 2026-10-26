@@ -22,7 +22,13 @@ export default function PhoneSetup() {
         LAN-LMS
       </Link>
       <section className="panel stack">
-        <h1>Mở camera điểm danh trên điện thoại</h1>
+        <h1>Quét liên tục qua HTTPS (tùy chọn)</h1>
+        <p>
+          Để điểm danh thông thường, bạn chỉ cần vào khóa học và bấm{" "}
+          <strong>Chụp QR để điểm danh</strong>. Nút này dùng camera hệ thống và
+          không cần cài chứng chỉ. Các bước bên dưới chỉ dành cho chế độ quét
+          liên tục trong trang web.
+        </p>
         <p>
           Cài chứng chỉ LAN-LMS một lần trên điện thoại, sau đó dùng địa chỉ
           HTTPS của lớp. Kết nối cùng Wi-Fi/LAN với máy chủ.

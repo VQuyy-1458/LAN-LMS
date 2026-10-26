@@ -173,7 +173,7 @@ Seed đầu hỏi mật khẩu sinh viên giả lập; không thay mật khẩu 
 
 ## 11. Running the Project
 
-**Chạy ngay trong LAN trên Windows:** nhấp đúp `CHAY_LAN.cmd`. Trình chạy tự chọn IP nếu chỉ có một kết nối LAN; nếu có nhiều kết nối, chọn mạng muốn dùng. Máy chủ mở localhost; cửa sổ in địa chỉ **HTTPS cổng 8443** cho điện thoại và địa chỉ HTTP cổng 8080 với trang **/setup** để cài chứng chỉ lần đầu. Launcher dùng OpenSSL đi kèm Git for Windows (hoặc `OPENSSL_PATH`), tạo CA/chứng chỉ trong `.runtime/tls/` và không tự cài trust. Xem [camera Android/iPhone](docs/PHONE_CAMERA.md). Chỉ máy chủ chạy file; máy sinh viên chỉ cần trình duyệt. Máy chủ cần bật suốt thời gian sử dụng.
+**Chạy ngay trong LAN trên Windows:** nhấp đúp `CHAY_LAN.cmd`. Trình chạy tự chọn IP nếu chỉ có một kết nối LAN; nếu có nhiều kết nối, chọn mạng muốn dùng. Máy chủ mở localhost; cửa sổ in địa chỉ **HTTP cổng 8080** cho điện thoại. Sinh viên dùng **Chụp QR để điểm danh**, không cần cài chứng chỉ. HTTPS 8443 và trang /setup là tùy chọn cho quét video liên tục. Launcher dùng OpenSSL đi kèm Git for Windows (hoặc `OPENSSL_PATH`), tạo CA/chứng chỉ trong `.runtime/tls/` và không tự cài trust. Xem [camera Android/iPhone](docs/PHONE_CAMERA.md). Chỉ máy chủ chạy file; máy sinh viên chỉ cần trình duyệt. Máy chủ cần bật suốt thời gian sử dụng.
 
 Trong VS Code, mở thư mục gốc project, chọn **Terminal → New Terminal** rồi chạy `./CHAY_LAN.cmd`. Không cần tự mở từng dịch vụ.
 

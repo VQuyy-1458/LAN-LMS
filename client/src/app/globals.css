@@ -1,6 +1,18 @@
 @import "tailwindcss";
-.exam-service-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; background: white; border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; }
-.exam-service-bar p { margin: 3px 0 0; }
+.exam-service-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+.exam-service-bar p {
+  margin: 3px 0 0;
+}
 .public-main {
   max-width: 1200px;
   margin: 32px auto;
@@ -309,7 +321,15 @@ small,
 }
 .stack {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
   gap: 20px;
+}
+.stack > *,
+.panel,
+.form-grid > *,
+.page-heading > div {
+  min-width: 0;
 }
 .grid-2 {
   display: grid;
@@ -855,6 +875,8 @@ details[open] > summary {
   }
   .page-heading {
     align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
   }
   h1 {
     font-size: 23px;
