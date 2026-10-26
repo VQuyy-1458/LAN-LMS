@@ -345,7 +345,10 @@ def start(address=None, open_browser=True):
     RUNTIME.mkdir(parents=True, exist_ok=True)
     tls = None
     if address:
-        from setup_lan_https import prepare_tls
+        try:
+            from scripts.setup_lan_https import prepare_tls
+        except ModuleNotFoundError:
+            from setup_lan_https import prepare_tls
         tls = prepare_tls(ROOT, address)
     source_version = fingerprint(ROOT / "client")
     server_hash = hashlib.sha256()
@@ -518,7 +521,7 @@ def show(state, open_browser=False):
         + (
             "worker đã khởi động."
             if state.get("judge")
-            else "chưa bật; cần Docker Engine và image judge."
+            else "worker đang chờ Docker Engine/image; xem trạng thái trong mục Thi lập trình."
         )
     )
     print("Dữ liệu: " + state.get("database", ""))

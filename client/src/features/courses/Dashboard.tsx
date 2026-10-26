@@ -160,7 +160,7 @@ export default function Dashboard({ teacher = false }: { teacher?: boolean }) {
             <strong>
               {teacher ? data.stats.awaiting_grades : data.stats.upcoming_exams}
             </strong>
-            <span>{teacher ? "Bài cần chấm" : "Kỳ thi sắp tới"}</span>
+            <span>{teacher ? "Bài cần chấm" : "Kỳ thi đang / sắp mở"}</span>
           </div>
         </div>
       </section>

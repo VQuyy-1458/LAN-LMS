@@ -50,16 +50,17 @@ def test_judge_presence_is_fresh_and_scoped_to_database(context):
 
 
 @pytest.mark.skipif(os.getenv("RUN_DOCKER_TESTS") != "1", reason="Real Docker required")
-def test_network_final_http_queue_docker_and_score_ladder(context):
+@pytest.mark.parametrize("component", ["midterm", "final"])
+def test_network_exams_http_queue_docker_and_score_ladder(context, component):
     app,c,_ = context
     seeded = seed_lab(app.state.sessions, app.state.storage_root, "t", ["s"])
-    final = next(e for e in seeded["exams"] if e["component"] == "final")
+    final = next(e for e in seeded["exams"] if e["component"] == component)
     eid = final["id"]
     session = c["s"].post(f"/api/coding-exams/{eid}/sessions/start").json()
     with app.state.sessions() as db:
         rows = list(db.scalars(select(Problems).where(Problems.exam_id==eid).order_by(Problems.id)))
         ids = [p.id for p in rows]
-    specs = problems()["final"]
+    specs = problems()[component]
     for index,(pid,spec) in enumerate(zip(ids,specs)):
         r = c["s"].post(f"/api/problems/{pid}/submissions", json={"exam_session_id":session["id"],"language":"cpp","source_code":spec.solution}, headers={"Idempotency-Key":f"network-{index}"})
         assert r.status_code == 202, r.text

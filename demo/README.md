@@ -26,7 +26,7 @@ Mở Docker Desktop, chờ Linux Engine chạy, nhấp BAT_BO_CHAM.cmd để chu
 
 Nộp bài thật: browser → HTTP POST có CSRF/Idempotency-Key → SQLite submission+job → worker lease → Docker compile/run từng test → aggregate verdict → outbox → WebSocket; REST khôi phục trạng thái khi mất kết nối. Chỉ lưu kết quả tổng bài. Có Pending/Compiling/Running, AC/WA/CE/RTE/TLE/MLE/SE.
 
-Kiểm thử Docker end-to-end cho cả 5 bài cuối kỳ:
+Kiểm thử Docker end-to-end cho toàn bộ 10 bài giữa kỳ và cuối kỳ:
 
 ~~~powershell
 $env:RUN_DOCKER_TESTS = "1"

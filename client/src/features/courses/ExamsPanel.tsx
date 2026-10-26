@@ -55,7 +55,6 @@ export default function ExamsPanel({
       </section>
       {chosen && (
         <div className="panel-title">
-          <h2>{chosen.title}</h2>
           <button className="secondary" onClick={() => setSelected(0)}>
             ← Danh sách kỳ thi
           </button>
