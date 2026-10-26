@@ -58,14 +58,14 @@ export default function Login() {
         <span>HỆ THỐNG HỌC TẬP VÀ THI LẬP TRÌNH TRONG MẠNG LAN</span>
       </div>
       <header className="site-header">
-        <Link className="brand" href="/login">
+        <Link className="brand" href="/">
           <span className="brand-mark">L</span>
           <span>
             <strong>LAN-LMS</strong>
             <small>HỌC TẬP · THỰC HÀNH · ĐÁNH GIÁ</small>
           </span>
         </Link>
-        <span className="muted">Cổng học tập của lớp</span>
+        <Link className="muted" href="/">← Về trang chủ</Link>
       </header>
       <main
         style={{

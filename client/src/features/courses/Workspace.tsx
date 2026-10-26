@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { apiRequest } from "@/lib/api";
-import { request, type Course, type Page } from "@/lib/lms";
+import { request, type Course, type Page, type Event } from "@/lib/lms";
 import { useAction } from "@/lib/useAction";
 import Feedback from "@/components/Feedback";
 import StudentsPanel from "./StudentsPanel";
@@ -141,6 +141,7 @@ export default function Workspace({
     [token, setToken] = useState(""),
     [loaded, setLoaded] = useState(false);
   const action = useAction();
+  const [attendanceLesson, setAttendanceLesson] = useState<Event | undefined>();
   const load = useCallback(async () => {
     const r = await apiRequest<Page<Course>>("/api/courses?page_size=100");
     setCourses(r.items);
@@ -168,6 +169,7 @@ export default function Workspace({
     setSelected(id);
     setAttendance(0);
     setToken("");
+    setAttendanceLesson(undefined);
     window.history.replaceState(
       null,
       "",
@@ -344,15 +346,33 @@ export default function Workspace({
               <MaterialsPanel courseId={course.id} teacher={teacher} />
             )}
             {tab === "calendar" && (
-              <CalendarPanel courseId={course.id} teacher={teacher} />
-            )}
-            {tab === "attendance" && (
-              <AttendancePanel
+              <CalendarPanel
                 courseId={course.id}
                 teacher={teacher}
-                initialSession={attendance}
-                initialToken={token}
+                onAttendance={(event) => {
+                  setAttendanceLesson(event);
+                  setTab("attendance");
+                }}
               />
+            )}
+            {tab === "attendance" && (
+              <div className="stack">
+                {teacher && (
+                  <CalendarPanel
+                    courseId={course.id}
+                    teacher={teacher}
+                    onAttendance={(event) => setAttendanceLesson(event)}
+                  />
+                )}
+                <AttendancePanel
+                  key={attendanceLesson?.id || "attendance"}
+                  courseId={course.id}
+                  teacher={teacher}
+                  lesson={attendanceLesson}
+                  initialSession={attendance}
+                  initialToken={token}
+                />
+              </div>
             )}
             {tab === "assignments" && (
               <AssignmentsPanel courseId={course.id} teacher={teacher} />

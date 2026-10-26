@@ -27,7 +27,7 @@ jobs:
           RUN_DOCKER_TESTS: '1'
       - run: npm ci --ignore-scripts --no-audit --no-fund
         working-directory: client
-      - run: npm run typecheck && npm run lint && npm run build
+      - run: npm test && npm run typecheck && npm run lint && npm run build
         working-directory: client
         env:
           NEXT_TELEMETRY_DISABLED: '1'

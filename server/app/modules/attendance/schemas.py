@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 class Create(BaseModel):
     title: str = Field(default="Điểm danh", min_length=1, max_length=200)
     duration_seconds: int = Field(default=300, ge=60, le=3600)
+    event_id: int | None = Field(default=None, gt=0)
 
 
 class Close(BaseModel):
@@ -17,5 +18,5 @@ class Check(BaseModel):
 
 class Correction(BaseModel):
     student_id: str
-    status: Literal["present", "absent"]
+    status: Literal["present", "absent", "late"]
     reason: str = Field(min_length=3, max_length=1000)

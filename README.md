@@ -21,7 +21,7 @@
 
 **Objectives:** Tập trung dữ liệu trên một máy chủ; phục vụ nhiều trình duyệt trong LAN; nhận bài bền vững; chấm C/C++/Java ngoài tiến trình API; trả trạng thái qua WebSocket và phục hồi bằng REST.
 
-**Scope:** Khóa học, CSV tạo tài khoản, tài liệu, lịch/thông báo, điểm danh QR, bài tập file, giữa kỳ/cuối kỳ, test case, phiên thi, hàng đợi/worker, bảng điểm và backup/restore. Không gồm webcam/ghi màn hình, phát hiện đạo văn code, bài nhiều file/project hoặc triển khai đa máy chủ.
+**Scope:** Trang chủ cho khách, khóa học, CSV tạo tài khoản, tài liệu, lịch/thông báo, điểm danh QR bằng camera/ảnh và chỉnh tay có mặt/đến muộn/vắng, bài tập file, giữa kỳ/cuối kỳ, test case, phiên thi, hàng đợi/worker, bảng điểm và backup/restore. Không gồm giám sát thi bằng webcam/ghi màn hình, phát hiện đạo văn code, bài nhiều file/project hoặc triển khai đa máy chủ.
 
 ## 3. System Overview
 
@@ -29,6 +29,7 @@ Giảng viên và sinh viên dùng trình duyệt. Máy chủ chạy Next.js, Fa
 
 | Vai trò | Chức năng |
 |---|---|
+| Khách | Xem trang chủ và danh mục; đăng nhập khi mở khóa học |
 | Giảng viên | Khóa học, sinh viên, import, tài liệu, lịch, QR, bài tập/chấm tay, đề/test, theo dõi thi, trọng số/công bố/xuất điểm |
 | Sinh viên | Đổi mật khẩu, học liệu/lịch, điểm danh, nộp file, thi code, xem lịch sử và điểm riêng |
 | Worker | Nhận job qua SQLite, biên dịch/chạy sandbox, ghi aggregate result và sự kiện |
@@ -78,7 +79,7 @@ Ví dụ kết quả:
 | DB | SQLite, SQLAlchemy 2.0.46, Alembic |
 | Xác thực | Argon2id, server session, cookie HttpOnly, CSRF/Origin |
 | Judge | Docker Linux, GCC/G++ C17/C++17, OpenJDK 17 |
-| QR | qrcode 8.2, SVG tạo trên server |
+| QR | qrcode 8.2 tạo SVG; ZXing Browser giải mã camera/ảnh ngay trong trình duyệt |
 | Kiểm thử | pytest, httpx/TestClient, Docker thật, ESLint, TypeScript, production build |
 | Tài liệu | Markdown, DOCX/PDF và biểu đồ từ số liệu thực nghiệm |
 
@@ -172,7 +173,17 @@ Seed đầu hỏi mật khẩu sinh viên giả lập; không thay mật khẩu 
 
 ## 11. Running the Project
 
-Mở các terminal riêng từ gốc repo trên Windows:
+**Chạy ngay trong LAN trên Windows:** nhấp đúp `CHAY_LAN.cmd`. Trình chạy tự chọn IP nếu chỉ có một kết nối LAN; nếu có nhiều kết nối, chọn mạng muốn dùng. Trình duyệt tự mở và cửa sổ hiển thị địa chỉ `http://<IP-máy-chủ>:8080` cho các máy khác cùng mạng truy cập. Chỉ máy chủ chạy file này; máy sinh viên chỉ cần trình duyệt. Máy chủ cần bật trong suốt thời gian sử dụng.
+
+Trong VS Code, mở thư mục gốc project, chọn **Terminal → New Terminal** rồi chạy `./CHAY_LAN.cmd`. Không cần tự mở từng dịch vụ.
+
+Nếu chỉ dùng trên máy này, nhấp đúp `CHAY_WEB.cmd` rồi chọn **1**. Nhấp đúp `DUNG_WEB.cmd` để dừng web; đóng cửa sổ launcher hay VS Code không dừng các dịch vụ đang chạy nền.
+
+Cần hoàn tất cài đặt ở mục 10 một lần và có Nginx (trong PATH, `tools/nginx/nginx.exe`, hoặc biến `NGINX_PATH`). Giao diện tự build khi mã nguồn thay đổi. Dữ liệu demo hiện có trong `.runtime/web/demo.db` được giữ lại; nếu không có, dùng cấu hình `server/.env` và database thông thường. Launcher không đặt lại dữ liệu. Worker chỉ tự bật khi Docker Engine và image judge đã sẵn sàng; các chức năng web còn lại vẫn chạy khi chưa có Docker.
+
+Chế độ LAN chỉ mở proxy trên IP mạng được chọn. Nếu firewall chặn, cần cho phép TCP 8080 trên mạng riêng tin cậy một lần; launcher không tự thay đổi firewall hay loại mạng. API và frontend nội bộ vẫn dùng loopback.
+
+Khi cần xem log trực tiếp hoặc phát triển, có thể mở các terminal riêng từ gốc repo trên Windows:
 
 ```powershell
 # 1 — API
@@ -220,7 +231,7 @@ Không đặt `RUN_DOCKER_TESTS=1` khi engine/image chưa sẵn sàng. Các test
 - Teacher tạo/sửa khóa, import CSV UTF-8/BOM theo preview → confirm, tạo tài khoản mới với mật khẩu DOB DDMMYYYY và bắt buộc đổi; giữ mật khẩu tài khoản cũ.
 - Tài liệu riêng tư; file/ZIP tối đa 20 MiB, tên lưu UUID, không giải nén/thực thi file upload.
 - Lịch học, hạn nộp, lịch thi và thông báo; dashboard đọc dữ liệu thật.
-- Điểm danh QR/nhập mã, token ngẫu nhiên 60–3600 giây; chống trùng; chỉnh sửa có lý do/audit. Token chỉ trả khi tạo phiên, DB chỉ lưu hash.
+- Tạo QR từ lịch học; sinh viên quét camera hoặc ảnh QR để tự gửi điểm danh, có nhập mã dự phòng. Token ngẫu nhiên 60–3600 giây; chống trùng; giảng viên đánh dấu trực tiếp có mặt/đến muộn/vắng cho toàn bộ danh sách lớp, có audit. Token chỉ trả khi tạo phiên, DB chỉ lưu hash. Đến muộn hiện được tính là có tham gia khi tính chuyên cần.
 - Bài tập file có deadline, cho phép nộp lại theo cấu hình, lưu lịch sử và chấm tay 0–10/feedback. Bản nộp cuối hợp lệ là bản hiệu lực để tính homework.
 - Mỗi khóa tối đa một giữa kỳ và một cuối kỳ. Giảng viên cấu hình số bài qua bảng quy đổi, mặc định `[0,5,7,8,9,10]` cho đề 5 bài.
 - Thi code có Pending/Compiling/Running rồi **AC, WA, CE, TLE, MLE, RTE, SE**. C17/C++17/Java17, stdin/stdout hoặc file I/O. Java dùng public class Main, không package.
@@ -257,7 +268,7 @@ Hai worker giảm hàng đợi và tăng throughput trên bộ bài mẫu đã �
 - Một API process, SQLite một writer; không phải kiến trúc phân tán hay triển khai production Internet nhiều node.
 - Docker giảm quyền và giới hạn tài nguyên nhưng không được mô tả an toàn tuyệt đối. API/worker không dành cho môi trường hostile multi-tenant quy mô lớn.
 - HTTP LAN demo không mã hóa nội dung truyền; HTTPS cần được cấu hình khi dùng dữ liệu thật ngoài môi trường thử tin cậy.
-- QR có thể được chia sẻ; không chứng minh vị trí tuyệt đối. Camera trong HTTP LAN tùy trình duyệt; nhập mã luôn có sẵn.
+- QR có thể được chia sẻ; không chứng minh vị trí tuyệt đối. Camera trực tiếp cần HTTPS tin cậy hoặc localhost; LAN HTTP dùng chụp/chọn ảnh QR hoặc nhập mã. Xem [hướng dẫn LAN](docs/lan-deployment.md).
 - Không có cơ chế kiểm tra đạo văn code, giám sát màn hình, bài nhiều file hoặc khôi phục bản nháp từ thiết bị khác.
 - Thông tin nhóm, đóng góp cá nhân và Compilatio do nhóm hoàn thiện bằng dữ liệu thật.
 

@@ -18,6 +18,28 @@ from .schemas import CourseInput, CoursePatch
 router = APIRouter(prefix="/api", tags=["courses"])
 
 
+@router.get("/public/courses")
+def public_courses(db=Depends(get_db), p=Depends(Pagination)):
+    """Only catalogue metadata is public; course content keeps its access policy."""
+    q = select(Courses).where(Courses.status == "active")
+    return p.response(
+        [
+            dict(
+                id=r.id,
+                course_code=r.course_code,
+                name=r.course_name,
+                description=r.description,
+                semester=r.semester,
+                academic_year=r.academic_year,
+            )
+            for r in db.scalars(
+                q.order_by(Courses.id.desc()).offset(p.offset).limit(p.page_size)
+            )
+        ],
+        db.scalar(select(func.count()).select_from(q.subquery())),
+    )
+
+
 @router.get("/courses")
 def courses(db=Depends(get_db), user=Depends(learning_user), p=Depends(Pagination)):
     if user.role == "teacher":

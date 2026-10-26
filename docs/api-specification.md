@@ -33,6 +33,7 @@ Không có public register. Password mới 8–128 ký tự và khác cũ. Đăn
 
 | Method | Path | Quyền và dữ liệu |
 |---|---|---|
+| GET | /public/courses | Khách: danh mục active, chỉ id,course_code,name,description,semester,academic_year; không có dữ liệu học tập/cá nhân |
 | GET/POST | /courses | T/S list; Teacher create `{course_code,name,description,semester,academic_year,start_date,end_date}` |
 | GET/PATCH | /courses/{id} | T/S detail; T patch các trường thay đổi |
 | GET | /courses/{id}/students | T list `{student_id,full_name,class_name,email}` |
@@ -53,12 +54,13 @@ Material có id,course_id,title,original_filename,size_bytes,uploaded_at. File 2
 |---|---|---|
 | GET/POST | /courses/{id}/events | T/S list; T EventInput |
 | PUT/DELETE | /events/{id} | T full EventInput / 204 |
-| GET/POST | /courses/{id}/attendance-sessions | T/S list; T `{title,duration_seconds}` |
+| GET/POST | /courses/{id}/attendance-sessions | T/S list; T `{title,duration_seconds,event_id?}`; event_id phải là lịch lesson của course, dùng tên lịch làm tên phiên |
 | GET/PATCH | /attendance-sessions/{id} | T/S detail; T `{status:"closed"}` |
 | POST | /attendance-sessions/{id}/check-in | S `{token}` → 201 mới / 200 record cũ |
 | GET/PATCH | /attendance-sessions/{id}/records | T list / `{student_id,status,reason}` |
+| GET | /attendance-sessions/{id}/roster | T: toàn bộ enrollment active; chưa có record thì id/checked_in_at=null, status=unmarked |
 
-EventInput: title,description,event_type (`lesson|exam|deadline|announcement`), starts_at,ends_at có timezone. Attendance create mặc định 300 giây, 60..3600; response thêm token,check_in_path,qr_svg **chỉ khi tạo**. Không khôi phục token nguyên văn từ DB hash qua GET; mất mã thì tạo phiên mới. List S thêm my_status, không lộ mã. Record status present/absent. Đóng/hết hạn không nhận record mới; token sai 403, thiếu membership 403. Correction yêu cầu reason >=3 ký tự và lưu audit.
+EventInput: title,description,event_type (`lesson|exam|deadline|announcement`), starts_at,ends_at có timezone. Attendance create mặc định 300 giây, 60..3600; response thêm token,check_in_path,qr_svg **chỉ khi tạo**. Không khôi phục token nguyên văn từ DB hash qua GET; mất mã thì tạo phiên mới. List S thêm my_status, không lộ mã. Record status present/absent/late; unmarked chỉ là trạng thái hiển thị của roster, không lưu thành record. Đóng/hết hạn không nhận record mới; token sai 403, thiếu membership 403. Correction yêu cầu reason >=3 ký tự và lưu audit. Quét lại trả record đã có, không ghi đè chỉnh tay. Late hiện tính như present khi tính chuyên cần.
 
 ## Bài tập file
 

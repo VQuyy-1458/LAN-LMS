@@ -89,7 +89,7 @@ def scores(db, cid, sid):
             select(func.count(AttendanceRecords.id)).where(
                 AttendanceRecords.session_id.in_(closed),
                 AttendanceRecords.student_id == sid,
-                AttendanceRecords.status == "present",
+                AttendanceRecords.status.in_(["present", "late"]),
             )
         )
         if closed

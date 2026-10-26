@@ -17,6 +17,7 @@ const teacherNav = [
 const studentNav = [
   ["Tổng quan", "dashboard"],
   ["Khóa học của tôi", "courses"],
+  ["Điểm danh QR", "attendance"],
   ["Thi lập trình", "exams"],
   ["Kết quả học tập", "grades"],
 ];

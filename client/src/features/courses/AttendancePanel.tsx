@@ -2,7 +2,9 @@
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { apiRequest } from "@/lib/api";
-import { date, request, type Page } from "@/lib/lms";
+import { date, request, type Page, type Event } from "@/lib/lms";
+import AttendanceScanner from "@/components/AttendanceScanner";
+import { parseAttendanceQr } from "@/lib/attendanceQr";
 import { useAction } from "@/lib/useAction";
 import Feedback from "@/components/Feedback";
 type Attendance = {
@@ -15,22 +17,24 @@ type Attendance = {
 };
 type Created = Attendance & { token: string; qr_svg: string };
 type Record = {
-  id: number;
+  id: number | null;
   student_id: string;
   full_name: string;
   status: string;
-  checked_in_at: string;
+  checked_in_at: string | null;
 };
 export default function AttendancePanel({
   courseId,
   teacher,
   initialSession,
   initialToken,
+  lesson,
 }: {
   courseId: number;
   teacher: boolean;
   initialSession?: number;
   initialToken?: string;
+  lesson?: Event;
 }) {
   const [rows, setRows] = useState<Attendance[]>([]),
     [created, setCreated] = useState<Created | null>(null),
@@ -52,7 +56,7 @@ export default function AttendancePanel({
   const loadRecords = useCallback(async () => {
     if (teacher && selected) {
       const r = await apiRequest<Page<Record>>(
-        `/api/attendance-sessions/${selected}/records?page=${recordPage}&page_size=50`,
+        `/api/attendance-sessions/${selected}/roster?page=${recordPage}&page_size=50`,
       );
       setRecords(r.items);
       setRecordTotal(r.total);
@@ -65,13 +69,27 @@ export default function AttendancePanel({
   }, [load, action.setError]);
   useEffect(() => {
     loadRecords().catch(action.setError);
-  }, [loadRecords, action.setError]);
+    if (!teacher || !selected) return;
+    const timer = setInterval(() => loadRecords().catch(() => {}), 5000);
+    return () => clearInterval(timer);
+  }, [loadRecords, action.setError, teacher, selected]);
+  useEffect(() => {
+    if (lesson)
+      document
+        .getElementById("attendance-create")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [lesson]);
   return (
     <div className="stack">
       <Feedback error={action.error} message={action.message} />
       {teacher ? (
-        <section className="panel">
-          <h2>Tạo phiên điểm danh</h2>
+        <section className="panel" id="attendance-create">
+          <h2>Tạo QR điểm danh{lesson ? ` · ${lesson.title}` : ""}</h2>
+          {lesson && (
+            <p className="section-note">
+              Lịch học: {date(lesson.starts_at)} → {date(lesson.ends_at)}
+            </p>
+          )}
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -83,10 +101,12 @@ export default function AttendancePanel({
                   {
                     title: f.get("title"),
                     duration_seconds: Number(f.get("duration_seconds")),
+                    event_id: lesson?.id,
                   },
                 );
                 setCreated(r);
                 setSelected(r.id);
+                setRecordPage(1);
                 await load();
               }, "Đã mở phiên điểm danh.");
             }}
@@ -96,7 +116,8 @@ export default function AttendancePanel({
                 Tên buổi học
                 <input
                   name="title"
-                  defaultValue="Điểm danh buổi học"
+                  defaultValue={lesson?.title || "Điểm danh buổi học"}
+                  readOnly={!!lesson}
                   maxLength={200}
                   required
                 />
@@ -117,7 +138,7 @@ export default function AttendancePanel({
               <button disabled={action.busy}>Mở phiên điểm danh</button>
             </div>
           </form>
-          {created && (
+          {created && created.id === selected && (
             <div className="details-box" style={{ textAlign: "center" }}>
               <h3>{created.title}</h3>
               <div className="qr">
@@ -130,7 +151,7 @@ export default function AttendancePanel({
                 />
               </div>
               <p className="section-note">
-                Quét QR bằng ứng dụng camera, hoặc nhập mã dưới đây.
+                Sinh viên mở mục Điểm danh trong khóa học để quét QR này.
               </p>
               <p className="token">{created.token}</p>
               <p className="section-note">
@@ -143,20 +164,51 @@ export default function AttendancePanel({
       ) : (
         <section className="panel">
           <h2>Điểm danh buổi học</h2>
+          <AttendanceScanner
+            disabled={action.busy}
+            onScan={(text) => {
+              void action.run(async () => {
+                const qr = parseAttendanceQr(text);
+                const session = await apiRequest<
+                  Attendance & { course_id: number }
+                >(`/api/attendance-sessions/${qr.sessionId}`);
+                if (session.course_id !== courseId)
+                  throw new Error(
+                    "QR thuộc khóa học khác. Hãy mở đúng khóa học rồi quét lại.",
+                  );
+                setSelected(qr.sessionId);
+                setToken(qr.token);
+                const result = await request<Record>(
+                  `/api/attendance-sessions/${qr.sessionId}/check-in`,
+                  "POST",
+                  { token: qr.token },
+                );
+                await load();
+                if (result.status !== "present" && result.status !== "late")
+                  throw new Error(
+                    "Giảng viên đã ghi nhận bạn vắng. Vui lòng liên hệ giảng viên để điều chỉnh.",
+                  );
+              }, "Điểm danh bằng QR thành công.");
+            }}
+          />
           <p className="section-note">
-            Chọn phiên đang mở và nhập mã giảng viên cung cấp. Nếu mở từ QR, mã
-            đã được điền sẵn.
+            Có thể nhập mã khi không sử dụng được camera. Nếu mở từ QR, mã đã
+            được điền sẵn.
           </p>
           <form
             onSubmit={(e) => {
               e.preventDefault();
               void action.run(async () => {
-                await request(
+                const result = await request<Record>(
                   `/api/attendance-sessions/${selected}/check-in`,
                   "POST",
                   { token },
                 );
                 await load();
+                if (result.status !== "present" && result.status !== "late")
+                  throw new Error(
+                    "Giảng viên đã ghi nhận bạn vắng. Vui lòng liên hệ giảng viên để điều chỉnh.",
+                  );
               }, "Điểm danh thành công.");
             }}
           >
@@ -256,6 +308,8 @@ export default function AttendancePanel({
                       </div>
                     ) : r.my_status === "present" ? (
                       "Đã điểm danh"
+                    ) : r.my_status === "late" ? (
+                      "Đến muộn"
                     ) : r.my_status === "absent" ? (
                       "Vắng"
                     ) : r.status === "open" ? (
@@ -294,10 +348,58 @@ export default function AttendancePanel({
               </thead>
               <tbody>
                 {records.map((r) => (
-                  <tr key={r.id}>
+                  <tr key={r.student_id}>
                     <td>{r.student_id}</td>
                     <td>{r.full_name}</td>
-                    <td>{r.status === "present" ? "Có mặt" : "Vắng"}</td>
+                    <td>
+                      <p className="section-note">
+                        {r.status === "present"
+                          ? "Có mặt"
+                          : r.status === "late"
+                            ? "Đến muộn"
+                            : r.status === "absent"
+                              ? "Vắng"
+                              : "Chưa điểm danh"}
+                      </p>
+                      <div
+                        className="actions"
+                        role="group"
+                        aria-label={`Điểm danh ${r.student_id}`}
+                      >
+                        {(
+                          [
+                            ["present", "Có mặt"],
+                            ["late", "Đến muộn"],
+                            ["absent", "Vắng"],
+                          ] as const
+                        ).map(([status, label]) => (
+                          <button
+                            key={status}
+                            type="button"
+                            className={r.status === status ? "" : "secondary"}
+                            aria-pressed={r.status === status}
+                            disabled={action.busy}
+                            onClick={() =>
+                              void action.run(async () => {
+                                await request(
+                                  `/api/attendance-sessions/${selected}/records`,
+                                  "PATCH",
+                                  {
+                                    student_id: r.student_id,
+                                    status,
+                                    reason:
+                                      "Giảng viên điểm danh thủ công tại lớp",
+                                  },
+                                );
+                                await loadRecords();
+                              }, `Đã ghi nhận ${r.full_name}: ${label.toLowerCase()}.`)
+                            }
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </td>
                     <td>{date(r.checked_in_at)}</td>
                   </tr>
                 ))}
@@ -351,6 +453,7 @@ export default function AttendancePanel({
                   <select name="status">
                     <option value="present">Có mặt</option>
                     <option value="absent">Vắng</option>
+                    <option value="late">Đến muộn</option>
                   </select>
                 </label>
                 <label className="full">

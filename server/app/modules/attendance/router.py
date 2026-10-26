@@ -8,7 +8,14 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select, func
 from ...core.database import get_db
 from ...core.security import learning_user, digest, fail
-from ...models import AttendanceSessions, AttendanceRecords, Students, Courses
+from ...models import (
+    AttendanceSessions,
+    AttendanceRecords,
+    Students,
+    Courses,
+    CalendarEvents,
+    CourseEnrollments,
+)
 from ...schemas.common import Pagination
 from ...services import access, idempotency
 from ...services.activity import iso, audit
@@ -53,6 +60,11 @@ def create(
 ):
     access.course(db, user, course_id, True)
     t = access.teacher(db, user)
+    if body.event_id is not None:
+        event = db.get(CalendarEvents, body.event_id)
+        if not event or event.course_id != course_id or event.event_type != "lesson":
+            fail(422, "INVALID_LESSON", "Lịch học không thuộc khóa học này")
+        body.title = event.title
     token = secrets.token_urlsafe(24)
     now = time.time()
     row = AttendanceSessions(
@@ -150,6 +162,40 @@ def records(
         ],
         db.scalar(select(func.count()).select_from(q.subquery())),
     )
+
+
+@router.get("/attendance-sessions/{sid}/roster")
+def roster(
+    sid: int, db=Depends(get_db), user=Depends(learning_user), p=Depends(Pagination)
+):
+    row = session(db, user, sid, True)
+    q = (
+        select(Students, AttendanceRecords)
+        .join(CourseEnrollments, CourseEnrollments.student_id == Students.id)
+        .outerjoin(
+            AttendanceRecords,
+            (AttendanceRecords.student_id == Students.id)
+            & (AttendanceRecords.session_id == sid),
+        )
+        .where(
+            CourseEnrollments.course_id == row.course_id,
+            CourseEnrollments.status == "active",
+        )
+    )
+    items = []
+    for student, entry in db.execute(
+        q.order_by(Students.student_code).offset(p.offset).limit(p.page_size)
+    ):
+        items.append(
+            dict(
+                id=entry.id if entry else None,
+                student_id=student.student_code,
+                full_name=student.full_name,
+                status=entry.status if entry else "unmarked",
+                checked_in_at=iso(entry.checked_in_at) if entry else None,
+            )
+        )
+    return p.response(items, db.scalar(select(func.count()).select_from(q.subquery())))
 
 
 @router.patch("/attendance-sessions/{sid}/records")

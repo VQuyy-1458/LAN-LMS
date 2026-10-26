@@ -103,9 +103,11 @@ function EventForm({
 export default function CalendarPanel({
   courseId,
   teacher,
+  onAttendance,
 }: {
   courseId: number;
   teacher: boolean;
+  onAttendance?: (event: Event) => void;
 }) {
   const [rows, setRows] = useState<Event[]>([]);
   const action = useAction();
@@ -161,6 +163,13 @@ export default function CalendarPanel({
           <p className="statement" style={{ marginTop: 14 }}>
             {e.description}
           </p>
+          {teacher && e.event_type === "lesson" && onAttendance && (
+            <div className="actions">
+              <button onClick={() => onAttendance(e)}>
+                Tạo QR điểm danh buổi học này
+              </button>
+            </div>
+          )}
           {teacher && (
             <details style={{ marginTop: 18 }}>
               <summary>Chỉnh sửa / Xóa</summary>
