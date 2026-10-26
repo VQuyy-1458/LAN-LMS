@@ -34,7 +34,9 @@ Sự kiện gồm title,description,type,starts_at,ends_at,course_id. Type lesso
 
 ## Phần VIII Điểm danh
 
-Teacher tạo phiên có tên và duration 60–3600 giây, mặc định 300. Token ngẫu nhiên chỉ trả khi tạo, DB lưu SHA-256. QR SVG tạo trên server, không dùng dịch vụ ngoài; QR mở trang nhập mã tương ứng. Student cũng có thể nhập mã tay. Unique(session,student) và khóa ghi chặn trùng, retry trả record cũ. Mã sai trả 403; phiên hết hạn/đóng không nhận điểm danh mới. Teacher đóng phiên, xem lịch sử, chỉnh present/absent có reason/audit. QR không chứng minh vị trí tuyệt đối.
+Teacher xem/tạo lịch học, chọn buổi học để tạo QR có duration 60–3600 giây, mặc định 300. Token ngẫu nhiên chỉ trả khi tạo, DB lưu SHA-256. QR SVG tạo trên server, không dùng dịch vụ ngoài. Student mở camera trong mục Điểm danh QR hoặc chụp/chọn ảnh để giải mã ngay tại trình duyệt và tự gửi điểm danh; vẫn có nhập mã tay. Camera trực tiếp cần HTTPS tin cậy hoặc localhost, còn LAN HTTP dùng ảnh/mã. Unique(session,student) và khóa ghi chặn trùng, retry trả record cũ, không ghi đè chỉnh tay của teacher. Mã sai trả 403; phiên hết hạn/đóng không nhận điểm danh mới. Teacher đóng phiên, xem lịch sử và danh sách cả lớp kể cả người chưa quét, đánh dấu có mặt/đến muộn/vắng (present/late/absent), lưu reason/audit. Late hiện tính như present khi tính chuyên cần. QR không chứng minh vị trí tuyệt đối.
+
+Khách không cần tài khoản để xem trang chủ và danh mục khóa học active. Khi chọn khóa học mới yêu cầu đăng nhập; header cũng có nút đăng nhập riêng. Các API nội dung, lịch học, sinh viên và điểm danh giữ nguyên kiểm tra phiên và quyền khóa học; danh mục công khai chỉ chứa thông tin giới thiệu.
 
 ## Phần IX Kỳ thi
 
