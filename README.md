@@ -266,7 +266,7 @@ Hai worker giảm hàng đợi và tăng throughput trên bộ bài mẫu đã �
 ## 16. Limitations
 
 - Chưa có bằng chứng nghiệm thu **hai máy vật lý LAN** trong phiên làm việc này.
-- Docker Desktop Windows trên máy phát triển bị lỗi khởi động; CI Linux chứng minh pipeline/sandbox trên Linux, không thay cho nghiệm thu Docker Windows.
+- Docker Desktop Windows đã phục hồi ngày 26/10/2026 sau khi khởi động lại WslService và cập nhật WSL 2.6.3 lên 3.0.3 (kernel 6.18.54.1). Bộ 90 test có Docker thật đã qua trên Windows; một bài mẫu nộp qua web được worker chấm AC và cập nhật điểm. Nghiệm thu nhiều máy LAN vẫn là bước riêng.
 - Một API process, SQLite một writer; không phải kiến trúc phân tán hay triển khai production Internet nhiều node.
 - Docker giảm quyền và giới hạn tài nguyên nhưng không được mô tả an toàn tuyệt đối. API/worker không dành cho môi trường hostile multi-tenant quy mô lớn.
 - HTTP LAN demo không mã hóa nội dung truyền; HTTPS cần được cấu hình khi dùng dữ liệu thật ngoài môi trường thử tin cậy.
