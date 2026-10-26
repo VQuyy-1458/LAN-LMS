@@ -9,17 +9,10 @@ import Realtime, { Connection } from "./Realtime";
 const teacherNav = [
   ["Tổng quan", "dashboard"],
   ["Khóa học", "courses"],
-  ["Sinh viên", "students"],
-  ["Điểm danh", "attendance"],
-  ["Thi lập trình", "exams"],
-  ["Bảng điểm", "gradebook"],
 ];
 const studentNav = [
   ["Tổng quan", "dashboard"],
   ["Khóa học của tôi", "courses"],
-  ["Điểm danh QR", "attendance"],
-  ["Thi lập trình", "exams"],
-  ["Kết quả học tập", "grades"],
 ];
 export default function AppShell({
   teacher = false,
@@ -67,9 +60,12 @@ export default function AppShell({
               </Link>
             ))}
             <div className="nav-note">
-              Cùng học, cùng tiến bộ.
+              Chọn khóa học để bắt đầu.
               <br />
-              <small>Mọi dữ liệu được lưu trên máy chủ của lớp học.</small>
+              <small>
+                Lịch học, điểm danh, bài tập, kỳ thi và bảng điểm nằm trong từng
+                khóa học.
+              </small>
             </div>
           </aside>
           <main className="main-content">{children}</main>

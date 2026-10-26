@@ -15,6 +15,7 @@ from server.app.services.files import resolve
 from . import job_queue as queue
 from .runners.container import DockerJudge, TestCase, InfrastructureError
 from .limits import Limits
+from .health import Heartbeat
 
 logger = logging.getLogger("lan_lms.worker")
 
@@ -94,9 +95,20 @@ def main():
     )
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO)
-    engine, sessions = database(Settings().database_url)
+    settings = Settings()
+    engine, sessions = database(settings.database_url)
+    health = Heartbeat(args.storage_root, args.worker_id, settings.database_url, os.getenv("JUDGE_IMAGE", "lan-lms-judge:day25"))
+    health.__enter__()
     try:
         while True:
+            if not health.ready:
+                if args.once:
+                    health.checked.wait(timeout=6)
+                    if not health.ready:
+                        raise InfrastructureError("Docker Engine/image chưa sẵn sàng")
+                else:
+                    time.sleep(1)
+                    continue
             c = queue.claim(sessions, args.worker_id)
             if not c:
                 if args.once:
@@ -123,6 +135,7 @@ def main():
     except KeyboardInterrupt:
         pass
     finally:
+        health.__exit__()
         engine.dispose()
 
 

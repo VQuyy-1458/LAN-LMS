@@ -1,5 +1,8 @@
 from .service import serialize
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import FileResponse
+from pathlib import Path
+import hashlib
 from sqlalchemy import select, func
 from ...core.database import get_db
 from ...core.security import learning_user, fail
@@ -16,6 +19,24 @@ from ...models import (
 from .schemas import CourseInput, CoursePatch
 
 router = APIRouter(prefix="/api", tags=["courses"])
+
+
+@router.get("/public/connection")
+def public_connection(request: Request):
+    settings = request.app.state.settings
+    ca = Path(settings.lan_ca_certificate) if settings.lan_ca_certificate else None
+    fingerprint = hashlib.sha256(ca.read_bytes()).hexdigest().upper() if ca and ca.is_file() else None
+    return {"origin": settings.public_origin,
+            "certificate_available": fingerprint is not None,
+            "fingerprint": ":".join(fingerprint[i:i+2] for i in range(0, len(fingerprint), 2)) if fingerprint else None}
+
+
+@router.get("/public/lan-certificate")
+def public_certificate(request: Request):
+    value = request.app.state.settings.lan_ca_certificate
+    if not value or not Path(value).is_file():
+        fail(404, "HTTPS_NOT_CONFIGURED", "Chưa tạo chứng chỉ LAN")
+    return FileResponse(value, media_type="application/x-x509-ca-cert", filename="LAN-LMS-CA.cer")
 
 
 @router.get("/public/courses")

@@ -24,7 +24,7 @@ class EventHub:
                     pass
 
     async def publish(self, event_type, data, recipient_ids):
-        if event_type not in {'submission.updated', 'exam.updated', 'session.updated'}:
+        if event_type not in {'submission.updated', 'exam.updated', 'session.updated', 'attendance.updated'}:
             raise ValueError('Unsupported event type')
         event = {'event_id': secrets.token_urlsafe(16), 'type': event_type,
                  'occurred_at': datetime.now(timezone.utc).isoformat(), 'data': data}

@@ -16,11 +16,17 @@ export default function ExamsPanel({
   const [rows, setRows] = useState<Exam[]>([]),
     [selected, setSelected] = useState(0);
   const action = useAction();
+  const [judge, setJudge] = useState<{
+    ready: boolean;
+    workers: number;
+    pending_jobs: number;
+  } | null>(null);
   const load = useCallback(async () => {
     const r = await apiRequest<Page<Exam>>(
       `/api/courses/${courseId}/coding-exams?page_size=100`,
     );
     setRows(r.items);
+    setJudge(await apiRequest(`/api/courses/${courseId}/judge-status`));
   }, [courseId]);
   useEffect(() => {
     load().catch(action.setError);
@@ -31,7 +37,31 @@ export default function ExamsPanel({
   return (
     <div className="stack">
       <Feedback error={action.error} message={action.message} />
-      {teacher && (
+      <section className="panel judge-status" aria-live="polite">
+        <div>
+          <h2>
+            {judge?.ready ? "Bộ chấm đang hoạt động" : "Bộ chấm chưa sẵn sàng"}
+          </h2>
+          <p className="section-note">
+            {judge?.ready
+              ? `${judge.workers} worker · ${judge.pending_jobs} bài trong hàng đợi`
+              : "Docker Engine hoặc worker chưa hoạt động. Bài nộp được lưu và chờ bộ chấm; chưa thể trả kết quả."}
+          </p>
+        </div>
+        <p className="section-note">
+          Nộp qua HTTP → hàng đợi trên máy chủ → chấm test trong Docker → cập
+          nhật kết quả qua WebSocket.
+        </p>
+      </section>
+      {chosen && (
+        <div className="panel-title">
+          <h2>{chosen.title}</h2>
+          <button className="secondary" onClick={() => setSelected(0)}>
+            ← Danh sách kỳ thi
+          </button>
+        </div>
+      )}
+      {teacher && !chosen && (
         <section className="panel">
           <details>
             <summary>Tạo kỳ thi giữa kỳ / cuối kỳ</summary>
@@ -52,34 +82,36 @@ export default function ExamsPanel({
           </details>
         </section>
       )}
-      <div className="grid-2">
-        {rows.map((e) => (
-          <button
-            key={e.id}
-            className="panel"
-            style={{
-              textAlign: "left",
-              color: "var(--text-primary)",
-              borderColor:
-                e.id === selected ? "var(--primary)" : "var(--border)",
-            }}
-            onClick={() => setSelected(e.id)}
-          >
-            <div className="panel-title">
-              <span className="badge">
-                {e.grade_component === "midterm" ? "Giữa kỳ" : "Cuối kỳ"}
-              </span>
-              <span className={`badge ${e.status}`}>
-                {statusLabel[e.status]}
-              </span>
-            </div>
-            <h2>{e.title}</h2>
-            <p className="section-note">
-              {date(e.starts_at)} · {e.problem_count} bài
-            </p>
-          </button>
-        ))}
-      </div>
+      {!chosen && (
+        <div className="grid-2">
+          {rows.map((e) => (
+            <button
+              key={e.id}
+              className="panel"
+              style={{
+                textAlign: "left",
+                color: "var(--text-primary)",
+                borderColor:
+                  e.id === selected ? "var(--primary)" : "var(--border)",
+              }}
+              onClick={() => setSelected(e.id)}
+            >
+              <div className="panel-title">
+                <span className="badge">
+                  {e.grade_component === "midterm" ? "Giữa kỳ" : "Cuối kỳ"}
+                </span>
+                <span className={`badge ${e.status}`}>
+                  {statusLabel[e.status]}
+                </span>
+              </div>
+              <h2>{e.title}</h2>
+              <p className="section-note">
+                {date(e.starts_at)} · {e.problem_count} bài
+              </p>
+            </button>
+          ))}
+        </div>
+      )}
       {!rows.length && (
         <div className="empty">
           {teacher

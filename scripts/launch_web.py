@@ -197,7 +197,7 @@ def choose_lan(explicit=None):
     return options[value - 1]["ip"]
 
 
-def make_environment(root, address=None):
+def make_environment(root, address=None, tls=None):
     env = {
         key: value
         for key, value in dotenv_values(root / "server" / ".env").items()
@@ -210,6 +210,10 @@ def make_environment(root, address=None):
     origins = ["http://localhost:8080", "http://127.0.0.1:8080"]
     if address:
         origins.append(f"http://{private_ipv4(address)}:8080")
+    if tls:
+        origins.append(tls["origin"])
+        env["PUBLIC_ORIGIN"] = tls["origin"]
+        env["LAN_CA_CERTIFICATE"] = tls["ca"]
     env["ALLOWED_ORIGINS"] = ",".join(origins)
     demo = root / ".runtime" / "web" / "demo.db"
     if demo.is_file():
@@ -219,13 +223,34 @@ def make_environment(root, address=None):
     return env
 
 
-def make_proxy_config(source, address=None):
+def make_proxy_config(source, address=None, tls=None):
     listener = "listen 127.0.0.1:8080;"
     if address:
         listener += "\n        listen " + private_ipv4(address) + ":8080;"
     if source.count("listen 8080;") != 1:
         raise ValueError("Không nhận diện được listener mẫu trong scripts/nginx.conf.")
-    return source.replace("listen 8080;", listener)
+    normal = source.replace("listen 8080;", listener)
+    if not tls:
+        return normal
+    if not address or "http {" not in source:
+        raise ValueError("HTTPS cần cấu hình HTTP đầy đủ và IP LAN.")
+    paths = []
+    for name in ("certificate", "key"):
+        path = Path(tls[name]).resolve().as_posix()
+        if any(c in path for c in '\r\n"{};'):
+            raise ValueError("Đường dẫn chứng chỉ không hợp lệ.")
+        paths.append(path)
+    start = source.index("server {")
+    depth = 0
+    end = start
+    for index in range(source.index("{", start), len(source)):
+        depth += (source[index] == "{") - (source[index] == "}")
+        if depth == 0:
+            end = index + 1
+            break
+    block = source[start:end].replace("listen 8080;", f'listen {private_ipv4(address)}:8443 ssl;\n        ssl_certificate "{paths[0]}";\n        ssl_certificate_key "{paths[1]}";\n        ssl_protocols TLSv1.2 TLSv1.3;')
+    head, tail = normal.rsplit("}", 1)
+    return head + "\n    " + block + "\n}" + tail
 
 
 def find_nginx():
@@ -300,10 +325,12 @@ def http_ok(path="/api/ready"):
         return False
 
 
-def available(address=None):
+def available(address=None, tls=None):
     checks = [("127.0.0.1", port) for port in (8000, 3000, 8080)]
     if address:
         checks.append((address, 8080))
+        if tls:
+            checks.append((address, 8443))
     for host, port in checks:
         with socket.socket() as probe:
             try:
@@ -316,22 +343,36 @@ def available(address=None):
 
 def start(address=None, open_browser=True):
     RUNTIME.mkdir(parents=True, exist_ok=True)
+    tls = None
+    if address:
+        from setup_lan_https import prepare_tls
+        tls = prepare_tls(ROOT, address)
+    source_version = fingerprint(ROOT / "client")
+    server_hash = hashlib.sha256()
+    server_inputs = list((ROOT / "server" / "app").rglob("*.py"))
+    server_inputs += list((ROOT / "judge").rglob("*.py"))
+    server_inputs += [Path(__file__), ROOT / "scripts" / "nginx.conf", ROOT / "scripts" / "setup_lan_https.py"]
+    for path in sorted(server_inputs):
+        server_hash.update(path.read_bytes())
+    if tls:
+        server_hash.update(Path(tls["certificate"]).read_bytes())
+    server_version = server_hash.hexdigest()
     old = load_state()
     if old:
         alive = owned_processes(old.get("processes", []), process_snapshot())
-        if alive and old.get("lan_ip") == address and http_ok() and http_ok("/login"):
+        if alive and old.get("lan_ip") == address and old.get("source_version") == source_version and old.get("server_version") == server_version and old.get("tls_fingerprint") == (tls["fingerprint"] if tls else None) and http_ok() and http_ok("/login"):
             show(old, open_browser)
             return
         if alive:
             stop()
         else:
             STATE.unlink(missing_ok=True)
-    available(address)
+    available(address, tls)
     nginx = find_nginx()
     node = shutil.which("node.exe") or shutil.which("node")
     if not node:
         raise FileNotFoundError("Chưa tìm thấy Node.js trong PATH.")
-    env = make_environment(ROOT, address)
+    env = make_environment(ROOT, address, tls)
     next_cli = ensure_build(node, env)
     subprocess.run(
         [
@@ -353,7 +394,7 @@ def start(address=None, open_browser=True):
     config = prefix / "nginx.conf"
     config.write_text(
         make_proxy_config(
-            (ROOT / "scripts" / "nginx.conf").read_text(encoding="utf-8"), address
+            (ROOT / "scripts" / "nginx.conf").read_text(encoding="utf-8"), address, tls
         ),
         encoding="utf-8",
     )
@@ -396,6 +437,10 @@ def start(address=None, open_browser=True):
         "url": "http://localhost:8080",
         "processes": [],
         "judge": False,
+        "source_version": source_version,
+        "server_version": server_version,
+        "tls_fingerprint": tls["fingerprint"] if tls else None,
+        "lan_url": tls["origin"] if tls else None,
         "database": env.get("DATABASE_URL", "server/.env hoặc database/lan_lms.db"),
     }
     try:
@@ -442,21 +487,13 @@ def start(address=None, open_browser=True):
                     timeout=4,
                     creationflags=NO_WINDOW,
                 )
-                if inspect.returncode == 0:
-                    with (RUNTIME / "worker.log").open("ab") as log:
-                        children.append(
-                            subprocess.Popen(
-                                [sys.executable, "-m", "judge.worker"],
-                                cwd=ROOT,
-                                env=env,
-                                stdout=log,
-                                stderr=log,
-                                creationflags=NO_WINDOW,
-                            )
-                        )
-                    state["judge"] = True
+                state["judge"] = inspect.returncode == 0
             except (OSError, subprocess.TimeoutExpired):
                 pass
+            with (RUNTIME / "worker.log").open("ab") as log:
+                children.append(subprocess.Popen([sys.executable, "-m", "judge.worker"], cwd=ROOT,
+                    env=env, stdout=log, stderr=log, creationflags=NO_WINDOW))
+            state["worker_started"] = True
         state["processes"] = descendants({p.pid for p in children}, process_snapshot())
         write_state(state)
     except BaseException:
@@ -471,8 +508,11 @@ def start(address=None, open_browser=True):
 def show(state, open_browser=False):
     print("\nWEB ĐÃ SẴN SÀNG: " + state["url"])
     if state.get("lan_ip"):
-        print("Máy khác cùng LAN mở: http://" + state["lan_ip"] + ":8080")
-        print("Nếu máy khác chưa vào được, kiểm tra quyền firewall TCP 8080 cho LAN.")
+        print("Máy khác cùng LAN mở: " + (state.get("lan_url") or "http://" + state["lan_ip"] + ":8080"))
+        print("Cài camera điện thoại lần đầu: http://" + state["lan_ip"] + ":8080/setup")
+        if state.get("tls_fingerprint"):
+            print("Chứng chỉ CA SHA-256: " + state["tls_fingerprint"])
+        print("Nếu máy khác chưa vào được, kiểm tra quyền firewall TCP 8080/8443 cho LAN.")
     print(
         "Chấm code: "
         + (

@@ -8,6 +8,45 @@ from server.app.models import AttendanceSessions, AuditLogs
 from server.app.modules.gradebook.service import scores
 
 
+def test_qr_check_in_updates_teacher_over_real_websocket(context):
+    app,c,cid = context
+    session = c["t"].post(f"/api/courses/{cid}/attendance-sessions",json={}).json()
+    app.state.settings.heartbeat_seconds = 0.1
+    app.state.settings.heartbeat_timeout = 2
+    with TestClient(app) as live:
+        live.cookies.update(c["t"].cookies)
+        with live.websocket_connect("/ws",headers={"Origin":"http://localhost:3000"}) as ws:
+            response = c["s"].post(f'/api/attendance-sessions/{session["id"]}/check-in',json={"token":session["token"]})
+            assert response.status_code == 201
+            found = False
+            for _ in range(30):
+                message = ws.receive_json()
+                if message["type"]=="heartbeat":
+                    ws.send_json({"type":"heartbeat.ack","id":message["id"]})
+                elif message["type"]=="attendance.updated":
+                    assert message["data"]["status"]=="present"
+                    assert message["data"]["session_id"]==session["id"]
+                    found = True
+                    break
+            assert found
+    rows = c["t"].get(f'/api/attendance-sessions/{session["id"]}/roster').json()["items"]
+    assert rows[0]["status"]=="present"
+
+
+def test_public_certificate_only_returns_configured_public_ca(context,tmp_path):
+    app,c,_ = context
+    public = tmp_path/"public.cer"; public.write_bytes(b"PUBLIC-CA-ONLY")
+    private = tmp_path/"private.key"; private.write_bytes(b"NEVER-SERVE-THIS")
+    app.state.settings.lan_ca_certificate = str(public)
+    app.state.settings.public_origin = "https://192.168.1.100:8443"
+    with TestClient(app) as guest:
+        info = guest.get("/api/public/connection").json()
+        assert info["origin"]=="https://192.168.1.100:8443" and info["certificate_available"]
+        certificate = guest.get("/api/public/lan-certificate?path=private.key")
+        assert certificate.content==b"PUBLIC-CA-ONLY"
+        assert "LAN-LMS-CA.cer" in certificate.headers["content-disposition"]
+
+
 def test_guest_only_sees_catalogue(context):
     app, clients, cid = context
     with TestClient(app) as guest:

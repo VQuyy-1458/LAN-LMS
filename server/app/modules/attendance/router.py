@@ -18,7 +18,7 @@ from ...models import (
 )
 from ...schemas.common import Pagination
 from ...services import access, idempotency
-from ...services.activity import iso, audit
+from ...services.activity import iso, audit, emit
 
 router = APIRouter(prefix="/api", tags=["attendance"])
 
@@ -87,7 +87,7 @@ def create(
 
     path = f"/student/courses?attendance={row.id}&token={token}"
     qr = qrcode.make(
-        request.headers["origin"] + path, image_factory=qrcode.image.svg.SvgPathImage
+        (request.app.state.settings.public_origin or request.headers["origin"]) + path, image_factory=qrcode.image.svg.SvgPathImage
     )
     stream = io.BytesIO()
     qr.save(stream)
@@ -143,6 +143,7 @@ def check_in(
     db.get(Courses, row.course_id).grades_published = False
     db.flush()
     response.status_code = 201
+    emit(db, "attendance.updated", row.course_id, {"session_id": sid, "student_id": s.student_code, "status": "present"}, s.user_id)
     db.commit()
     return record(db, r)
 
@@ -232,6 +233,7 @@ def correct(
         )
         db.add(r)
     r.status = body.status
+    emit(db, "attendance.updated", row.course_id, {"session_id": sid, "student_id": s.student_code, "status": body.status}, s.user_id)
     db.get(Courses, row.course_id).grades_published = False
     audit(
         db,

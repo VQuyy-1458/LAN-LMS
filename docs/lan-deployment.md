@@ -1,5 +1,8 @@
 # Chạy LAN và chuyển máy
 
+Máy Windows có thể nhấp CHAY_LAN.cmd: localhost HTTP 8080 cho máy chủ, HTTPS 8443 cho điện thoại. Trang http://IP:8080/setup hướng dẫn cài CA một lần cho Android và iPhone; xem [PHONE_CAMERA](PHONE_CAMERA.md). Cần OpenSSL của Git for Windows hoặc OPENSSL_PATH. Không đổi firewall/trust tự động. QR tạo từ localhost vẫn chứa PUBLIC_ORIGIN HTTPS đúng của LAN.
+
+Sau khi Docker Linux Engine chạy, nhấp BAT_BO_CHAM.cmd để tạo image. Worker nền chờ Engine/image sẵn sàng mới nhận job, có heartbeat cho mục Thi lập trình. Xem [bộ đề thực hành cụ thể](../demo/README.md).
 Dùng README gốc mục 10–11. Máy chủ cần Python 3.12, Node.js 22, Docker Linux và Nginx. Tạo venv, cài lockfile, chạy migration, `npm ci` và build frontend, build image judge rồi seed teacher tương tác. Máy sinh viên chỉ cần trình duyệt cùng LAN.
 
 Nginx cổng 8080 là origin web; Next.js cổng 3000 và API cổng 8000 nghe loopback. `ALLOWED_ORIGINS` phải khớp origin trình duyệt dùng, ví dụ `http://192.168.1.10:8080`. Proxy chuyển `/api` và `/ws`, giữ Host, hỗ trợ upgrade WebSocket và chuyển địa chỉ client. Uvicorn chỉ tin forwarded headers từ `127.0.0.1`. Sinh viên truy cập IP máy chủ, không dùng localhost trên máy mình.

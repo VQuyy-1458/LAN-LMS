@@ -34,6 +34,9 @@ Sự kiện gồm title,description,type,starts_at,ends_at,course_id. Type lesso
 
 ## Phần VIII Điểm danh
 
+Điều hướng của hai vai trò: Tổng quan/Khóa học ở menu chung → chọn khóa học → chức năng trong khóa. Không lặp menu sinh viên/điểm danh/thi/điểm ở cấp toàn hệ thống. Tab và course lưu trong URL để tải lại/quay lại đúng ngữ cảnh. Lịch và điểm danh là hai tab riêng, tạo QR từ lịch chuyển sang tab điểm danh.
+
+CHAY_LAN cung cấp HTTPS 8443 và trang /setup cho Android/iPhone tải CA công khai, đối chiếu fingerprint và cài tin cậy một lần. Không tự thay đổi trust/firewall. QR dùng PUBLIC_ORIGIN để liên kết quét bằng camera hệ thống trỏ về IP máy chủ, không trỏ localhost. Quét trong trang hoặc mở liên kết QR sau login tự gửi điểm danh; outbox attendance.updated báo cho teacher và student tương ứng.
 Teacher xem/tạo lịch học, chọn buổi học để tạo QR có duration 60–3600 giây, mặc định 300. Token ngẫu nhiên chỉ trả khi tạo, DB lưu SHA-256. QR SVG tạo trên server, không dùng dịch vụ ngoài. Student mở camera trong mục Điểm danh QR hoặc chụp/chọn ảnh để giải mã ngay tại trình duyệt và tự gửi điểm danh; vẫn có nhập mã tay. Camera trực tiếp cần HTTPS tin cậy hoặc localhost, còn LAN HTTP dùng ảnh/mã. Unique(session,student) và khóa ghi chặn trùng, retry trả record cũ, không ghi đè chỉnh tay của teacher. Mã sai trả 403; phiên hết hạn/đóng không nhận điểm danh mới. Teacher đóng phiên, xem lịch sử và danh sách cả lớp kể cả người chưa quét, đánh dấu có mặt/đến muộn/vắng (present/late/absent), lưu reason/audit. Late hiện tính như present khi tính chuyên cần. QR không chứng minh vị trí tuyệt đối.
 
 Khách không cần tài khoản để xem trang chủ và danh mục khóa học active. Khi chọn khóa học mới yêu cầu đăng nhập; header cũng có nút đăng nhập riêng. Các API nội dung, lịch học, sinh viên và điểm danh giữ nguyên kiểm tra phiên và quyền khóa học; danh mục công khai chỉ chứa thông tin giới thiệu.

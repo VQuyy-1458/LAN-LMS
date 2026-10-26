@@ -20,6 +20,8 @@ Idempotency-Key dài 1–128 ký tự, scope user/method/path, giữ 24 giờ ch
 |---|---|---|
 | GET | /health | DB SELECT 1 |
 | GET | /ready | Kiểm tra cột auth và schema tích hợp; 503 nếu thiếu |
+| GET | /public/connection | Không cần login: origin HTTPS, certificate_available và fingerprint CA công khai |
+| GET | /public/lan-certificate | Chỉ tải CA công khai được cấu hình; không nhận đường dẫn từ request, không phục vụ private key |
 | POST | /auth/login | `{username,password}` → `{user:{user_id,username,role,must_change_password}}` |
 | GET | /auth/me | User |
 | GET | /auth/csrf | `{csrf_token}` |
@@ -34,6 +36,7 @@ Không có public register. Password mới 8–128 ký tự và khác cũ. Đăn
 | Method | Path | Quyền và dữ liệu |
 |---|---|---|
 | GET | /public/courses | Khách: danh mục active, chỉ id,course_code,name,description,semester,academic_year; không có dữ liệu học tập/cá nhân |
+| GET | /courses/{id}/judge-status | T/S của course: ready, workers có heartbeat dưới 30 giây, pending_jobs trong course, server_time; không công khai đường dẫn/secret |
 | GET/POST | /courses | T/S list; Teacher create `{course_code,name,description,semester,academic_year,start_date,end_date}` |
 | GET/PATCH | /courses/{id} | T/S detail; T patch các trường thay đổi |
 | GET | /courses/{id}/students | T list `{student_id,full_name,class_name,email}` |

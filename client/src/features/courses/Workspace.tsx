@@ -11,6 +11,7 @@ import CalendarPanel from "./CalendarPanel";
 import AttendancePanel from "./AttendancePanel";
 import ExamsPanel from "./ExamsPanel";
 import GradebookPanel from "./GradebookPanel";
+import { courseLocation, courseHref } from "@/lib/courseNavigation";
 type Tab =
   | "overview"
   | "students"
@@ -149,18 +150,47 @@ export default function Workspace({
   }, []);
   useEffect(() => {
     load().catch(action.setError);
-    const q = new URLSearchParams(window.location.search);
-    if (q.get("course")) setSelected(Number(q.get("course")));
-    if (q.get("attendance")) {
-      const id = Number(q.get("attendance"));
-      setAttendance(id);
-      setToken(q.get("token") || "");
-      setTab("attendance");
-      apiRequest<{ course_id: number }>(`/api/attendance-sessions/${id}`)
-        .then((r) => setSelected(r.course_id))
-        .catch(action.setError);
-    }
-  }, [load, action.setError]);
+    const syncLocation = () => {
+      const q = new URLSearchParams(window.location.search);
+      const location = courseLocation(
+        window.location.search,
+        teacher,
+        initialTab,
+      );
+      setSelected(location.courseId);
+      setTab(location.tab);
+      setAttendanceLesson(undefined);
+      setAttendance(0);
+      setToken("");
+      if (q.get("attendance")) {
+        const id = Number(q.get("attendance"));
+        setAttendance(id);
+        setToken(q.get("token") || "");
+        setTab("attendance");
+        apiRequest<{ course_id: number }>(`/api/attendance-sessions/${id}`)
+          .then((r) => setSelected(r.course_id))
+          .catch(action.setError);
+      }
+    };
+    syncLocation();
+    window.addEventListener("popstate", syncLocation);
+    return () => window.removeEventListener("popstate", syncLocation);
+  }, [load, action.setError, teacher, initialTab]);
+  useEffect(() => {
+    if (!selected || !loaded || courses.some((c) => c.id === selected)) return;
+    let live = true;
+    apiRequest<Course>(`/api/courses/${selected}`)
+      .then((c) => {
+        if (live)
+          setCourses((rows) =>
+            rows.some((r) => r.id === c.id) ? rows : [...rows, c],
+          );
+      })
+      .catch(action.setError);
+    return () => {
+      live = false;
+    };
+  }, [selected, loaded, courses, action.setError]);
   const course = courses.find((c) => c.id === selected),
     filtered = courses.filter((c) =>
       `${c.course_code} ${c.name}`.toLowerCase().includes(search.toLowerCase()),
@@ -170,11 +200,12 @@ export default function Workspace({
     setAttendance(0);
     setToken("");
     setAttendanceLesson(undefined);
-    window.history.replaceState(
-      null,
-      "",
-      `${window.location.pathname}${id ? `?course=${id}` : ""}`,
-    );
+    setTab("overview");
+    window.history.pushState(null, "", courseHref(teacher, id));
+  };
+  const selectTab = (value: Tab) => {
+    setTab(value);
+    window.history.pushState(null, "", courseHref(teacher, selected, value));
   };
   return (
     <div className="stack">
@@ -183,19 +214,13 @@ export default function Workspace({
           <div className="eyebrow">
             {teacher ? "COURSE MANAGEMENT" : "MY COURSES"}
           </div>
-          <h1>
-            {course
-              ? course.name
-              : initialTab === "overview"
-                ? "Khóa học"
-                : tabs.find(([k]) => k === initialTab)?.[1]}
-          </h1>
+          <h1>{course ? course.name : "Khóa học"}</h1>
           <p>
             {course
               ? `${course.course_code} · Học kỳ ${course.semester} · ${course.academic_year}`
               : teacher
-                ? "Quản lý nội dung học tập và hoạt động của lớp."
-                : "Tài liệu, bài tập và hoạt động trong các khóa học của bạn."}
+                ? "Chọn khóa học để quản lý sinh viên, lịch học, điểm danh và kỳ thi."
+                : "Chọn khóa học để xem tài liệu, quét QR điểm danh và làm bài thi."}
           </p>
         </div>
         {selected > 0 && (
@@ -205,7 +230,7 @@ export default function Workspace({
         )}
       </div>
       <Feedback error={action.error} message={action.message} />
-      {!course && (
+      {!course && !selected && (
         <>
           {teacher && (
             <section className="panel">
@@ -284,7 +309,7 @@ export default function Workspace({
                 <button
                   key={k}
                   className={tab === k ? "active" : ""}
-                  onClick={() => setTab(k)}
+                  onClick={() => selectTab(k)}
                 >
                   {n}
                 </button>
@@ -324,19 +349,9 @@ export default function Workspace({
                     />
                   </details>
                 )}
-                <div className="grid-3" style={{ marginTop: 24 }}>
-                  {tabs
-                    .filter(([k]) => !["overview", "students"].includes(k))
-                    .map(([k, n]) => (
-                      <button
-                        className="button-link"
-                        key={k}
-                        onClick={() => setTab(k)}
-                      >
-                        {n} →
-                      </button>
-                    ))}
-                </div>
+                <p className="section-note" style={{ marginTop: 24 }}>
+                  Chọn mục trên thanh chức năng của khóa học để tiếp tục.
+                </p>
               </section>
             )}
             {tab === "students" && teacher && (
@@ -351,18 +366,26 @@ export default function Workspace({
                 teacher={teacher}
                 onAttendance={(event) => {
                   setAttendanceLesson(event);
-                  setTab("attendance");
+                  selectTab("attendance");
                 }}
               />
             )}
             {tab === "attendance" && (
               <div className="stack">
                 {teacher && (
-                  <CalendarPanel
-                    courseId={course.id}
-                    teacher={teacher}
-                    onAttendance={(event) => setAttendanceLesson(event)}
-                  />
+                  <div className="panel">
+                    <h2>Điểm danh theo buổi học</h2>
+                    <p className="section-note">
+                      Tạo hoặc chọn buổi học trong Lịch & Thông báo, sau đó tạo
+                      mã QR. Bạn cũng có thể mở phiên trực tiếp bên dưới.
+                    </p>
+                    <button
+                      className="secondary"
+                      onClick={() => selectTab("calendar")}
+                    >
+                      Mở lịch học →
+                    </button>
+                  </div>
                 )}
                 <AttendancePanel
                   key={attendanceLesson?.id || "attendance"}
@@ -385,6 +408,9 @@ export default function Workspace({
             )}
           </div>
         </>
+      )}
+      {selected > 0 && !course && !action.error && (
+        <p role="status">Đang tải khóa học…</p>
       )}
     </div>
   );

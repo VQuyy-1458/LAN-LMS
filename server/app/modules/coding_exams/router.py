@@ -13,6 +13,7 @@ from ...models import (
     ExamRegistrations,
     Courses,
     Students,
+    CodeSubmissions,
 )
 from ...schemas.common import Pagination
 from ...services import access, idempotency, files
@@ -21,6 +22,16 @@ from .schemas import ExamInput, ProblemInput
 from . import service as svc
 
 router = APIRouter(prefix="/api", tags=["coding-exams"])
+
+
+@router.get("/courses/{course_id}/judge-status")
+def judge_status(course_id: int, request: Request, db=Depends(get_db), user=Depends(learning_user)):
+    access.course(db, user, course_id)
+    from judge.health import status
+    from ...models import JudgeJobs
+    workers = status(request.app.state.storage_root, request.app.state.settings.database_url)
+    q = select(func.count(JudgeJobs.id)).join(CodeSubmissions, JudgeJobs.submission_id == CodeSubmissions.id).join(Problems, CodeSubmissions.problem_id == Problems.id).join(CodingExams, Problems.exam_id == CodingExams.id).where(CodingExams.course_id == course_id, JudgeJobs.status.in_(["pending", "running"]))
+    return {"ready": workers > 0, "workers": workers, "pending_jobs": db.scalar(q), "server_time": iso(time.time())}
 
 
 @router.get("/courses/{course_id}/coding-exams")

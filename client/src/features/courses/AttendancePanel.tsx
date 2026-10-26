@@ -1,10 +1,12 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { apiRequest } from "@/lib/api";
 import { date, request, type Page, type Event } from "@/lib/lms";
 import AttendanceScanner from "@/components/AttendanceScanner";
 import { parseAttendanceQr } from "@/lib/attendanceQr";
+import { courseHref } from "@/lib/courseNavigation";
+import { useRealtime } from "@/components/Realtime";
 import { useAction } from "@/lib/useAction";
 import Feedback from "@/components/Feedback";
 type Attendance = {
@@ -44,6 +46,8 @@ export default function AttendancePanel({
     [recordPage, setRecordPage] = useState(1),
     [recordTotal, setRecordTotal] = useState(0);
   const action = useAction();
+  const autoCheck = useRef("");
+  const { revision } = useRealtime();
   const load = useCallback(async () => {
     setRows(
       (
@@ -66,13 +70,36 @@ export default function AttendancePanel({
     load().catch(action.setError);
     const timer = setInterval(() => load().catch(() => {}), 15000);
     return () => clearInterval(timer);
-  }, [load, action.setError]);
+  }, [load, action.setError, revision]);
   useEffect(() => {
     loadRecords().catch(action.setError);
     if (!teacher || !selected) return;
     const timer = setInterval(() => loadRecords().catch(() => {}), 5000);
     return () => clearInterval(timer);
-  }, [loadRecords, action.setError, teacher, selected]);
+  }, [loadRecords, action.setError, teacher, selected, revision]);
+  useEffect(() => {
+    if (teacher || !initialSession || !initialToken) return;
+    const identity = `${initialSession}:${initialToken}`;
+    if (autoCheck.current === identity) return;
+    autoCheck.current = identity;
+    void action.run(async () => {
+      const result = await request<Record>(
+        `/api/attendance-sessions/${initialSession}/check-in`,
+        "POST",
+        { token: initialToken },
+      );
+      await load();
+      if (result.status !== "present" && result.status !== "late")
+        throw new Error(
+          "Giảng viên đã ghi nhận bạn vắng. Vui lòng liên hệ giảng viên để điều chỉnh.",
+        );
+      window.history.replaceState(
+        null,
+        "",
+        courseHref(false, courseId, "attendance"),
+      );
+    }, "Đã quét QR và cập nhật điểm danh thành công.");
+  }, [teacher, initialSession, initialToken, courseId, load, action]);
   useEffect(() => {
     if (lesson)
       document

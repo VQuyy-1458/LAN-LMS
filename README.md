@@ -173,15 +173,15 @@ Seed đầu hỏi mật khẩu sinh viên giả lập; không thay mật khẩu 
 
 ## 11. Running the Project
 
-**Chạy ngay trong LAN trên Windows:** nhấp đúp `CHAY_LAN.cmd`. Trình chạy tự chọn IP nếu chỉ có một kết nối LAN; nếu có nhiều kết nối, chọn mạng muốn dùng. Trình duyệt tự mở và cửa sổ hiển thị địa chỉ `http://<IP-máy-chủ>:8080` cho các máy khác cùng mạng truy cập. Chỉ máy chủ chạy file này; máy sinh viên chỉ cần trình duyệt. Máy chủ cần bật trong suốt thời gian sử dụng.
+**Chạy ngay trong LAN trên Windows:** nhấp đúp `CHAY_LAN.cmd`. Trình chạy tự chọn IP nếu chỉ có một kết nối LAN; nếu có nhiều kết nối, chọn mạng muốn dùng. Máy chủ mở localhost; cửa sổ in địa chỉ **HTTPS cổng 8443** cho điện thoại và địa chỉ HTTP cổng 8080 với trang **/setup** để cài chứng chỉ lần đầu. Launcher dùng OpenSSL đi kèm Git for Windows (hoặc `OPENSSL_PATH`), tạo CA/chứng chỉ trong `.runtime/tls/` và không tự cài trust. Xem [camera Android/iPhone](docs/PHONE_CAMERA.md). Chỉ máy chủ chạy file; máy sinh viên chỉ cần trình duyệt. Máy chủ cần bật suốt thời gian sử dụng.
 
 Trong VS Code, mở thư mục gốc project, chọn **Terminal → New Terminal** rồi chạy `./CHAY_LAN.cmd`. Không cần tự mở từng dịch vụ.
 
 Nếu chỉ dùng trên máy này, nhấp đúp `CHAY_WEB.cmd` rồi chọn **1**. Nhấp đúp `DUNG_WEB.cmd` để dừng web; đóng cửa sổ launcher hay VS Code không dừng các dịch vụ đang chạy nền.
 
-Cần hoàn tất cài đặt ở mục 10 một lần và có Nginx (trong PATH, `tools/nginx/nginx.exe`, hoặc biến `NGINX_PATH`). Giao diện tự build khi mã nguồn thay đổi. Dữ liệu demo hiện có trong `.runtime/web/demo.db` được giữ lại; nếu không có, dùng cấu hình `server/.env` và database thông thường. Launcher không đặt lại dữ liệu. Worker chỉ tự bật khi Docker Engine và image judge đã sẵn sàng; các chức năng web còn lại vẫn chạy khi chưa có Docker.
+Cần hoàn tất cài đặt ở mục 10 một lần và có Nginx (trong PATH, `tools/nginx/nginx.exe`, hoặc biến `NGINX_PATH`). Giao diện tự build khi mã nguồn thay đổi; dịch vụ nền tự được khởi động lại khi code thay đổi. Dữ liệu demo hiện có trong `.runtime/web/demo.db` được giữ lại; nếu không có, dùng cấu hình `server/.env` và database thông thường. Launcher không đặt lại dữ liệu. Khi có Docker CLI, worker chạy nền và chờ Engine/image; không tiêu hao lượt chấm khi Engine chưa sẵn sàng. Mở Docker Desktop, chờ Linux Engine, chạy **BAT_BO_CHAM.cmd** để chuẩn bị image. Mục Thi lập trình hiển thị worker đang hoạt động và số bài chờ.
 
-Chế độ LAN chỉ mở proxy trên IP mạng được chọn. Nếu firewall chặn, cần cho phép TCP 8080 trên mạng riêng tin cậy một lần; launcher không tự thay đổi firewall hay loại mạng. API và frontend nội bộ vẫn dùng loopback.
+Chế độ LAN chỉ mở proxy trên IP mạng được chọn. Nếu firewall chặn, cần cho phép Nginx nhận TCP 8080/8443 từ mạng lớp học một lần; launcher không tự thay đổi firewall hay loại mạng. API và frontend nội bộ vẫn dùng loopback.
 
 Khi cần xem log trực tiếp hoặc phát triển, có thể mở các terminal riêng từ gốc repo trên Windows:
 
@@ -228,6 +228,8 @@ Không đặt `RUN_DOCKER_TESTS=1` khi engine/image chưa sẵn sàng. Các test
 
 ## 12. Main Features
 
+- Cả hai vai trò chọn khóa học trước; menu chung chỉ có Tổng quan/Khóa học. Tài liệu, lịch, điểm danh, bài tập, kỳ thi và điểm nằm trong khóa đã chọn. URL giữ course/tab khi tải lại hoặc quay lại.
+- Có [khóa thực hành mạng](demo/README.md) gồm 2 kỳ thi, 10 bài và 62 test; script seed idempotent giữ nguyên dữ liệu có sẵn.
 - Teacher tạo/sửa khóa, import CSV UTF-8/BOM theo preview → confirm, tạo tài khoản mới với mật khẩu DOB DDMMYYYY và bắt buộc đổi; giữ mật khẩu tài khoản cũ.
 - Tài liệu riêng tư; file/ZIP tối đa 20 MiB, tên lưu UUID, không giải nén/thực thi file upload.
 - Lịch học, hạn nộp, lịch thi và thông báo; dashboard đọc dữ liệu thật.
