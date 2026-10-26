@@ -15,14 +15,17 @@ import {
 } from "@/lib/lms";
 import { useAction } from "@/lib/useAction";
 import Feedback from "@/components/Feedback";
+import type { ExamComponent } from "@/lib/examCreation";
 export function ExamForm({
   exam,
   save,
   busy,
+  availableComponents = ["midterm", "final"],
 }: {
   exam?: Exam;
   save: (body: unknown) => void;
   busy: boolean;
+  availableComponents?: ExamComponent[];
 }) {
   const [defaults] = useState(() => ({
     start: localInput(
@@ -61,9 +64,16 @@ export function ExamForm({
         {!exam && (
           <label>
             Thành phần điểm
-            <select name="grade_component">
-              <option value="midterm">Giữa kỳ</option>
-              <option value="final">Cuối kỳ</option>
+            <select
+              name="grade_component"
+              required
+              defaultValue={availableComponents[0]}
+            >
+              {availableComponents.map((component) => (
+                <option key={component} value={component}>
+                  {component === "midterm" ? "Giữa kỳ" : "Cuối kỳ"}
+                </option>
+              ))}
             </select>
           </label>
         )}
@@ -189,7 +199,9 @@ function ProblemForm({
             name="comparator"
             defaultValue={problem?.comparator || "normalized"}
           >
-            <option value="normalized">Bỏ trắng cuối dòng và chuẩn hóa xuống dòng</option>
+            <option value="normalized">
+              Bỏ trắng cuối dòng và chuẩn hóa xuống dòng
+            </option>
             <option value="exact">Khớp chính xác</option>
           </select>
         </label>

@@ -94,7 +94,7 @@ def create_app(settings=None):
         except Exception:
             # Do not log request bodies/passwords or SQL bound parameters.
             logger.error("Unhandled request error id=%s", request.state.request_id)
-            response = error(request, 500, "INTERNAL_ERROR", "Lá»—i há»‡ thá»‘ng")
+            response = error(request, 500, "INTERNAL_ERROR", "Lỗi hệ thống")
         response.headers["X-Request-ID"] = request.state.request_id
         response.headers["X-Content-Type-Options"] = "nosniff"
         if request.url.path.startswith("/api/"):
@@ -112,7 +112,7 @@ def create_app(settings=None):
             request,
             exc.status_code,
             payload.get("code", f"HTTP_{exc.status_code}"),
-            payload.get("detail", "YÃªu cáº§u khÃ´ng há»£p lá»‡"),
+            payload.get("detail", "Yêu cầu không hợp lệ"),
         )
         if exc.headers:
             response.headers.update(exc.headers)
@@ -125,17 +125,17 @@ def create_app(settings=None):
             for e in exc.errors()
         ]
         return error(
-            request, 422, "VALIDATION_ERROR", "Dá»¯ liá»‡u khÃ´ng há»£p lá»‡", errors
+            request, 422, "VALIDATION_ERROR", "Dữ liệu không hợp lệ", errors
         )
 
     @app.exception_handler(IntegrityError)
     async def integrity_error(request, exc):
-        return error(request, 409, "DATA_CONFLICT", "Dá»¯ liá»‡u xung Ä‘á»™t")
+        return error(request, 409, "DATA_CONFLICT", "Dữ liệu xung đột")
 
     @app.exception_handler(OperationalError)
     async def database_error(request, exc):
         return error(
-            request, 503, "DATABASE_UNAVAILABLE", "Database táº¡m khÃ´ng sáºµn sÃ ng"
+            request, 503, "DATABASE_UNAVAILABLE", "Database tạm không sẵn sàng"
         )
 
     @app.get("/api/health", tags=["system"])

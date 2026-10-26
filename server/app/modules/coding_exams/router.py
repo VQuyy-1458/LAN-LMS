@@ -63,6 +63,16 @@ def create(
     idempotency.write_lock(db)
     access.course(db, user, course_id, True)
     t = access.teacher(db, user)
+    existing = db.scalar(
+        select(CodingExams).where(
+            CodingExams.course_id == course_id,
+            CodingExams.grade_component == body.grade_component,
+        )
+    )
+    if existing:
+        label = "giữa kỳ" if body.grade_component == "midterm" else "cuối kỳ"
+        fail(409, "EXAM_COMPONENT_EXISTS",
+             f'Khóa học đã có đề {label} "{existing.title}". Mỗi khóa chỉ có một đề giữa kỳ và một đề cuối kỳ; hãy mở đề hiện có để quản lý.')
     if body.starts_at.timestamp() <= time.time():
         fail(422, "INVALID_DATES", "Tạo kỳ thi có giờ bắt đầu trong tương lai")
     row = CodingExams(

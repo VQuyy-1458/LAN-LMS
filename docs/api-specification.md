@@ -91,6 +91,8 @@ File 20 MiB, .pdf/.docx/.txt/.zip/.c/.cpp/.java; không giải nén hay thực t
 | POST | /coding-exams/{id}/sessions/start | S → phiên mới hoặc phiên cũ dùng chung nhiều tab |
 | GET | /coding-exams/{id}/my-session | S → ExamSession hoặc null |
 | GET | /coding-exams/{id}/sessions | T list monitor |
+
+Tạo trùng thành phần giữa kỳ/cuối kỳ trong cùng khóa trả 409 `EXAM_COMPONENT_EXISTS`, thông báo nêu đề đã tồn tại và hướng dẫn mở để quản lý. Quy tắc áp dụng cả draft/đề đã kết thúc. Form giảng viên chỉ hiện loại chưa có; khi đủ hai đề thì không hiện form tạo thêm. Việc kiểm tra trùng nằm trong khóa ghi DB để hai request đồng thời không rơi vào lỗi SQL chung.
 | GET | /exam-sessions/{id} | T/O snapshot |
 | POST | /exam-sessions/{id}/finish | O, lặp an toàn |
 

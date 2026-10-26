@@ -6,6 +6,7 @@ import { useAction } from "@/lib/useAction";
 import Feedback from "@/components/Feedback";
 import ExamEditor, { ExamForm } from "./ExamEditor";
 import ExamPlayer from "./ExamPlayer";
+import { availableExamComponents } from "@/lib/examCreation";
 export default function ExamsPanel({
   courseId,
   teacher,
@@ -16,6 +17,7 @@ export default function ExamsPanel({
   const [rows, setRows] = useState<Exam[]>([]),
     [selected, setSelected] = useState(0);
   const action = useAction();
+  const [loaded, setLoaded] = useState(false);
   const [judge, setJudge] = useState<{
     ready: boolean;
     workers: number;
@@ -26,6 +28,7 @@ export default function ExamsPanel({
       `/api/courses/${courseId}/coding-exams?page_size=100`,
     );
     setRows(r.items);
+    setLoaded(true);
     setJudge(await apiRequest(`/api/courses/${courseId}/judge-status`));
   }, [courseId]);
   useEffect(() => {
@@ -34,6 +37,7 @@ export default function ExamsPanel({
     return () => clearInterval(timer);
   }, [load, action.setError]);
   const chosen = rows.find((r) => r.id === selected);
+  const availableComponents = availableExamComponents(rows);
   return (
     <div className="stack">
       <Feedback error={action.error} message={action.message} />
@@ -54,19 +58,30 @@ export default function ExamsPanel({
           </button>
         )}
       </section>
-      {teacher && !chosen && (
+      {teacher && loaded && !chosen && availableComponents.length > 0 && (
         <section className="panel">
           <details>
             <summary>Tạo kỳ thi giữa kỳ / cuối kỳ</summary>
+            <p className="section-note">
+              Mỗi khóa học có một đề giữa kỳ và một đề cuối kỳ. Chỉ tạo được
+              thành phần chưa có; các đề đã có nằm trong danh sách bên dưới.
+            </p>
             <ExamForm
+              availableComponents={availableComponents}
               busy={action.busy}
               save={(body) =>
                 void action.run(async () => {
-                  const e = await request<Exam>(
-                    `/api/courses/${courseId}/coding-exams`,
-                    "POST",
-                    body,
-                  );
+                  let e: Exam;
+                  try {
+                    e = await request<Exam>(
+                      `/api/courses/${courseId}/coding-exams`,
+                      "POST",
+                      body,
+                    );
+                  } catch (error) {
+                    await load();
+                    throw error;
+                  }
                   setSelected(e.id);
                   await load();
                 }, "Đã tạo đề nháp. Thêm đủ bài và test trước khi lên lịch mở thi.")
@@ -75,6 +90,16 @@ export default function ExamsPanel({
           </details>
         </section>
       )}
+      {teacher && loaded && !chosen && availableComponents.length === 0 && (
+        <section className="panel">
+          <h2>Khóa học đã có đủ hai kỳ thi</h2>
+          <p className="section-note">
+            Mỗi khóa học có một đề giữa kỳ và một đề cuối kỳ. Chọn một đề bên
+            dưới để xem nội dung, quản lý lịch thi và theo dõi bài nộp.
+          </p>
+        </section>
+      )}
+      {!loaded && <p role="status">Đang tải danh sách kỳ thi…</p>}
       {!chosen && (
         <div className="grid-2">
           {rows.map((e) => (
@@ -105,7 +130,7 @@ export default function ExamsPanel({
           ))}
         </div>
       )}
-      {!rows.length && (
+      {loaded && !rows.length && (
         <div className="empty">
           {teacher
             ? "Chưa có kỳ thi. Tạo đề nháp để bắt đầu."
