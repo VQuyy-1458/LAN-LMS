@@ -272,6 +272,7 @@ function TestEditor({
   editable: boolean;
 }) {
   const [rows, setRows] = useState<Test[]>([]);
+  const [zipKey, setZipKey] = useState(key);
   const action = useAction();
   const load = useCallback(
     async () =>
@@ -348,10 +349,11 @@ function TestEditor({
                 {
                   method: "POST",
                   body: new FormData(form),
-                  headers: { "Idempotency-Key": key() },
+                  headers: { "Idempotency-Key": zipKey },
                 },
               );
               form.reset();
+              setZipKey(key());
               await load();
             }, "Đã nhập bộ testcase và chia đều trọng số.");
           }}
@@ -364,7 +366,13 @@ function TestEditor({
           </p>
           <label>
             File ZIP
-            <input type="file" name="file" accept=".zip" required />
+            <input
+              type="file"
+              name="file"
+              accept=".zip"
+              required
+              onChange={() => setZipKey(key())}
+            />
           </label>
           <button
             className="secondary"
