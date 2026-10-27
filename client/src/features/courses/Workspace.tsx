@@ -4,6 +4,7 @@ import { apiRequest } from "@/lib/api";
 import { request, type Course, type Page, type Event } from "@/lib/lms";
 import { useAction } from "@/lib/useAction";
 import Feedback from "@/components/Feedback";
+import CourseOverview from "./CourseOverview";
 import CourseTransfer from "./CourseTransfer";
 import StudentsPanel from "./StudentsPanel";
 import MaterialsPanel from "./MaterialsPanel";
@@ -329,42 +330,49 @@ export default function Workspace({
           </nav>
           <div key={course.id}>
             {tab === "overview" && (
-              <section className="panel">
-                <div className="panel-title">
-                  <h2>Thông tin khóa học</h2>
-                  <span className="badge">{course.course_code}</span>
-                </div>
-                <p className="statement">
-                  {course.description || "Chưa có mô tả khóa học."}
-                </p>
-                <p className="section-note">
-                  Thời gian: {course.start_date || "Chưa đặt"} →{" "}
-                  {course.end_date || "Chưa đặt"}
-                </p>
-                {teacher && (
-                  <details style={{ marginTop: 24 }}>
-                    <summary>Sửa thông tin khóa học</summary>
-                    <CourseForm
-                      key={JSON.stringify(course)}
-                      course={course}
-                      busy={action.busy}
-                      save={(body) =>
-                        void action.run(async () => {
-                          await request(
-                            `/api/courses/${course.id}`,
-                            "PATCH",
-                            body,
-                          );
-                          await load();
-                        })
-                      }
-                    />
-                  </details>
-                )}
-                <p className="section-note" style={{ marginTop: 24 }}>
-                  Chọn mục trên thanh chức năng của khóa học để tiếp tục.
-                </p>
-              </section>
+              <>
+                <section className="panel">
+                  <div className="panel-title">
+                    <h2>Thông tin khóa học</h2>
+                    <span className="badge">{course.course_code}</span>
+                  </div>
+                  <p className="statement">
+                    {course.description || "Chưa có mô tả khóa học."}
+                  </p>
+                  <p className="section-note">
+                    Thời gian: {course.start_date || "Chưa đặt"} →{" "}
+                    {course.end_date || "Chưa đặt"}
+                  </p>
+                  {teacher && (
+                    <details style={{ marginTop: 24 }}>
+                      <summary>Sửa thông tin khóa học</summary>
+                      <CourseForm
+                        key={JSON.stringify(course)}
+                        course={course}
+                        busy={action.busy}
+                        save={(body) =>
+                          void action.run(async () => {
+                            await request(
+                              `/api/courses/${course.id}`,
+                              "PATCH",
+                              body,
+                            );
+                            await load();
+                          })
+                        }
+                      />
+                    </details>
+                  )}
+                  <p className="section-note" style={{ marginTop: 24 }}>
+                    Chọn mục trên thanh chức năng của khóa học để tiếp tục.
+                  </p>
+                </section>
+                <CourseOverview
+                  courseId={course.id}
+                  teacher={teacher}
+                  open={selectTab}
+                />
+              </>
             )}
             {tab === "students" && teacher && (
               <StudentsPanel courseId={course.id} />

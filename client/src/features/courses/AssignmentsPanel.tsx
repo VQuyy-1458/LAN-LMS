@@ -16,6 +16,7 @@ type Assignment = {
   description: string;
   due_at: string;
   allow_resubmit: boolean;
+  attachment_filename: string | null;
 };
 type FileSub = {
   id: number;
@@ -166,6 +167,43 @@ function AssignmentCard({
         {a.description || "Giảng viên chưa thêm mô tả."}
       </p>
       <Feedback error={action.error} message={action.message} />
+      {a.attachment_filename && (
+        <p>
+          <a href={`/api/assignments/${a.id}/attachment`}>
+            Tải đề bài: {a.attachment_filename}
+          </a>
+        </p>
+      )}
+      {teacher && (
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            const form = event.currentTarget;
+            void action.run(async () => {
+              await apiRequest(`/api/assignments/${a.id}/attachment`, {
+                method: "POST",
+                body: new FormData(form),
+              });
+              form.reset();
+              await reload();
+            }, "Đã lưu file đề bài.");
+          }}
+        >
+          <label>
+            Đính kèm / thay file đề bài (20 MiB)
+            <input
+              type="file"
+              name="file"
+              accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.zip"
+              required
+            />
+          </label>
+          <button className="secondary" disabled={action.busy}>
+            Lưu file đề bài
+          </button>
+        </form>
+      )}
+
       {teacher ? (
         <details style={{ marginTop: 18 }}>
           <summary>Chỉnh sửa bài tập</summary>

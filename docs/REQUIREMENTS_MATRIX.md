@@ -26,3 +26,6 @@ Các mục cài sạch trên máy khác, Docker Windows, LAN vật lý, điền 
 
 
 Quy định mới và chuyển khóa học/USB ngày 27/10: xem [CHANGES_20261027.md](CHANGES_20261027.md).
+
+
+Hai khóa học có 40 tài khoản mẫu, PDF tự soạn, assignment có file đề, nhập testcase ZIP và ví dụ công khai: xem [CLASSROOM_DEMO.md](CLASSROOM_DEMO.md). Migration 0006 thêm file đề assignment; gói chuyển khóa phiên bản 1 cũ vẫn được đọc với attachment rỗng.

@@ -4,6 +4,7 @@ import { apiRequest } from "@/lib/api";
 import {
   allPages,
   date,
+  key,
   localInput,
   localISO,
   request,
@@ -310,6 +311,11 @@ function TestEditor({
                 <td>{r.points}</td>
                 <td>{r.is_hidden ? "Ẩn" : "Ví dụ"}</td>
                 <td>
+                  <a href={`/api/test-cases/${r.id}/file?kind=input`}>Input</a>
+                  {" · "}
+                  <a href={`/api/test-cases/${r.id}/file?kind=output`}>
+                    Output
+                  </a>{" "}
                   {editable && (
                     <button
                       className="danger"
@@ -331,6 +337,43 @@ function TestEditor({
           </tbody>
         </table>
       </div>
+      {editable && (
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            const form = event.currentTarget;
+            void action.run(async () => {
+              await apiRequest(
+                `/api/problems/${problemId}/test-cases/import-zip`,
+                {
+                  method: "POST",
+                  body: new FormData(form),
+                  headers: { "Idempotency-Key": key() },
+                },
+              );
+              form.reset();
+              await load();
+            }, "Đã nhập bộ testcase và chia đều trọng số.");
+          }}
+        >
+          <h4>Nhập nhanh bộ testcase (.zip)</h4>
+          <p className="section-note">
+            Dành cho bài chưa có test. ZIP chứa các cặp 01.in/01.out ở thư mục
+            gốc; tên bắt đầu sample_ là ví dụ công khai. Tối đa 100 cặp, ZIP 20
+            MiB. Các test chia đều trọng số.
+          </p>
+          <label>
+            File ZIP
+            <input type="file" name="file" accept=".zip" required />
+          </label>
+          <button
+            className="secondary"
+            disabled={action.busy || rows.length > 0}
+          >
+            Nhập testcase ZIP
+          </button>
+        </form>
+      )}
       {editable && (
         <form
           style={{ marginTop: 18 }}

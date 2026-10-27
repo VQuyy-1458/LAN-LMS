@@ -22,7 +22,10 @@ from ...services.activity import iso, audit, emit
 from .schemas import ExamInput, ProblemInput, SessionEventInput
 from . import service as svc
 
+from .testcase_files import router as testcase_files_router
+
 router = APIRouter(prefix="/api", tags=["coding-exams"])
+router.include_router(testcase_files_router)
 
 
 @router.get("/courses/{course_id}/judge-status")

@@ -10,6 +10,7 @@ def assignment_view(r):
         description=r.description,
         due_at=datetime.fromtimestamp(r.due_at, timezone.utc).isoformat(),
         allow_resubmit=r.allow_resubmit,
+        attachment_filename=r.attachment_filename,
     )
 
 

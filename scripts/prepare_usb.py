@@ -21,7 +21,7 @@ def checksum(path):
     return digest.hexdigest()
 
 
-def build(output):
+def build(output, reuse_dependencies=None):
     if sys.platform != "win32" or sys.version_info[:2] != (3, 12):
         raise RuntimeError("Build this kit on Windows with Python 3.12")
     output = Path(output).resolve()
@@ -29,10 +29,26 @@ def build(output):
     if output == ROOT or ROOT.is_relative_to(output): raise ValueError("Output cannot contain the source project")
     node = shutil.which("node")
     docker = shutil.which("docker")
-    if not node or not docker: raise RuntimeError("Node.js and running Docker are required")
+    if not node or (not docker and not reuse_dependencies): raise RuntimeError("Node.js and running Docker (or a verified older kit) are required")
     version = subprocess.check_output([node, "--version"], text=True).strip()
     image = os.environ.get("JUDGE_IMAGE", "lan-lms-judge:day25")
-    image_id = subprocess.check_output([docker, "image", "inspect", image, "--format", "{{.Id}}"], text=True, timeout=15).strip()
+    previous = None
+    if reuse_dependencies:
+        previous_root = Path(reuse_dependencies).resolve()
+        previous = json.loads((previous_root / "manifest.json").read_text(encoding="utf-8"))
+        if previous.get("format") != "lan-lms-offline" or previous.get("version") != 1 or previous["machine"] != platform.machine() or previous["python"] != "3.12" or previous["node"] != version or previous["judge_image"] != image:
+            raise ValueError("Previous kit platform/runtime does not match")
+        for relative in ("client/package-lock.json", "server/requirements.lock", "judge/Dockerfile", "judge/sandbox_entry.py"):
+            if previous["files"].get("LAN-LMS/" + relative) != checksum(ROOT / relative):
+                raise ValueError("Dependencies/image inputs changed; build a fresh kit online")
+        for name, digest in previous["files"].items():
+            if not name.startswith("dependencies/"): continue
+            source_path = (previous_root / name).resolve()
+            if not source_path.is_relative_to(previous_root) or source_path.is_symlink() or checksum(source_path) != digest:
+                raise ValueError("Previous dependency checksum failed")
+        image_id = previous["judge_image_id"]
+    else:
+        image_id = subprocess.check_output([docker, "image", "inspect", image, "--format", "{{.Id}}"], text=True, timeout=15).strip()
     from scripts.launch_web import find_nginx
     nginx = Path(find_nginx()).parent
     modules = ROOT / "client" / "node_modules"
@@ -53,19 +69,23 @@ def build(output):
         if path.suffix in (".db", ".sqlite", ".sqlite3"): raise ValueError("Tracked database")
         target = source / relative
         target.parent.mkdir(parents=True, exist_ok=True); shutil.copy2(path, target)
-    wheels = dependencies / "wheels"; wheels.mkdir()
-    print("Preparing Windows Python wheels (Internet required on build machine)...", flush=True)
-    if importlib.util.find_spec("pip") is None:
-        subprocess.run([sys.executable, "-m", "ensurepip"], check=True)
-    subprocess.run([sys.executable, "-m", "pip", "download", "--only-binary=:all:", "-r", str(ROOT / "server/requirements.lock"), "-d", str(wheels)], check=True)
-    print("Packing installed Windows frontend dependencies...", flush=True)
-    with zipfile.ZipFile(dependencies / "node_modules.zip", "w", zipfile.ZIP_DEFLATED, compresslevel=1) as archive:
-        for path in modules.rglob("*"):
-            if path.is_symlink(): raise ValueError("Install npm dependencies without links before packaging")
-            if path.is_file(): archive.write(path, path.relative_to(modules).as_posix())
-    shutil.copytree(nginx, dependencies / "nginx", ignore=shutil.ignore_patterns("logs", "*_temp"))
-    print("Saving Docker compiler image...", flush=True)
-    subprocess.run([docker, "save", "--output", str(dependencies / "judge-image.tar"), image], check=True, timeout=300)
+    if previous:
+        shutil.copytree(previous_root / "dependencies", dependencies, dirs_exist_ok=True)
+        print("Reused checksum-verified dependency/image bundle.", flush=True)
+    else:
+        wheels = dependencies / "wheels"; wheels.mkdir()
+        print("Preparing Windows Python wheels (Internet required on build machine)...", flush=True)
+        if importlib.util.find_spec("pip") is None:
+            subprocess.run([sys.executable, "-m", "ensurepip"], check=True)
+        subprocess.run([sys.executable, "-m", "pip", "download", "--only-binary=:all:", "-r", str(ROOT / "server/requirements.lock"), "-d", str(wheels)], check=True)
+        print("Packing installed Windows frontend dependencies...", flush=True)
+        with zipfile.ZipFile(dependencies / "node_modules.zip", "w", zipfile.ZIP_DEFLATED, compresslevel=1) as archive:
+            for path in modules.rglob("*"):
+                if path.is_symlink(): raise ValueError("Install npm dependencies without links before packaging")
+                if path.is_file(): archive.write(path, path.relative_to(modules).as_posix())
+        shutil.copytree(nginx, dependencies / "nginx", ignore=shutil.ignore_patterns("logs", "*_temp"))
+        print("Saving Docker compiler image...", flush=True)
+        subprocess.run([docker, "save", "--output", str(dependencies / "judge-image.tar"), image], check=True, timeout=300)
     manifest = {"format": "lan-lms-offline", "version": 1, "platform": sys.platform,
                 "machine": platform.machine(), "python": "3.12", "node": version,
                 "judge_image": image, "judge_image_id": image_id, "files": {}}
@@ -86,4 +106,6 @@ def build(output):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", required=True)
-    build(parser.parse_args().output)
+    parser.add_argument("--reuse-dependencies", help="Path to an older verified kit with unchanged lockfiles and judge image inputs")
+    args=parser.parse_args()
+    build(args.output,args.reuse_dependencies)

@@ -33,6 +33,16 @@ function Solver({
   refreshSession: () => Promise<void>;
   canSubmit: boolean;
 }) {
+  const [examples, setExamples] = useState<
+    { input: string; output: string; truncated: boolean }[]
+  >([]);
+  useEffect(() => {
+    apiRequest<{
+      items: { input: string; output: string; truncated: boolean }[];
+    }>(`/api/problems/${p.id}/examples`)
+      .then((r) => setExamples(r.items))
+      .catch(() => {});
+  }, [p.id]);
   const [source, setSource] = useState(""),
     [language, setLanguage] = useState(p.languages[0]),
     [rows, setRows] = useState<Submission[]>([]),
@@ -127,6 +137,20 @@ function Solver({
             }}
           />
           <div className="statement">{p.statement}</div>
+          {examples.map((example, index) => (
+            <div className="details-box" key={index}>
+              <h3>Ví dụ {index + 1}</h3>
+              <strong>Input</strong>
+              <pre className="source-output">{example.input || "(rỗng)"}</pre>
+              <strong>Output</strong>
+              <pre className="source-output">{example.output || "(rỗng)"}</pre>
+              {example.truncated && (
+                <p className="section-note">
+                  Ví dụ dài; chỉ hiển thị 64 KiB mỗi phần.
+                </p>
+              )}
+            </div>
+          ))}
         </section>
         <section className="panel">
           <h2>Bài làm của bạn</h2>

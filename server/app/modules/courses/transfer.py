@@ -27,7 +27,7 @@ MODELS = [m.Classes, m.User, m.Students, m.Courses, m.CourseClasses,
           m.Problems, m.TestCases, m.ExamRegistrations, m.ExamSessions,
           m.CodeSubmissions, m.JudgeJobs, m.JudgeResults, m.GradeComponents, m.Grades,
           m.ExamSessionEvents]
-PATHS = {"storage_path", "source_path", "input_path", "expected_output_path"}
+PATHS = {"storage_path", "source_path", "input_path", "expected_output_path", "attachment_path"}
 
 
 def export_package(db, user, cid, root):
@@ -68,6 +68,7 @@ def export_package(db, user, cid, root):
     for rows in tables.values():
         for row in rows:
             for column in PATHS & row.keys():
+                if row[column] is None: continue
                 content = files.resolve(root, row[column]).read_bytes()
                 digest = hashlib.sha256(content).hexdigest()
                 if digest not in blobs:
@@ -110,6 +111,9 @@ def read_package(data):
                 rows = tables[model.__tablename__]
                 ids = set()
                 for row in rows:
+                    if model == m.Assignments:
+                        row.setdefault("attachment_path", None)
+                        row.setdefault("attachment_filename", None)
                     if set(row) != set(model.__table__.columns.keys()) or type(row["id"]) is not int or row["id"] <= 0 or row["id"] in ids:
                         raise ValueError("Invalid columns/ids")
                     ids.add(row["id"])
@@ -130,6 +134,7 @@ def read_package(data):
             for rows in tables.values():
                 for row in rows:
                     for column in PATHS & row.keys():
+                        if row[column] is None: continue
                         digest = row[column]
                         if len(digest) != 64 or any(c not in "0123456789abcdef" for c in digest): raise ValueError("Invalid blob name")
                         if digest not in blobs:
@@ -187,6 +192,7 @@ def import_package(db, user, tables, blobs, course_code, root, created_paths):
                 values.update(status="pending", attempt_id=None, lease_until=None, worker_id=None, attempt_count=0, started_at=None, finished_at=None)
             if model == m.CodeSubmissions and values["status"] in ("Compiling", "Running"): values["status"] = "Pending"
             for column in PATHS & values.keys():
+                if values[column] is None: continue
                 path = files.save(root, "course_imports", blobs[values[column]])
                 created_paths.append(path)
                 values[column] = path

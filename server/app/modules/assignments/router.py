@@ -246,3 +246,33 @@ def grade(
     )
     db.commit()
     return submission_view(db, r, user, c)
+
+
+@router.post("/assignments/{aid}/attachment")
+async def upload_attachment(aid: int, request: Request, file: UploadFile = File(...), db=Depends(get_db), user=Depends(learning_user)):
+    name, data = await read_upload(file, 20 * 1024 * 1024, {".pdf", ".doc", ".docx", ".ppt", ".pptx", ".txt", ".zip"})
+    idempotency.write_lock(db)
+    assignment = db.get(Assignments, aid)
+    if not assignment: fail(404, "NOT_FOUND", "Không tìm thấy bài tập")
+    access.course(db, user, assignment.course_id, True)
+    old_path = assignment.attachment_path
+    path = save(request.app.state.storage_root, "assignment_handouts", data)
+    try:
+        assignment.attachment_path = path
+        assignment.attachment_filename = name
+        db.commit()
+    except BaseException:
+        (Path(request.app.state.storage_root) / path).unlink(missing_ok=True)
+        raise
+    if old_path:
+        try: resolve(request.app.state.storage_root, old_path).unlink(missing_ok=True)
+        except OSError: pass
+    return assignment_view(assignment)
+
+
+@router.get("/assignments/{aid}/attachment")
+def download_attachment(aid: int, request: Request, db=Depends(get_db), user=Depends(learning_user)):
+    assignment = db.get(Assignments, aid)
+    if not assignment or not assignment.attachment_path: fail(404, "NOT_FOUND", "Chưa có file đề bài")
+    access.course(db, user, assignment.course_id)
+    return FileResponse(resolve(request.app.state.storage_root, assignment.attachment_path), filename=assignment.attachment_filename, media_type="application/octet-stream")

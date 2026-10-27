@@ -888,3 +888,8 @@ details[open] > summary {
     max-width: none;
   }
 }
+
+.overview-card { text-align:left; color:var(--text-primary); display:flex; flex-direction:column; gap:8px; min-width:0; }
+.overview-card strong { font-size:32px; line-height:1.2; }
+.course-activity { display:flex; gap:12px; align-items:flex-start; border-bottom:1px solid var(--border); padding:14px 0; }
+.course-activity>div { min-width:0; overflow-wrap:anywhere; }

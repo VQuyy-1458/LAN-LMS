@@ -93,6 +93,8 @@ class Assignments(Base):
     title: Mapped[str] = mapped_column(Text, nullable=False)
     description: Mapped[str] = mapped_column(Text, default="", server_default="")
     due_at: Mapped[float] = mapped_column(Float, nullable=False)
+    attachment_path: Mapped[str | None] = mapped_column(Text, nullable=True)
+    attachment_filename: Mapped[str | None] = mapped_column(Text, nullable=True)
     allow_resubmit: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
 class CodingExams(Base):

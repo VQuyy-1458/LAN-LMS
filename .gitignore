@@ -67,3 +67,6 @@ storage/course_imports/*
 
 # Temporary Microsoft Office lock files
 ~$*
+
+storage/assignment_handouts/*
+output/

@@ -34,3 +34,5 @@ Nếu thiếu OpenSSL/Git, launcher chạy HTTP LAN; camera chụp QR hệ thố
 `CAI_OFFLINE.cmd` không dùng pip/npm Internet và không tự cập nhật Docker. Môi trường đã cài dở hoặc đã có venv phải được giữ lại; dùng bản gói giải nén mới để thử lại, script không tự xóa cài đặt cũ. Manifest SHA-256 phát hiện lỗi copy, không chứng minh nguồn tin cậy; chỉ dùng bộ do nhóm chuẩn bị.
 
 Kiểm thử cài vào thư mục sạch trên cùng máy không thay cho nghiệm thu ở máy phòng thi khác. Nhóm cần kiểm tra một lượt Windows sạch/máy phòng thi và hai máy LAN dây trước bàn giao chính thức.
+
+Nếu chỉ sửa source/học liệu mà lockfile và judge image không đổi, có thể đóng gói lại không cần Docker chạy: `python -m scripts.prepare_usb --output THU_MUC_MOI --reuse-dependencies THU_MUC_GOI_CU`. Script kiểm SHA-256 của dependency và đối chiếu lockfile/Dockerfile/sandbox trước khi dùng lại.
