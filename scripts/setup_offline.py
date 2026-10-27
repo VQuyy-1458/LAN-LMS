@@ -32,7 +32,7 @@ def install(root=ROOT, create_teacher=True):
             raise ValueError("Missing or modified kit file: " + name)
     venv = root / ".venv"
     if venv.exists(): raise FileExistsError("This folder already has .venv; preserve it and unpack the kit into a fresh folder")
-    env = dict(os.environ, PYTHONUTF8="1", PIP_NO_INDEX="1", PIP_DISABLE_PIP_VERSION_CHECK="1", NEXT_TELEMETRY_DISABLED="1", DISABLE_SQLALCHEMY_CEXT_RUNTIME="1")
+    env = dict(os.environ, PYTHONUTF8="1", PIP_NO_INDEX="1", PIP_DISABLE_PIP_VERSION_CHECK="1", NEXT_TELEMETRY_DISABLED="1", DISABLE_SQLALCHEMY_CEXT_RUNTIME="1", RAYON_NUM_THREADS="2", NODE_OPTIONS="--max-old-space-size=1536")
     subprocess.run([sys.executable, "-m", "venv", str(venv)], check=True, env=env)
     python = venv / "Scripts" / "python.exe"
     dependencies = kit / "dependencies"
@@ -62,9 +62,17 @@ def install(root=ROOT, create_teacher=True):
     config = root / "server" / ".env"
     if not config.exists(): shutil.copy2(root / "server" / ".env.example", config)
     subprocess.run([str(python), "-m", "alembic", "-c", "server/alembic.ini", "upgrade", "head"], cwd=root, env=env, check=True)
-    subprocess.run([node, str(modules / "next/dist/bin/next"), "build"], cwd=root / "client", env=env, check=True)
-    if create_teacher: subprocess.run([str(python), "-m", "server.app.seed"], cwd=root, env=env, check=True)
-    print("Offline setup complete. Run CHAY_LAN.cmd, then import your course ZIP.", flush=True)
+    subprocess.run([node, str(modules / "next/dist/bin/next"), "build", "--webpack"], cwd=root / "client", env=env, check=True)
+    from scripts.launch_web import fingerprint
+    launcher = root / ".runtime" / "launcher"
+    launcher.mkdir(parents=True, exist_ok=True)
+    (launcher / "build-fingerprint.txt").write_text(fingerprint(root / "client"))
+    snapshot = kit / "classroom-data" / "server-snapshot" / "manifest.json"
+    if snapshot.is_file():
+        print("Offline setup complete. Run NAP_DU_LIEU_LOP.cmd at the kit root, then LAN-LMS\\CHAY_LAN.cmd. Existing classroom accounts are preserved.", flush=True)
+    else:
+        if create_teacher: subprocess.run([str(python), "-m", "server.app.seed"], cwd=root, env=env, check=True)
+        print("Offline setup complete. Run CHAY_LAN.cmd, then import your course ZIP.", flush=True)
 
 
 if __name__ == "__main__": install()
