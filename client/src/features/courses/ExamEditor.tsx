@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { apiRequest } from "@/lib/api";
 import {
+  allPages,
   date,
   localInput,
   localISO,
@@ -15,12 +16,12 @@ import {
 } from "@/lib/lms";
 import { useAction } from "@/lib/useAction";
 import Feedback from "@/components/Feedback";
-import type { ExamComponent } from "@/lib/examCreation";
+import { examComponentLabel, type ExamComponent } from "@/lib/examCreation";
 export function ExamForm({
   exam,
   save,
   busy,
-  availableComponents = ["midterm", "final"],
+  availableComponents = ["practice", "midterm", "final"],
 }: {
   exam?: Exam;
   save: (body: unknown) => void;
@@ -44,7 +45,7 @@ export function ExamForm({
           title: f.get("title"),
           starts_at: localISO(String(f.get("starts_at"))),
           ends_at: localISO(String(f.get("ends_at"))),
-          ...(exam ? {} : { grade_component: f.get("grade_component") }),
+          grade_component: f.get("grade_component"),
           score_ladder: String(f.get("score_ladder"))
             .split(",")
             .map((x) => Number(x.trim())),
@@ -61,22 +62,22 @@ export function ExamForm({
             maxLength={200}
           />
         </label>
-        {!exam && (
+        {
           <label>
             Thành phần điểm
             <select
               name="grade_component"
               required
-              defaultValue={availableComponents[0]}
+              defaultValue={exam?.grade_component || availableComponents[0]}
             >
               {availableComponents.map((component) => (
                 <option key={component} value={component}>
-                  {component === "midterm" ? "Giữa kỳ" : "Cuối kỳ"}
+                  {examComponentLabel[component]}
                 </option>
               ))}
             </select>
           </label>
-        )}
+        }
         <label>
           Bắt đầu
           <input
@@ -430,14 +431,12 @@ export default function ExamEditor({
     new Date(exam.starts_at).getTime() > now;
   const load = useCallback(async () => {
     const [p, s] = await Promise.all([
-      apiRequest<Page<Problem>>(
-        `/api/coding-exams/${exam.id}/problems?page_size=100`,
-      ),
+      allPages<Problem>(`/api/coding-exams/${exam.id}/problems`),
       apiRequest<Page<ExamSession>>(
         `/api/coding-exams/${exam.id}/sessions?page_size=100`,
       ),
     ]);
-    setProblems(p.items);
+    setProblems(p);
     setSessions(s.items);
   }, [exam.id]);
   const loadSubs = useCallback(async () => {
@@ -517,6 +516,31 @@ export default function ExamEditor({
               Đóng kỳ thi
             </button>
           )}
+        </div>
+        <div className="actions">
+          <label>
+            Loại bài thi
+            <select
+              aria-label="Loại bài thi"
+              value={exam.grade_component}
+              disabled={action.busy}
+              onChange={(event) => {
+                const grade_component = event.target.value;
+                void action.run(async () => {
+                  await request(`/api/coding-exams/${exam.id}`, "PATCH", {
+                    grade_component,
+                  });
+                  await onChange();
+                }, "Đã cập nhật loại bài thi và tính lại điểm thành phần.");
+              }}
+            >
+              {["practice", "midterm", "final"].map((value) => (
+                <option key={value} value={value}>
+                  {examComponentLabel[value]}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
         {editable && (
           <details style={{ marginTop: 18 }}>
@@ -626,6 +650,7 @@ export default function ExamEditor({
                 <th>AC / Tổng bài</th>
                 <th>Điểm</th>
                 <th>Chờ chấm</th>
+                <th>IP / Nhật ký</th>
               </tr>
             </thead>
             <tbody>
@@ -649,6 +674,10 @@ export default function ExamEditor({
                   </td>
                   <td>{s.total_score}/10</td>
                   <td>{s.pending_count}</td>
+                  <td>
+                    <p>{s.started_ip || "—"}</p>
+                    <SessionEvents session={s} />
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -738,5 +767,55 @@ export default function ExamEditor({
         )}
       </section>
     </div>
+  );
+}
+
+function SessionEvents({ session }: { session: ExamSession }) {
+  const [events, setEvents] = useState<
+    { id: number; event_type: string; ip_address: string; created_at: string }[]
+  >([]);
+  const action = useAction();
+  return (
+    <details
+      onToggle={(event) => {
+        if (event.currentTarget.open)
+          void action.run(async () => {
+            setEvents(
+              (
+                await apiRequest<
+                  Page<{
+                    id: number;
+                    event_type: string;
+                    ip_address: string;
+                    created_at: string;
+                  }>
+                >(`/api/exam-sessions/${session.id}/events?page_size=100`)
+              ).items,
+            );
+          });
+      }}
+    >
+      <summary>{session.focus_event_count} sự kiện rời màn hình</summary>
+      <Feedback error={action.error} message="" />
+      <p className="section-note">
+        100 sự kiện gần nhất; nhật ký trình duyệt chỉ hỗ trợ giám sát, không
+        khẳng định gian lận.
+      </p>
+      {events.map((event) => (
+        <p key={event.id}>
+          {date(event.created_at)} ·{" "}
+          {
+            (
+              {
+                tab_hidden: "Rời tab",
+                window_blur: "Mất tiêu điểm",
+                fullscreen_exit: "Thoát toàn màn hình",
+              } as Record<string, string>
+            )[event.event_type]
+          }{" "}
+          · {event.ip_address}
+        </p>
+      ))}
+    </details>
   );
 }

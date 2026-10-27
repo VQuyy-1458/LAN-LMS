@@ -11,6 +11,7 @@ from ...models import (
     ExamRegistrations,
     CodeSubmissions,
     Students,
+    ExamSessionEvents,
 )
 from ...services import access
 from ...services.activity import iso
@@ -165,6 +166,8 @@ def session_payload(db, row, reg, e, s, hub=None):
         submitted_at=iso(row.submitted_at),
         status=status,
         last_seen_at=iso(row.last_seen_at),
+        started_ip=row.started_ip,
+        focus_event_count=db.scalar(select(func.count(ExamSessionEvents.id)).where(ExamSessionEvents.session_id == row.id)),
         connection_status="connected" if connected else "disconnected",
         accepted_count=len(accepted),
         accepted_problem_ids=sorted(accepted),

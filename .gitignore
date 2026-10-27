@@ -61,6 +61,7 @@ client/next-env.d.ts
 *.sqlite3-shm
 storage/code_submissions/*
 storage/test_cases/*
+storage/course_imports/*
 !storage/code_submissions/.gitkeep
 !storage/test_cases/.gitkeep
 

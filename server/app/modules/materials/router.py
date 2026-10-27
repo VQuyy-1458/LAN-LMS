@@ -49,7 +49,7 @@ async def upload(
 ):
     access.course(db, user, course_id, True)
     name, data = await read_upload(
-        file, 20 * 1024 * 1024, {".pdf", ".docx", ".pptx", ".txt", ".zip"}
+        file, 20 * 1024 * 1024, {".pdf", ".doc", ".docx", ".ppt", ".pptx", ".txt", ".zip"}
     )
     path = save(request.app.state.storage_root, "course_materials", data)
     try:

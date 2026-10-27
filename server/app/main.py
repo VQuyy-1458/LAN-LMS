@@ -16,6 +16,7 @@ from .core.realtime import EventHub, websocket_endpoint
 from .modules.auth import router
 from .schemas.common import ErrorResponse
 from .core.config import PROJECT_ROOT
+from .modules.courses.transfer import router as course_transfer_router
 from .modules.courses.router import router as courses_router
 from .modules.students.router import router as students_router
 from .modules.materials.router import router as materials_router
@@ -166,6 +167,7 @@ def create_app(settings=None):
 
     app.include_router(router)
     for module_router in (
+        course_transfer_router,
         courses_router,
         students_router,
         materials_router,

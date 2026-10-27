@@ -18,8 +18,11 @@ Bốn file gốc ở docs/requirements. Code và tài liệu trong cùng bản p
 | Instruction/Submission | Compilatio | Cần nhóm kiểm tra và lưu kết quả thật; không tự xác nhận đạt |
 | Instruction/Topics | Demo nhiều client | Test tải mô phỏng và CI có bằng chứng; LAN hai máy vật lý cần nghiệm thu riêng |
 | User 25/10 | Chỉ kết quả tổng bài | Không có per-test result; hidden tests không trả student |
-| User 25/10 | Giữa kỳ và một cuối kỳ | Unique index mỗi loại/course, API/UI thống nhất |
+| User 27/10 | Nhiều giữa kỳ/test, một cuối kỳ | Migration 0005, điểm giữa kỳ trung bình, ladder số bài AC |
 | User 25/10 | Điểm theo bài AC | Ladder mặc định [0,5,7,8,9,10], cấu hình N/ladder, AC giữ lại qua các lần sai |
 | User 25/10 | Tham khảo UI student | Dashboard/lịch/thẻ khóa, nền sáng/đỏ/xanh đậm; chức năng theo đặc tả riêng |
 
 Các mục cài sạch trên máy khác, Docker Windows, LAN vật lý, điền nhóm, Compilatio và bàn giao chính thức cần người dùng/nhóm thực hiện hoặc cung cấp môi trường. Gói source và test không thay thế bằng chứng cho các mục này.
+
+
+Quy định mới và chuyển khóa học/USB ngày 27/10: xem [CHANGES_20261027.md](CHANGES_20261027.md).

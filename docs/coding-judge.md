@@ -1,6 +1,6 @@
 # Thi lập trình và bộ chấm
 
-Mỗi khóa có tối đa một giữa kỳ và một cuối kỳ. Giảng viên chọn số bài và bảng quy đổi; mặc định năm bài với `[0,5,7,8,9,10]`. Một bài có ít nhất một AC hợp lệ trước hạn được tính một lần. Lần WA, RTE hoặc SE sau đó không xóa bài đã giải. Chỉ lưu kết quả tổng của bài, không có bảng kết quả từng test.
+Mỗi khóa có nhiều đề test/giữa kỳ và tối đa một cuối kỳ. Giữa kỳ lấy trung bình các đề được chọn. Giảng viên chọn số bài và bảng quy đổi; mặc định năm bài với `[0,5,7,8,9,10]`. Một bài có ít nhất một AC hợp lệ trước hạn được tính một lần. Lần WA, RTE hoặc SE sau đó không xóa bài đã giải. Chỉ lưu kết quả tổng của bài, không có bảng kết quả từng test.
 
 Source UTF-8 tối đa 256 KiB. Hỗ trợ C17, C++17 và Java17; Java dùng class Main, không package. Có stdio hoặc file I/O. Compiler và runtime nhận argv cố định, không nhận lệnh shell từ người dùng. Comparator exact giữ nguyên bytes; normalized đổi CRLF thành LF, bỏ space/tab cuối mỗi dòng và newline cuối, giữ khoảng trắng đầu dòng và nội bộ.
 
@@ -9,3 +9,6 @@ API ghi source, submission, job và idempotency nguyên tử rồi trả 202. Wo
 Trạng thái Pending/Compiling/Running chuyển sang AC/WA/CE/TLE/MLE/RTE/SE. Lỗi chương trình như CE/WA có score 0; AC có score bằng max_score; pending/SE có score null. Max_score là tổng trọng số test nội bộ; điểm kỳ thi thang 10 là `ladder[số bài AC]`. Worker ghi result và outbox trong cùng transaction; API gửi WS, reconnect lấy snapshot qua GET. SE thể hiện lỗi hạ tầng, không được giả thành AC.
 
 Build bằng `docker build -t lan-lms-judge:day25 judge`, sau đó chạy `python -m judge.worker`. Không expose Docker socket ra web. CLI runner ở [judge/README.md](../judge/README.md); test Docker thật có kiểm tra file/network isolation. Kết quả thực nghiệm tại [experiments/RESULTS.md](../experiments/RESULTS.md). Docker Windows và LAN nhiều máy cần nghiệm thu riêng.
+
+
+Quy định mới và chuyển khóa học/USB ngày 27/10: xem [CHANGES_20261027.md](CHANGES_20261027.md).

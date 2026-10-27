@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { apiRequest } from "@/lib/api";
 import { request } from "@/lib/lms";
 import { useAction } from "@/lib/useAction";
+import { useRealtime } from "@/components/Realtime";
 import Feedback from "@/components/Feedback";
 type Weights = {
   attendance: number;
@@ -37,12 +38,13 @@ export default function GradebookPanel({
   const [book, setBook] = useState<Book | null>(null),
     [weights, setWeights] = useState<Weights>({
       attendance: 10,
-      homework: 20,
-      midterm: 30,
-      final: 40,
+      homework: 10,
+      midterm: 10,
+      final: 70,
     }),
     [search, setSearch] = useState("");
   const action = useAction();
+  const { revision } = useRealtime();
   const load = useCallback(async () => {
     const r = await apiRequest<Book>(`/api/courses/${courseId}/gradebook`);
     setBook(r);
@@ -50,7 +52,11 @@ export default function GradebookPanel({
   }, [courseId]);
   useEffect(() => {
     load().catch(action.setError);
-  }, [load, action.setError]);
+  }, [load, revision, action.setError]);
+  useEffect(() => {
+    const timer = setInterval(() => void load().catch(() => {}), 5000);
+    return () => clearInterval(timer);
+  }, [load]);
   const total = Object.values(weights).reduce((a, b) => a + b, 0);
   return (
     <div className="stack">
@@ -231,6 +237,12 @@ export default function GradebookPanel({
               </button>
             </div>
           </div>
+        )}
+        {!teacher && !book?.published && (
+          <p className="section-note">
+            Điểm thi tự cập nhật khi bạn kết thúc phiên và các bài đã chấm xong.
+            Điểm tổng kết được giảng viên công bố sau.
+          </p>
         )}
         <div className="table-wrap">
           <table>

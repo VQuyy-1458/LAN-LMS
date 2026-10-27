@@ -258,7 +258,7 @@ def test_accepted_count_ladder_and_grades_publish(context):
     claim = job_queue.claim(app.state.sessions, "test")
     job_queue.complete(app.state.sessions, claim, Result("Wrong Answer", 0, 100), 1, 1)
     assert c["s"].get(f"/api/exam-sessions/{sid}").json()["total_score"] == 10
-    assert c["s"].get(f"/api/courses/{cid}/gradebook").json()["items"] == []
+    assert c["s"].get(f"/api/courses/{cid}/gradebook").json()["items"][0]["total_score"] is None
     # A later infrastructure error on an already solved problem cannot erase an AC.
     submit(c, pids[0], sid, key="system-error-after-ac")
     claim = job_queue.claim(app.state.sessions, "infrastructure")
@@ -312,7 +312,7 @@ def test_accepted_count_ladder_and_grades_publish(context):
         ]
     }
     assert c["t"].patch(f"/api/courses/{cid}/grades", json=edit).status_code == 200
-    assert c["s"].get(f"/api/courses/{cid}/gradebook").json()["items"] == []
+    assert c["s"].get(f"/api/courses/{cid}/gradebook").json()["items"][0]["total_score"] is None
     assert (
         c["t"].get(f"/api/courses/{cid}/gradebook").json()["items"][0]["total_score"]
         == 8

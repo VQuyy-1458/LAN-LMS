@@ -12,21 +12,26 @@ const compiled = ts.transpileModule(source, {
 const { availableExamComponents } = await import(
   "data:text/javascript;base64," + Buffer.from(compiled).toString("base64")
 );
-test("teacher can create only missing exam components", () => {
-  assert.deepEqual(availableExamComponents([]), ["midterm", "final"]);
+test("multiple practice and midterms remain available; only final is unique", () => {
+  assert.deepEqual(availableExamComponents([]), [
+    "practice",
+    "midterm",
+    "final",
+  ]);
   assert.deepEqual(availableExamComponents([{ grade_component: "midterm" }]), [
+    "practice",
+    "midterm",
     "final",
   ]);
   assert.deepEqual(availableExamComponents([{ grade_component: "final" }]), [
+    "practice",
     "midterm",
   ]);
-});
-test("both existing exams hide the create form, including drafts and ended exams", () => {
   assert.deepEqual(
     availableExamComponents([
-      { grade_component: "midterm", status: "draft" },
-      { grade_component: "final", status: "ended" },
+      { grade_component: "midterm" },
+      { grade_component: "final" },
     ]),
-    [],
+    ["practice", "midterm"],
   );
 });

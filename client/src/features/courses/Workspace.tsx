@@ -4,6 +4,7 @@ import { apiRequest } from "@/lib/api";
 import { request, type Course, type Page, type Event } from "@/lib/lms";
 import { useAction } from "@/lib/useAction";
 import Feedback from "@/components/Feedback";
+import CourseTransfer from "./CourseTransfer";
 import StudentsPanel from "./StudentsPanel";
 import MaterialsPanel from "./MaterialsPanel";
 import AssignmentsPanel from "./AssignmentsPanel";
@@ -255,6 +256,14 @@ export default function Workspace({
               </details>
             </section>
           )}
+          {teacher && (
+            <CourseTransfer
+              imported={async (id) => {
+                await load();
+                choose(id);
+              }}
+            />
+          )}
           <div className="toolbar">
             <input
               placeholder="Tìm tên hoặc mã khóa học…"
@@ -302,6 +311,9 @@ export default function Workspace({
       )}
       {course && (
         <>
+          {teacher && tab === "overview" && (
+            <CourseTransfer courseId={course.id} />
+          )}
           <nav className="tabs" aria-label="Nội dung khóa học">
             {tabs
               .filter(([k]) => teacher || k !== "students")

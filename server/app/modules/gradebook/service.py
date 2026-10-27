@@ -4,7 +4,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from sqlalchemy import select, func
 from ...models import *
 
-DEFAULT_WEIGHTS = {"attendance": 10, "homework": 20, "midterm": 30, "final": 40}
+DEFAULT_WEIGHTS = {"attendance": 10, "homework": 10, "midterm": 10, "final": 70}
 
 
 def weights(db, cid):
@@ -31,45 +31,32 @@ def components(db, cid):
     return rows
 
 
-def exam_score(db, cid, sid, kind):
-    e = db.scalar(
-        select(CodingExams).where(
-            CodingExams.course_id == cid, CodingExams.grade_component == kind
-        )
-    )
-    if (
-        not e
-        or e.status == "draft"
-        or (e.status != "closed" and e.ends_at > time.time())
-    ):
+def single_exam_score(db, exam, sid):
+    registration = db.scalar(select(ExamRegistrations).where(
+        ExamRegistrations.exam_id == exam.id, ExamRegistrations.student_id == sid))
+    session = db.scalar(select(ExamSessions).where(ExamSessions.registration_id == registration.id)) if registration else None
+    ended = exam.status == "closed" or exam.ends_at <= time.time()
+    if exam.status == "draft" or (not ended and (not session or session.status == "active")):
         return None
-    accepted = set(
-        db.scalars(
-            select(CodeSubmissions.problem_id)
-            .join(Problems, CodeSubmissions.problem_id == Problems.id)
-            .where(
-                Problems.exam_id == e.id,
-                CodeSubmissions.student_id == sid,
-                CodeSubmissions.status == "Accepted",
-            )
-        )
-    )
-    pending = db.scalar(
-        select(func.count(CodeSubmissions.id))
-        .join(Problems, CodeSubmissions.problem_id == Problems.id)
-        .where(
-            Problems.exam_id == e.id,
-            CodeSubmissions.student_id == sid,
-            CodeSubmissions.problem_id.not_in(accepted),
-            CodeSubmissions.status.in_(
-                ["Pending", "Compiling", "Running", "System Error"]
-            ),
-        )
-    )
+    accepted = set(db.scalars(select(CodeSubmissions.problem_id).join(Problems, CodeSubmissions.problem_id == Problems.id).where(
+        Problems.exam_id == exam.id, CodeSubmissions.student_id == sid, CodeSubmissions.status == "Accepted")))
+    pending = db.scalar(select(func.count(CodeSubmissions.id)).join(Problems, CodeSubmissions.problem_id == Problems.id).where(
+        Problems.exam_id == exam.id, CodeSubmissions.student_id == sid,
+        CodeSubmissions.problem_id.not_in(accepted),
+        CodeSubmissions.status.in_(["Pending", "Compiling", "Running", "System Error"])))
     if pending:
         return None
-    ladder = json.loads(e.score_ladder_json)
+    ladder = json.loads(exam.score_ladder_json)
     return ladder[min(len(accepted), len(ladder) - 1)]
+
+
+def exam_score(db, cid, sid, kind):
+    exams = list(db.scalars(select(CodingExams).where(
+        CodingExams.course_id == cid, CodingExams.grade_component == kind)))
+    if not exams:
+        return None
+    values = [single_exam_score(db, exam, sid) for exam in exams]
+    return sum(values) / len(values) if all(value is not None for value in values) else None
 
 
 def scores(db, cid, sid):

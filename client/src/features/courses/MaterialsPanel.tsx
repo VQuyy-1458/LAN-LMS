@@ -63,7 +63,7 @@ export default function MaterialsPanel({
                 <input
                   type="file"
                   name="file"
-                  accept=".pdf,.docx,.pptx,.txt,.zip"
+                  accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.zip"
                   required
                 />
               </label>

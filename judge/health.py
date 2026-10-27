@@ -5,6 +5,7 @@ from pathlib import Path
 import subprocess
 import threading
 import time
+import uuid
 
 
 def probe(image):
@@ -20,10 +21,20 @@ def write(root, worker_id, database_url, ready, image):
     folder = Path(root) / ".worker-health"
     folder.mkdir(parents=True, exist_ok=True)
     path = folder / (hashlib.sha256(worker_id.encode()).hexdigest() + ".json")
-    temporary = path.with_suffix(".tmp")
+    temporary = path.with_suffix("." + uuid.uuid4().hex + ".tmp")
     temporary.write_text(json.dumps({"updated_at": time.time(), "ready": ready, "image": image,
                                      "database": hashlib.sha256(database_url.encode()).hexdigest()}), encoding="utf-8")
-    temporary.replace(path)
+    try:
+        for attempt in range(5):
+            try:
+                temporary.replace(path)
+                break
+            except PermissionError:
+                if attempt == 4:
+                    raise
+                time.sleep(0.03 * (attempt + 1))
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def status(root, database_url):
@@ -51,7 +62,12 @@ class Heartbeat:
         while not self.stop.is_set():
             self.ready = probe(self.image)
             self.checked.set()
-            write(self.root, self.worker_id, self.database_url, self.ready, self.image)
+            try:
+                write(self.root, self.worker_id, self.database_url, self.ready, self.image)
+            except OSError:
+                # Windows readers/antivirus can briefly lock an atomic replace.
+                # A failed status write must not kill the heartbeat permanently.
+                pass
             self.stop.wait(5)
 
     def __enter__(self):
@@ -61,4 +77,7 @@ class Heartbeat:
     def __exit__(self, *_):
         self.stop.set()
         self.thread.join(timeout=6)
-        write(self.root, self.worker_id, self.database_url, False, self.image)
+        try:
+            write(self.root, self.worker_id, self.database_url, False, self.image)
+        except OSError:
+            pass  # Readers expire stale status after 30 seconds.

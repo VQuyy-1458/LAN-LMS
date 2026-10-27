@@ -73,7 +73,7 @@ Mỗi bài chỉ cần ít nhất một AC hợp lệ trước lúc kết thúc 
 
 Chuyên cần = 10 × số phiên present / số phiên đã đóng. Homework = trung bình điểm bản nộp cuối của các bài đã hết hạn; không nộp sau hạn tính 0, có nộp nhưng chưa chấm thì null. Chưa có phiên/bài đã đóng thì null. Điểm thi tự động chỉ chốt sau khi kỳ thi kết thúc và không còn pending/SE ở các bài chưa có AC cần xử lý; pending/SE của bài đã AC không chặn điểm.
 
-Trọng số mặc định 10/20/30/40; teacher cấu hình đủ 4 giá trị không âm, tổng 100. Thành phần weight=0 bỏ qua; thiếu điểm ở weight>0 thì tổng null. Tính bằng dữ liệu chưa làm tròn; làm tròn tổng hai chữ số. Override có reason/audit; score null xóa override để dùng lại tự động. Sửa nguồn/weight/override thu hồi công bố. Student chỉ xem dòng của mình khi published; không public leaderboard.
+Trọng số mặc định 10/10/10/70; teacher cấu hình đủ 4 giá trị không âm, tổng 100. Thành phần weight=0 bỏ qua; thiếu điểm ở weight>0 thì tổng null. Tính bằng dữ liệu chưa làm tròn; làm tròn tổng hai chữ số. Override có reason/audit; score null xóa override để dùng lại tự động. Sửa nguồn/weight/override thu hồi công bố. Student chỉ xem dòng của mình khi published; không public leaderboard.
 
 ## Phần XV Dữ liệu và API
 
@@ -98,3 +98,6 @@ Báo cáo technical paper DOCX/PDF trong REPORT. Gói Source/Report theo Submiss
 ## Phần XIX Điều kiện hoàn tất
 
 Chức năng phải có code chạy, test tương ứng, build và tài liệu đúng. Có số đo và nguồn gốc thay vì điền số giả. Giới hạn Windows Docker/LAN vật lý/Compilatio được ghi riêng; không tick hoàn thành khi chưa có bằng chứng. Xem [REQUIREMENTS_MATRIX.md](REQUIREMENTS_MATRIX.md) và README mục Final Verification.
+
+
+Quy định mới và chuyển khóa học/USB ngày 27/10: xem [CHANGES_20261027.md](CHANGES_20261027.md).

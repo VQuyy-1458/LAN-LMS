@@ -8,9 +8,9 @@ class ExamInput(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     starts_at: datetime
     ends_at: datetime
-    grade_component: Literal["midterm", "final"]
+    grade_component: Literal["practice", "midterm", "final"]
     score_ladder: list[float] = Field(
-        default_factory=lambda: [0, 5, 7, 8, 9, 10], min_length=2, max_length=21
+        default_factory=lambda: [0, 5, 7, 8, 9, 10], min_length=2
     )
 
     @model_validator(mode="after")
@@ -62,3 +62,9 @@ class ProblemInput(BaseModel):
             if self.input_filename == self.output_filename:
                 raise ValueError("Input/output cần tên khác nhau")
         return self
+
+
+class SessionEventInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    event_key: str = Field(min_length=1, max_length=100)
+    event_type: Literal["tab_hidden", "fullscreen_exit", "window_blur"]

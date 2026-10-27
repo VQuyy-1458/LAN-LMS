@@ -120,7 +120,7 @@ Giữ cấu trúc đã thống nhất của nhóm. Instruction.md cho phép thay
 
 ## 9. Requirements
 
-- Python 3.12; Node.js 22 và npm.
+- Python 3.12; Node.js 22 hoặc 24 và npm (bộ USB cần cùng major máy đóng gói).
 - Windows với Docker Desktop dùng Linux engine/WSL2, hoặc Linux có Docker Engine.
 - Nginx cho cùng origin trong LAN. Backend chỉ nghe loopback theo script mặc định.
 - Database và storage nằm trên ổ đĩa cục bộ của máy chủ, đủ dung lượng bài nộp.
@@ -235,11 +235,11 @@ Không đặt `RUN_DOCKER_TESTS=1` khi engine/image chưa sẵn sàng. Các test
 - Lịch học, hạn nộp, lịch thi và thông báo; dashboard đọc dữ liệu thật.
 - Tạo QR từ lịch học; sinh viên quét camera hoặc ảnh QR để tự gửi điểm danh, có nhập mã dự phòng. Token ngẫu nhiên 60–3600 giây; chống trùng; giảng viên đánh dấu trực tiếp có mặt/đến muộn/vắng cho toàn bộ danh sách lớp, có audit. Token chỉ trả khi tạo phiên, DB chỉ lưu hash. Đến muộn hiện được tính là có tham gia khi tính chuyên cần.
 - Bài tập file có deadline, cho phép nộp lại theo cấu hình, lưu lịch sử và chấm tay 0–10/feedback. Bản nộp cuối hợp lệ là bản hiệu lực để tính homework.
-- Mỗi khóa tối đa một giữa kỳ và một cuối kỳ. Giảng viên cấu hình số bài qua bảng quy đổi, mặc định `[0,5,7,8,9,10]` cho đề 5 bài.
+- Mỗi khóa có nhiều đề test/giữa kỳ và tối đa một cuối kỳ. Giữa kỳ lấy trung bình các đề được chọn. Giảng viên cấu hình số bài qua bảng quy đổi, mặc định `[0,5,7,8,9,10]` cho đề 5 bài.
 - Thi code có Pending/Compiling/Running rồi **AC, WA, CE, TLE, MLE, RTE, SE**. C17/C++17/Java17, stdin/stdout hoặc file I/O. Java dùng public class Main, không package.
 - Chỉ bài **AC toàn bộ test** được tính là đã giải; một bài có nhiều AC vẫn tính một lần. Lần sai sau AC không làm mất bài đã giải. Mặc định 0/1/2/3/4/5 bài AC → 0/5/7/8/9/10 điểm thi. Không cộng điểm test lẻ vào điểm thi.
 - Chuyên cần = 10 × số phiên có mặt / số phiên đã đóng; homework trung bình bản nộp cuối của các bài đã hết hạn, thiếu bài nộp tính 0 sau hạn, chưa chấm thì null. Không có phiên/bài đã đóng thì null.
-- Trọng số mặc định 10/20/30/40 cho chuyên cần/bài tập/giữa kỳ/cuối kỳ; teacher sửa, tổng phải 100. Thành phần trọng số 0 được bỏ qua; thiếu điểm ở thành phần trọng số dương thì tổng null. Làm tròn cuối cùng hai chữ số.
+- Trọng số mặc định 10/10/10/70 cho chuyên cần/bài tập/giữa kỳ/cuối kỳ; teacher sửa, tổng phải 100. Thành phần trọng số 0 được bỏ qua; thiếu điểm ở thành phần trọng số dương thì tổng null. Làm tròn cuối cùng hai chữ số.
 - Sửa điểm cần lý do, ghi audit và thu hồi công bố; điểm override để trống trả về tính tự động. Student chỉ xem dòng của mình khi đã công bố. Xuất CSV BOM có chống công thức; import cột mã dạng Text để giữ số 0 đầu.
 
 ## 13. Experimental Setup
@@ -351,3 +351,6 @@ Các ô chưa tick là bước nghiệm thu/hành chính cần bằng chứng, k
 ## 24. Contact
 
 Nhóm tự điền đầu mối liên hệ và giảng viên ở mục 1. Không có hotline/thông tin tổ chức giả được cấu hình trong ứng dụng.
+
+
+Quy định mới và chuyển khóa học/USB ngày 27/10: xem [CHANGES_20261027.md](docs/CHANGES_20261027.md).

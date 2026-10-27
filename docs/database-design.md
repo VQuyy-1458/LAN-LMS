@@ -13,7 +13,7 @@
 
 ## Ràng buộc
 
-Username/student_code/teacher_code duy nhất; enrollment(course,student), attendance(session,student), registration(exam,student) và attempt(session,problem,attempt_no) duy nhất. Một profile/user; teacher/student FK khác user id. Partial unique index bảo vệ một final và một midterm/course. Một job/result/submission. Idempotency unique(user,method,path,key), không unique riêng user_id. Không có submission_test_results.
+Username/student_code/teacher_code duy nhất; enrollment(course,student), attendance(session,student), registration(exam,student) và attempt(session,problem,attempt_no) duy nhất. Một profile/user; teacher/student FK khác user id. Partial unique index bảo vệ một final/course; cho phép nhiều midterm/practice. Một job/result/submission. Idempotency unique(user,method,path,key), không unique riêng user_id. Không có submission_test_results.
 
 Date course YYYY-MM-DD; timestamp khác là UTC epoch trong DB, API xuất ISO timezone. JSON cấu hình languages và score_ladder được validation trước ghi. Foreign keys RESTRICT ngăn xóa dây chuyền dữ liệu học tập ngoài ý muốn. Status/điểm/quy tắc nghiệp vụ kiểm tra tại service; không tự nhận mọi cột Text đều được DB kiểm tra enum.
 
@@ -32,3 +32,6 @@ Grades giữ manual overrides có reason/teacher; điểm tự động tính t�
 ## Backup
 
 Không copy riêng .db đang dùng WAL rồi coi đủ. scripts.backup_database giữ writer reservation ngắn theo toàn snapshot, dùng SQLite backup API trên reader riêng rồi copy storage/manifest. Restore kiểm tra SHA-256/integrity/FK vào đích mới, thu hồi session và reset job đang chạy. Nên dừng API/worker để tránh request bị busy trong lúc copy file lớn. Không đặt WAL DB trên NAS/network share.
+
+
+Quy định mới và chuyển khóa học/USB ngày 27/10: xem [CHANGES_20261027.md](CHANGES_20261027.md).

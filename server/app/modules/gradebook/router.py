@@ -58,7 +58,9 @@ def gradebook(cid: int, db=Depends(get_db), user=Depends(learning_user)):
     items = (
         svc.rows(db, cid, student.id if student else None)
         if user.role == "teacher" or course.grades_published
-        else []
+        else [dict(row, attendance_score=None, homework_score=None, total_score=None,
+                   midterm_score=svc.round_score(svc.exam_score(db,cid,student.id,"midterm")),
+                   final_score=svc.round_score(svc.exam_score(db,cid,student.id,"final"))) for row in svc.rows(db, cid, student.id)]
     )
     return dict(
         weights=svc.weights(db, cid), published=course.grades_published, items=items

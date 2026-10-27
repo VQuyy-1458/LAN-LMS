@@ -106,7 +106,7 @@ async def submit(
     user=Depends(learning_user),
 ):
     name, data = await read_upload(
-        file, 20 * 1024 * 1024, {".pdf", ".docx", ".txt", ".zip", ".c", ".cpp", ".java"}
+        file, 20 * 1024 * 1024, {".pdf", ".doc", ".docx", ".ppt", ".pptx", ".txt", ".zip", ".c", ".cpp", ".java"}
     )
     paths = []
     context = {}

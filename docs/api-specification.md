@@ -92,11 +92,11 @@ File 20 MiB, .pdf/.docx/.txt/.zip/.c/.cpp/.java; không giải nén hay thực t
 | GET | /coding-exams/{id}/my-session | S → ExamSession hoặc null |
 | GET | /coding-exams/{id}/sessions | T list monitor |
 
-Tạo trùng thành phần giữa kỳ/cuối kỳ trong cùng khóa trả 409 `EXAM_COMPONENT_EXISTS`, thông báo nêu đề đã tồn tại và hướng dẫn mở để quản lý. Quy tắc áp dụng cả draft/đề đã kết thúc. Form giảng viên chỉ hiện loại chưa có; khi đủ hai đề thì không hiện form tạo thêm. Việc kiểm tra trùng nằm trong khóa ghi DB để hai request đồng thời không rơi vào lỗi SQL chung.
+Tạo trùng final trong cùng khóa trả 409 `EXAM_COMPONENT_EXISTS`. Midterm và practice được tạo nhiều; form luôn cho tạo thêm các loại này. Kiểm tra duy nhất final trong khóa ghi DB.
 | GET | /exam-sessions/{id} | T/O snapshot |
 | POST | /exam-sessions/{id}/finish | O, lặp an toàn |
 
-ExamInput: title,starts_at,ends_at,grade_component (`midterm|final`),score_ladder (mặc định [0,5,7,8,9,10]). Tối đa một mỗi loại/course. Ladder từ 0 đến 10, không giảm, dài N+1 với N=1..20. Số bài phải đúng N khi lên lịch. Response có problem_count và server_time.
+ExamInput: title,starts_at,ends_at,grade_component (`practice|midterm|final`),score_ladder (mặc định [0,5,7,8,9,10]). Nhiều midterm/practice và tối đa một final/course. Ladder từ 0 đến 10, không giảm, dài N+1 với N>=1, không giới hạn nghiệp vụ số câu. Số bài phải đúng N khi lên lịch. Response có problem_count và server_time.
 
 Draft không xuất hiện cho S. PATCH status `scheduled` kiểm tra đủ đề/test trước khi mở; trạng thái hiển thị `upcoming|open|ended` theo giờ server; `closed` là teacher đóng sớm. Metadata/test bị khóa khi tới giờ hoặc có phiên. PATCH không thay grade_component.
 
@@ -143,3 +143,6 @@ Sự kiện submission.updated gửi owner và T hiện có quyền; exam.update
 ## Kiểm chứng
 
 Kiểm thử tại tests/, lệnh ở README. [Kết quả](../experiments/RESULTS.md) phân biệt local Windows, CI Linux và nghiệm thu LAN vật lý. Không dùng endpoint/job giả trả AC khi Docker không sẵn sàng.
+
+
+Quy định mới và chuyển khóa học/USB ngày 27/10: xem [CHANGES_20261027.md](CHANGES_20261027.md).

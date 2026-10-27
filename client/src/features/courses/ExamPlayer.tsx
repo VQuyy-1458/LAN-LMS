@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { apiRequest } from "@/lib/api";
 import {
+  allPages,
   date,
   key,
   request,
@@ -13,6 +14,7 @@ import {
   type Submission,
 } from "@/lib/lms";
 import { useAction } from "@/lib/useAction";
+import ExamFocus from "@/components/ExamFocus";
 import Feedback from "@/components/Feedback";
 import { useRealtime } from "@/components/Realtime";
 const template: Record<string, string> = {
@@ -363,11 +365,11 @@ export default function ExamPlayer({ exam }: { exam: Exam }) {
     setSession(s);
     if (s) setOffset(new Date(s.server_time).getTime() - Date.now());
     if (exam.status !== "upcoming") {
-      const p = await apiRequest<Page<Problem>>(
-        `/api/coding-exams/${exam.id}/problems?page_size=100`,
+      const p = await allPages<Problem>(
+        `/api/coding-exams/${exam.id}/problems`,
       );
-      setProblems(p.items);
-      setPid((v) => v || p.items[0]?.id || 0);
+      setProblems(p);
+      setPid((v) => v || p[0]?.id || 0);
     }
   }, [exam.id, exam.status]);
   useEffect(() => {
@@ -405,6 +407,7 @@ export default function ExamPlayer({ exam }: { exam: Exam }) {
   return (
     <div className="stack">
       <Feedback error={action.error} message={action.message} />
+      {canSubmit && session && <ExamFocus sessionId={session.id} />}
       <section className="panel">
         <div className="panel-title">
           <div>
@@ -463,7 +466,7 @@ export default function ExamPlayer({ exam }: { exam: Exam }) {
                   onClick={() => {
                     if (
                       confirm(
-                        "Kết thúc phiên thi? Bạn sẽ không gửi thêm bài được.",
+                        "Chỉ bài đã gửi chấm được tính; mã nháp chưa gửi sẽ không được chấm. Nộp bài và kết thúc phiên thi? Bạn sẽ không gửi thêm bài được.",
                       )
                     )
                       void action.run(async () => {
@@ -475,7 +478,7 @@ export default function ExamPlayer({ exam }: { exam: Exam }) {
                       }, "Đã kết thúc phiên thi. Các bài đang chấm vẫn được xử lý.");
                   }}
                 >
-                  Kết thúc phiên thi
+                  Nộp bài và kết thúc phiên thi
                 </button>
               </div>
             )}
@@ -486,6 +489,14 @@ export default function ExamPlayer({ exam }: { exam: Exam }) {
               disabled={exam.status !== "open" || action.busy}
               onClick={() =>
                 void action.run(async () => {
+                  if (
+                    !document.fullscreenElement &&
+                    document.documentElement.requestFullscreen
+                  ) {
+                    void document.documentElement
+                      .requestFullscreen()
+                      .catch(() => {});
+                  }
                   setSession(
                     await request<ExamSession>(
                       `/api/coding-exams/${exam.id}/sessions/start`,

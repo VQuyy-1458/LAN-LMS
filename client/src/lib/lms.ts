@@ -59,6 +59,8 @@ export type ExamSession = {
   ends_at: string;
   last_seen_at: string | null;
   connection_status: string;
+  started_ip: string | null;
+  focus_event_count: number;
   accepted_count: number;
   accepted_problem_ids: number[];
   problem_count: number;
@@ -127,3 +129,15 @@ export const statusLabel: Record<string, string> = {
   MLE: "MLE",
   SE: "Lỗi hệ thống",
 };
+
+export async function allPages<T>(path: string): Promise<T[]> {
+  const result: T[] = [];
+  for (let page = 1; ; page++) {
+    const response = await apiRequest<Page<T>>(
+      `${path}${path.includes("?") ? "&" : "?"}page=${page}&page_size=100`,
+    );
+    result.push(...response.items);
+    if (result.length >= response.total || response.items.length === 0)
+      return result;
+  }
+}

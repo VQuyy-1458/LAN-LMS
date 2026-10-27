@@ -97,7 +97,7 @@ class Assignments(Base):
 
 class CodingExams(Base):
     __tablename__ = "coding_exams"
-    __table_args__ = (Index("uq_one_final_per_course", "course_id", unique=True, sqlite_where=text("grade_component = 'final'")), Index("uq_one_midterm_per_course", "course_id", unique=True, sqlite_where=text("grade_component = 'midterm'")))
+    __table_args__ = (Index("uq_one_final_per_course", "course_id", unique=True, sqlite_where=text("grade_component = 'final'")),)
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     course_id: Mapped[int] = mapped_column(ForeignKey("courses.id", ondelete="RESTRICT"), nullable=False, index=True)
     created_by: Mapped[int] = mapped_column(ForeignKey("teachers.id", ondelete="RESTRICT"), nullable=False, index=True)
@@ -235,6 +235,7 @@ class ExamSessions(Base):
     ends_at: Mapped[float] = mapped_column(Float, nullable=False)
     submitted_at: Mapped[float | None] = mapped_column(Float, nullable=True)
     last_seen_at: Mapped[float | None] = mapped_column(Float, nullable=True)
+    started_ip: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(Text, nullable=False)
     total_score: Mapped[float | None] = mapped_column(Float, nullable=True)
 
@@ -303,3 +304,16 @@ class RealtimeEvents(Base):
     owner_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     data_json: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[float] = mapped_column(Float, nullable=False)
+
+
+class ExamSessionEvents(Base):
+    __tablename__ = "exam_session_events"
+    __table_args__ = (UniqueConstraint("session_id", "event_key", name="uq_session_event_key"),)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    session_id: Mapped[int] = mapped_column(ForeignKey("exam_sessions.id"), nullable=False)
+    event_key: Mapped[str] = mapped_column(Text, nullable=False)
+    event_type: Mapped[str] = mapped_column(Text, nullable=False)
+    ip_address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[float] = mapped_column(Float, nullable=False)
+
+__all__.append("ExamSessionEvents")

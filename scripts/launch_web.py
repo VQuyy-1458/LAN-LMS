@@ -347,10 +347,15 @@ def start(address=None, open_browser=True):
     tls = None
     if address:
         try:
-            from scripts.setup_lan_https import prepare_tls
+            from scripts.setup_lan_https import prepare_tls, openssl_path
         except ModuleNotFoundError:
-            from setup_lan_https import prepare_tls
-        tls = prepare_tls(ROOT, address)
+            from setup_lan_https import prepare_tls, openssl_path
+        try:
+            openssl_path()
+        except RuntimeError:
+            print("Chưa có OpenSSL: chạy HTTP LAN; HTTPS là tùy chọn.", flush=True)
+        else:
+            tls = prepare_tls(ROOT, address)
     source_version = fingerprint(ROOT / "client")
     server_hash = hashlib.sha256()
     server_inputs = list((ROOT / "server" / "app").rglob("*.py"))

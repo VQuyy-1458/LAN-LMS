@@ -187,7 +187,7 @@ function AssignmentCard({
             <input
               name="file"
               type="file"
-              accept=".pdf,.docx,.txt,.zip,.c,.cpp,.java"
+              accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.zip,.c,.cpp,.java"
               required
               onChange={() => {
                 retry.current = null;

@@ -14,11 +14,12 @@ from ...models import (
     Courses,
     Students,
     CodeSubmissions,
+    ExamSessionEvents,
 )
 from ...schemas.common import Pagination
 from ...services import access, idempotency, files
 from ...services.activity import iso, audit, emit
-from .schemas import ExamInput, ProblemInput
+from .schemas import ExamInput, ProblemInput, SessionEventInput
 from . import service as svc
 
 router = APIRouter(prefix="/api", tags=["coding-exams"])
@@ -69,10 +70,10 @@ def create(
             CodingExams.grade_component == body.grade_component,
         )
     )
-    if existing:
+    if body.grade_component == "final" and existing:
         label = "giữa kỳ" if body.grade_component == "midterm" else "cuối kỳ"
         fail(409, "EXAM_COMPONENT_EXISTS",
-             f'Khóa học đã có đề {label} "{existing.title}". Mỗi khóa chỉ có một đề giữa kỳ và một đề cuối kỳ; hãy mở đề hiện có để quản lý.')
+             f'Khóa học đã có đề {label} "{existing.title}". Mỗi khóa chỉ có một đề cuối kỳ; hãy mở đề hiện có hoặc tạo đề giữa kỳ/test.')
     if body.starts_at.timestamp() <= time.time():
         fail(422, "INVALID_DATES", "Tạo kỳ thi có giờ bắt đầu trong tương lai")
     row = CodingExams(
@@ -106,13 +107,14 @@ def detail(eid: int, db=Depends(get_db), user=Depends(learning_user)):
 def update(eid: int, body: dict, db=Depends(get_db), user=Depends(learning_user)):
     idempotency.write_lock(db)
     row = svc.exam(db, user, eid, True)
-    if set(body) - {"title", "starts_at", "ends_at", "score_ladder", "status"}:
+    if set(body) - {"title", "starts_at", "ends_at", "score_ladder", "status", "grade_component"}:
         fail(422, "VALIDATION_ERROR", "Trường cập nhật không hợp lệ")
     action = body.pop("status", None)
     if action not in (None, "scheduled", "closed"):
         fail(422, "INVALID_STATUS", "Trạng thái không hợp lệ")
     if body:
-        svc.editable(db, row)
+        if set(body) - {"grade_component"}:
+            svc.editable(db, row)
         try:
             merged = ExamInput.model_validate(
                 {
@@ -126,6 +128,10 @@ def update(eid: int, body: dict, db=Depends(get_db), user=Depends(learning_user)
             )
         except ValidationError:
             fail(422, "VALIDATION_ERROR", "Thông tin kỳ thi không hợp lệ")
+        if merged.grade_component == "final" and db.scalar(select(CodingExams.id).where(
+            CodingExams.course_id == row.course_id, CodingExams.grade_component == "final", CodingExams.id != eid)):
+            fail(409, "EXAM_COMPONENT_EXISTS", "Khóa học đã có đề cuối kỳ; hãy đổi đề cuối kỳ cũ sang test trước")
+        row.grade_component = merged.grade_component
         row.title = merged.title
         row.starts_at = merged.starts_at.timestamp()
         row.ends_at = merged.ends_at.timestamp()
@@ -185,8 +191,6 @@ def create_problem(
     idempotency.write_lock(db)
     e = svc.exam(db, user, eid, True)
     svc.editable(db, e)
-    if db.scalar(select(func.count(Problems.id)).where(Problems.exam_id == eid)) >= 20:
-        fail(409, "TOO_MANY_PROBLEMS", "Tối đa 20 bài mỗi đề")
     r = Problems(exam_id=eid)
     assign_problem(r, body)
     db.add(r)
@@ -350,6 +354,7 @@ def start(eid: int, request: Request, db=Depends(get_db), user=Depends(learning_
         fail(403, "FORBIDDEN", "Đăng ký thi không hoạt động")
     row = ExamSessions(
         registration_id=reg.id,
+        started_ip=request.client.host if request.client else None,
         started_at=now,
         ends_at=e.ends_at,
         last_seen_at=now,
@@ -465,3 +470,34 @@ def delete_problem(
         except OSError:
             pass
     return Response(status_code=204)
+
+
+@router.post("/exam-sessions/{sid}/events", status_code=201)
+def record_event(sid: int, body: SessionEventInput, request: Request, db=Depends(get_db), user=Depends(learning_user)):
+    idempotency.write_lock(db)
+    row, reg, e, student = svc.session(db, user, sid)
+    if user.user_id != student.user_id:
+        fail(403, "FORBIDDEN", "Chỉ sinh viên của phiên được gửi sự kiện")
+    old = db.scalar(select(ExamSessionEvents).where(ExamSessionEvents.session_id == sid, ExamSessionEvents.event_key == body.event_key))
+    if old:
+        return {"id": old.id}
+    if row.status != "active" or row.ends_at <= time.time() or e.status == "closed":
+        fail(409, "SESSION_CLOSED", "Phiên thi đã kết thúc")
+    if db.scalar(select(func.count(ExamSessionEvents.id)).where(ExamSessionEvents.session_id == sid)) >= 1000:
+        fail(429, "EVENT_LIMIT", "Phiên đã có quá nhiều sự kiện")
+    event = ExamSessionEvents(session_id=sid, event_key=body.event_key, event_type=body.event_type,
+        ip_address=request.client.host if request.client else None, created_at=time.time())
+    db.add(event)
+    db.flush()
+    db.commit()
+    return {"id": event.id}
+
+
+@router.get("/exam-sessions/{sid}/events")
+def list_events(sid: int, db=Depends(get_db), user=Depends(learning_user), p=Depends(Pagination)):
+    row, reg, e, student = svc.session(db, user, sid)
+    access.course(db, user, e.course_id, True)
+    query = select(ExamSessionEvents).where(ExamSessionEvents.session_id == sid)
+    return p.response([{"id": x.id, "event_type": x.event_type, "ip_address": x.ip_address,
+        "created_at": iso(x.created_at)} for x in db.scalars(query.order_by(ExamSessionEvents.id.desc()).offset(p.offset).limit(p.page_size))],
+        db.scalar(select(func.count()).select_from(query.subquery())))
