@@ -314,7 +314,11 @@ def ensure_build(node, env):
             "Đang chuẩn bị giao diện; các lần sau chỉ build lại khi code thay đổi…",
             flush=True,
         )
-        subprocess.run([node, str(next_cli), "build"], cwd=client, env=env, check=True)
+        command = [node, str(next_cli), "build"]
+        if os.name == "nt":
+            # Avoid Turbopack's CSS subprocess failures on resource-constrained Windows hosts.
+            command.append("--webpack")
+        subprocess.run(command, cwd=client, env=env, check=True)
         saved.write_text(checksum)
     return next_cli
 

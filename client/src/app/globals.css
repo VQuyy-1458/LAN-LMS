@@ -914,6 +914,10 @@ details[open] > summary {
 .course-tree .tree-course { padding: 12px 0; font-weight: 700; font-size: 12px; color: var(--primary); }
 .tree-course small { display:block; font-weight:400; color:var(--muted); margin-top:4px; }
 .app-nav .course-tree a { position:relative; display:block; margin:2px 0; padding:10px 8px; font-size:13px; }
+.app-nav .course-tree a { border-radius:8px; color:#59677c; }
+.app-nav .course-tree a:hover { background:#fff; }
+.app-nav .course-tree a.active { background:#fde2e6; color:var(--primary); font-weight:700; box-shadow:inset 3px 0 0 var(--primary); }
+.app-nav .course-tree a:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
 .course-tree a::before { content:""; position:absolute; width:16px; left:-16px; top:50%; border-top:2px solid #e2c8cc; }
 .pagination { justify-content:center; margin:16px 0; flex-wrap:wrap; }
 .assignment-matrix td:nth-child(2) { white-space:nowrap; min-width:150px; }

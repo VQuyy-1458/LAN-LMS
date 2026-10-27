@@ -213,8 +213,8 @@ export default function Workspace({
           </p>
         </div>
         {selected > 0 && (
-          <button className="secondary" onClick={() => choose(0)}>
-            ← Danh sách khóa
+          <button className="secondary" onClick={() => window.history.length > 1 ? window.history.back() : choose(0)}>
+            ← Quay lại
           </button>
         )}
       </div>
