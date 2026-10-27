@@ -70,3 +70,6 @@ storage/course_imports/*
 
 storage/assignment_handouts/*
 output/
+
+# Installed local proxy binary; offline kits carry their own verified copy.
+tools/nginx/

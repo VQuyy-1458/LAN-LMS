@@ -378,3 +378,8 @@ Quy tắc mới thay thế phần hướng dẫn cũ về mở lại đề, ch�
 LMS phục vụ C17, C++17, Java 17 và cấu trúc dữ liệu/giải thuật. Khóa Lập trình mạng đã được gỡ khỏi bộ dữ liệu đang chạy, thay bằng Lập trình C, C++ và Java (`LT-D24-01`), giữ tài khoản sinh viên và các lớp khác. Ngân hàng mặc định có 20 bài gốc và 130 testcase, không yêu cầu chương trình sinh viên tạo kết nối mạng. Các thành phần HTTP, WebSocket, hàng đợi và sandbox của chính hệ thống vẫn là nội dung kỹ thuật của bài tập lớn Lập trình mạng. Xem [dữ liệu hiện hành](docs/CLASSROOM_DEMO.md).
 
 Bộ lọc khóa học gồm Tất cả trạng thái, Đang học và Đã học; Đã học tương ứng khóa đã chốt tổng kết.
+
+
+### Dung lượng thư mục và dữ liệu trên máy
+
+Nginx đặt tại `tools/nginx`; tài khoản riêng tư tại `.runtime/accounts`; dữ liệu đang chạy tại `.runtime/web`. Chỉ giữ một bộ USB ở `.runtime/offline-kit`, đã cập nhật source và snapshot dữ liệu. Các bản USB cũ, source thử nghiệm, cache và bản sao ổ Docker dùng khi sửa lỗi đã được dọn. Xem [cấu trúc lưu trữ và cách dọn an toàn](docs/WORKSPACE_STORAGE.md).

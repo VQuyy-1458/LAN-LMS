@@ -32,7 +32,7 @@ Bộ dữ liệu ban đầu ngày 28/10 có hai học phần Lập trình mạng
 
 Tên, ngày sinh và lịch sử học tập do nhóm tự soạn, không phải hồ sơ của sinh viên thật. Thông tin này nằm trong tài liệu bàn giao, không chèn nhãn thử nghiệm vào màn học tập.
 
-Giảng viên `GV001`, mật khẩu được tạo riêng trong `.runtime/classroom-20261028/LOGIN.txt`. Sinh viên `B24DCCN101`–`B24DCCN140`, ngày sinh và mật khẩu ban đầu ở `students.csv` cùng thư mục. Mật khẩu ban đầu DDMMYYYY, phải đổi lần đầu. Các tài khoản cũ đã bị loại khỏi DB đang chạy.
+Giảng viên `GV001`, mật khẩu được tạo riêng trong `.runtime/accounts/LOGIN.txt`. Sinh viên `B24DCCN101`–`B24DCCN140`, ngày sinh và mật khẩu ban đầu ở `students.csv` cùng thư mục. Mật khẩu ban đầu DDMMYYYY, phải đổi lần đầu. Các tài khoản cũ đã bị loại khỏi DB đang chạy.
 
 Dữ liệu cũ được sao lưu tại `.runtime/backups/before-activation-20261028`; bản file gốc nằm tại `.runtime/backups/reset-original-files-20261028`. Không đưa database, storage hoặc mật khẩu lên Git. Để dựng thêm bộ mới vào thư mục trống: `python -m scripts.build_fresh_classrooms --output .runtime/new-classrooms`. Lệnh này chỉ dựng riêng, không tự ghi đè DB đang chạy. Sao lưu và dừng web trước khi thay dữ liệu.
 

@@ -262,12 +262,6 @@ def find_nginx():
         shutil.which("nginx.exe"),
         str(ROOT / "tools" / "nginx" / "nginx.exe"),
     ]
-    candidates += [
-        str(p)
-        for p in sorted(
-            (ROOT / "tmp" / "nginx-review").glob("*/nginx.exe"), reverse=True
-        )
-    ]
     for value in candidates:
         if value and Path(value).is_file():
             return str(Path(value).resolve())
