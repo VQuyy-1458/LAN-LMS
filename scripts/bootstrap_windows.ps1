@@ -74,7 +74,7 @@ function Get-Python {
     if ($python -and $python.Source -notlike '*WindowsApps*') { $paths += $python.Source }
     foreach ($path in $paths) {
         if (-not (Test-Path -LiteralPath $path)) { continue }
-        try { $r=Invoke-Native $path @('-c','import sys;print(str(sys.version_info.major)+"."+str(sys.version_info.minor))'); if ($r.Code -eq 0 -and $r.Text.Trim() -eq '3.12') { return $path } } catch {}
+        try { $r=Invoke-Native $path @('-c','import sys;print(str(sys.version_info.major)+"."+str(sys.version_info.minor) if sys.maxsize>2**32 else "32-bit")'); if ($r.Code -eq 0 -and $r.Text.Trim() -eq '3.12') { return $path } } catch {}
     }
     return $null
 }
@@ -83,7 +83,7 @@ function Get-Node {
     $node = Get-Command node.exe -ErrorAction SilentlyContinue
     if ($node) { $paths += $node.Source }
     foreach ($path in $paths) {
-        if (Test-Path -LiteralPath $path) { try { $r=Invoke-Native $path @('--version'); if ($r.Code -eq 0 -and $r.Text.Trim() -match '^v24\.') { return $path } } catch {} }
+        if (Test-Path -LiteralPath $path) { try { $r=Invoke-Native $path @('--version'); if ($r.Code -eq 0 -and $r.Text.Trim() -match '^v24\.') { $arch=Invoke-Native $path @('-p','process.arch'); if ($arch.Code -eq 0 -and $arch.Text.Trim() -eq 'x64') { return $path } } } catch {} }
     }
     return $null
 }

@@ -18,7 +18,7 @@ def install(root=ROOT, create_teacher=True, *, resume=False):
     manifest = json.loads((kit / "manifest.json").read_text(encoding="utf-8"))
     if manifest.get("format") != "lan-lms-offline" or manifest.get("version") != 1:
         raise ValueError("Unsupported offline kit")
-    if sys.platform != "win32" or platform.machine() != manifest["machine"] or sys.version_info[:2] != (3, 12):
+    if sys.platform != "win32" or platform.machine() != manifest["machine"] or sys.version_info[:2] != (3, 12) or sys.maxsize < 2**32:
         raise RuntimeError("Use the same Windows architecture and Python 3.12 as the kit")
     node = shutil.which("node"); docker = shutil.which("docker")
     if not node or not docker: raise RuntimeError("Install Node.js and Docker Desktop first")
