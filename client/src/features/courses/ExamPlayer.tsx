@@ -15,7 +15,9 @@ import {
 } from "@/lib/lms";
 import { useAction } from "@/lib/useAction";
 import ExamFocus from "@/components/ExamFocus";
+import Modal from "@/components/Modal";
 import Feedback from "@/components/Feedback";
+import { useRouter } from "next/navigation";
 import { useRealtime } from "@/components/Realtime";
 const template: Record<string, string> = {
   c: "#include <stdio.h>\n\nint main(void) {\n    // Viết bài làm tại đây\n    return 0;\n}\n",
@@ -374,7 +376,9 @@ function Solver({
     </div>
   );
 }
-export default function ExamPlayer({ exam }: { exam: Exam }) {
+export default function ExamPlayer({ exam, dedicated=false }: { exam: Exam; dedicated?: boolean }) {
+  const router=useRouter();
+  const [finishOpen,setFinishOpen]=useState(false);
   const [session, setSession] = useState<ExamSession | null>(null),
     [problems, setProblems] = useState<Problem[]>([]),
     [pid, setPid] = useState(0),
@@ -428,9 +432,15 @@ export default function ExamPlayer({ exam }: { exam: Exam }) {
         .then(() => refresh())
         .catch(() => {});
   }, [session?.id, session?.status, remaining, refresh]);
+  useEffect(()=>{
+    if (session?.status === "active" && !dedicated)
+      router.replace(`/student/exam?exam=${exam.id}`);
+  },[session?.status,dedicated,exam.id,router]);
   return (
     <div className="stack">
       <Feedback error={action.error} message={action.message} />
+      {dedicated && session && !canSubmit && <a className="button-link" href={`/student/courses?course=${exam.course_id}&tab=exams`}>Đã kết thúc phiên · Trở về khóa học</a>}
+      {finishOpen&&session&&<Modal title="Nộp bài và kết thúc phiên thi" onClose={()=>setFinishOpen(false)}><p>Chỉ code đã gửi chấm được tính. Mã nháp chưa gửi sẽ không được chấm. Sau khi nộp, bạn không thể gửi thêm bài.</p><div className="actions"><button disabled={action.busy} onClick={()=>void action.run(async()=>{await request(`/api/exam-sessions/${session.id}/finish`,"POST");setFinishOpen(false);await refresh()},"Đã nộp bài. Các bài chờ chấm tiếp tục được xử lý.")}>Xác nhận nộp bài</button><button className="secondary" onClick={()=>setFinishOpen(false)}>Tiếp tục làm bài</button></div></Modal>}
       {canSubmit && session && <ExamFocus sessionId={session.id} />}
       <section className="panel">
         <div className="panel-title">
@@ -487,20 +497,7 @@ export default function ExamPlayer({ exam }: { exam: Exam }) {
                 <button
                   className="secondary"
                   disabled={action.busy}
-                  onClick={() => {
-                    if (
-                      confirm(
-                        "Chỉ bài đã gửi chấm được tính; mã nháp chưa gửi sẽ không được chấm. Nộp bài và kết thúc phiên thi? Bạn sẽ không gửi thêm bài được.",
-                      )
-                    )
-                      void action.run(async () => {
-                        await request(
-                          `/api/exam-sessions/${session.id}/finish`,
-                          "POST",
-                        );
-                        await refresh();
-                      }, "Đã kết thúc phiên thi. Các bài đang chấm vẫn được xử lý.");
-                  }}
+                  onClick={() => setFinishOpen(true)}
                 >
                   Nộp bài và kết thúc phiên thi
                 </button>

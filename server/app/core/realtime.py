@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 
 from fastapi import WebSocket, WebSocketDisconnect
 
-from .security import COOKIE, lookup, digest
+from .security import session_token, lookup, digest
 
 
 class EventHub:
@@ -16,7 +16,7 @@ class EventHub:
 
     async def revoke(self, user_id, session_hash=None):
         for ws, (uid, _) in list(self.connections.items()):
-            if uid == user_id and (session_hash is None or digest(ws.cookies.get(COOKIE, "")) == session_hash):
+            if uid == user_id and (session_hash is None or digest(session_token(ws) or "") == session_hash):
                 self.connections.pop(ws, None)
                 try:
                     await ws.close(1008)
@@ -24,7 +24,7 @@ class EventHub:
                     pass
 
     async def publish(self, event_type, data, recipient_ids):
-        if event_type not in {'submission.updated', 'exam.updated', 'session.updated', 'attendance.updated'}:
+        if event_type not in {'submission.updated', 'exam.updated', 'session.updated', 'attendance.updated', 'grade.updated'}:
             raise ValueError('Unsupported event type')
         event = {'event_id': secrets.token_urlsafe(16), 'type': event_type,
                  'occurred_at': datetime.now(timezone.utc).isoformat(), 'data': data}
@@ -39,7 +39,7 @@ class EventHub:
 
 async def websocket_endpoint(ws: WebSocket):
     app = ws.app
-    user = await asyncio.to_thread(lookup, app, ws.cookies.get(COOKIE))
+    user = await asyncio.to_thread(lookup, app, session_token(ws))
     if ws.headers.get('origin') not in app.state.settings.allowed_origins or not user or user.must_change_password:
         await ws.close(1008)
         return
@@ -56,7 +56,7 @@ async def websocket_endpoint(ws: WebSocket):
         while True:
             remaining = max(0, deadline - asyncio.get_running_loop().time())
             done, _ = await asyncio.wait([receive, outgoing], timeout=remaining, return_when=asyncio.FIRST_COMPLETED)
-            fresh = await asyncio.to_thread(lookup, app, ws.cookies.get(COOKIE))
+            fresh = await asyncio.to_thread(lookup, app, session_token(ws))
             if not fresh or fresh.must_change_password:
                 await ws.close(1008)
                 return

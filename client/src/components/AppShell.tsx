@@ -23,6 +23,7 @@ export default function AppShell({
 }) {
   const path = usePathname(),
     role = teacher ? "teacher" : "student";
+  if (!teacher && path === "/student/exam") return <AuthGuard role="student"><Realtime><main className="exam-room">{children}</main></Realtime></AuthGuard>;
   return (
     <AuthGuard role={role}>
       <Realtime>

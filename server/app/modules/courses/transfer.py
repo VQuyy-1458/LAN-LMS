@@ -23,7 +23,7 @@ UNPACKED_LIMIT = 500 * 1024 * 1024
 # Parents precede children. Teachers are deliberately mapped to the importing owner.
 MODELS = [m.Classes, m.User, m.Students, m.Courses, m.CourseClasses,
           m.CourseEnrollments, m.CourseMaterials, m.CalendarEvents, m.AttendanceSessions,
-          m.AttendanceRecords, m.Assignments, m.AssignmentSubmissions, m.CodingExams,
+          m.AttendanceRecords, m.Assignments, m.AssignmentSubmissions, m.AssignmentGrades, m.CodingExams,
           m.Problems, m.TestCases, m.ExamRegistrations, m.ExamSessions,
           m.CodeSubmissions, m.JudgeJobs, m.JudgeResults, m.GradeComponents, m.Grades,
           m.ExamSessionEvents]
@@ -37,7 +37,7 @@ def export_package(db, user, cid, root):
     # Resolve the scope downwards, then collect profiles belonging to this course.
     scope = [m.CourseClasses, m.CourseEnrollments, m.CourseMaterials, m.CalendarEvents,
              m.AttendanceSessions, m.AttendanceRecords, m.Assignments,
-             m.AssignmentSubmissions, m.CodingExams, m.Problems, m.TestCases,
+             m.AssignmentSubmissions, m.AssignmentGrades, m.CodingExams, m.Problems, m.TestCases,
              m.ExamRegistrations, m.ExamSessions, m.CodeSubmissions, m.JudgeJobs,
              m.JudgeResults, m.GradeComponents, m.Grades, m.ExamSessionEvents]
     for model in scope:
@@ -103,6 +103,7 @@ def read_package(data):
             if manifest["format"] != "lan-lms-course" or manifest["version"] != 1:
                 raise ValueError("Unsupported format")
             tables = manifest["tables"]
+            tables.setdefault("assignment_grades", [])
             if set(tables) != {model.__tablename__ for model in MODELS}:
                 raise ValueError("Unknown/missing tables")
             if len(tables["courses"]) != 1 or sum(map(len, tables.values())) > 50000:

@@ -30,7 +30,7 @@ Thông tin cấp tài khoản nằm tại `.runtime/classroom-20261027/accounts.
 - Teacher tạo assignment rồi đính kèm/thay file đề (20 MiB); student có quyền trong khóa tải được file và nộp file/ZIP. File đề đi cùng gói chuyển khóa.
 - Teacher nhập `tests.zip` cho câu chưa có test. Chứa cặp `01.in`/`01.out` ở gốc ZIP; `sample_01.in`/`.out` là ví dụ công khai. Tối đa 100 cặp, 1 MiB/file, 20 MiB nén/50 MiB tổng; chia đều trọng số theo điểm tối đa câu. Test hiện có không bị xóa hoặc ghi đè khi nhập.
 - Student xem ví dụ công khai trong màn làm bài; test ẩn không được trả về. Teacher tải input/output để kiểm tra lại testcase.
-- Điểm code vẫn theo số câu AC và ladder; trung bình giữa kỳ, một cuối kỳ, trọng số 10/10/10/70. Điểm và nhận xét assignment theo cơ chế công bố hiện có.
+- Điểm code vẫn theo số câu AC và ladder; trung bình giữa kỳ, một cuối kỳ, trọng số 10/10/10/70. Điểm và nhận xét assignment cập nhật trực tiếp cho sinh viên.
 
 ## Vận hành buổi học
 

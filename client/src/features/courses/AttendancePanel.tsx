@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import Modal from "@/components/Modal";
 import { apiRequest } from "@/lib/api";
 import { allPages, date, request, type Page, type Event } from "@/lib/lms";
 import AttendanceScanner from "@/components/AttendanceScanner";
@@ -69,13 +70,11 @@ export default function AttendancePanel({
   }, [teacher, courseId, action.setError]);
   const loadRecords = useCallback(async () => {
     if (teacher && selected) {
-      const r = await apiRequest<Page<Record>>(
-        `/api/attendance-sessions/${selected}/roster?page=${recordPage}&page_size=50`,
-      );
-      setRecords(r.items);
-      setRecordTotal(r.total);
+      const records = await allPages<Record>(`/api/attendance-sessions/${selected}/roster`);
+      setRecords(records);
+      setRecordTotal(records.length);
     }
-  }, [selected, teacher, recordPage]);
+  }, [selected, teacher]);
   useEffect(() => {
     load().catch(action.setError);
     const timer = setInterval(() => load().catch(() => {}), 15000);
@@ -176,7 +175,7 @@ export default function AttendancePanel({
                   type="number"
                   min={60}
                   max={3600}
-                  defaultValue={300}
+                  defaultValue={3600}
                   required
                 />
               </label>
@@ -187,29 +186,7 @@ export default function AttendancePanel({
               </button>
             </div>
           </form>
-          {created && created.id === selected && (
-            <div className="details-box" style={{ textAlign: "center" }}>
-              <h3>{created.title}</h3>
-              <div className="qr">
-                <Image
-                  src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(created.qr_svg)}`}
-                  alt="QR điểm danh"
-                  width={220}
-                  height={220}
-                  unoptimized
-                />
-              </div>
-              <p className="section-note">
-                Sinh viên mở mục Điểm danh trong khóa học để quét QR này.
-              </p>
 
-              <p className="section-note">
-                Mã QR có hiệu lực đến {date(created.expires_at)}. Tạo lại mã cho
-                cùng buổi học để tiếp tục điểm danh; danh sách đã ghi nhận được
-                giữ nguyên.
-              </p>
-            </div>
-          )}
         </section>
       ) : (
         <section className="panel">
@@ -326,7 +303,33 @@ export default function AttendancePanel({
         {!rows.length && <div className="empty">Chưa có phiên điểm danh.</div>}
       </section>
       {teacher && selected > 0 && (
-        <section className="panel">
+        <Modal title={rows.find(r=>r.id===selected)?.title || "Điểm danh buổi học"} onClose={()=>setSelected(0)}>
+        <Feedback error={action.error} message={action.message}/>
+          {created && created.id === selected && (
+            <div className="details-box" style={{ textAlign: "center" }}>
+              <h3>{created.title}</h3>
+              <div className="qr">
+                <Image
+                  src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(created.qr_svg)}`}
+                  alt="QR điểm danh"
+                  width={360}
+                  height={360}
+                  unoptimized
+                />
+              </div>
+              <p className="section-note">
+                Sinh viên mở mục Điểm danh trong khóa học để quét QR này.
+              </p>
+
+              <p className="section-note">
+                Mã QR có hiệu lực đến {date(created.expires_at)}. Tạo lại mã cho
+                cùng buổi học để tiếp tục điểm danh; danh sách đã ghi nhận được
+                giữ nguyên.
+              </p>
+            </div>
+          )}
+        <p className="section-note">Đã có mặt: {records.filter(r=>["present","late"].includes(r.status)).length}/{recordTotal}. Danh sách dưới đây chỉ còn sinh viên chưa có mặt.</p>
+        <section>
           <div className="panel-title">
             <h2>Điểm danh phiên #{selected}</h2>
             <button
@@ -347,7 +350,7 @@ export default function AttendancePanel({
                 </tr>
               </thead>
               <tbody>
-                {records.map((r) => (
+                {records.filter(r=>!["present","late"].includes(r.status)).slice((recordPage-1)*50,recordPage*50).map((r) => (
                   <tr key={r.student_id}>
                     <td>{r.student_id}</td>
                     <td>{r.full_name}</td>
@@ -417,7 +420,7 @@ export default function AttendancePanel({
             <span>Trang {recordPage}</span>
             <button
               className="secondary"
-              disabled={recordPage * 50 >= recordTotal}
+              disabled={recordPage * 50 >= records.filter(r=>!["present","late"].includes(r.status)).length}
               onClick={() => setRecordPage((x) => x + 1)}
             >
               Sau
@@ -471,7 +474,12 @@ export default function AttendancePanel({
               </div>
             </form>
           </details>
+          {rows.find(r=>r.id===selected)?.status==="open" && <button className="danger" disabled={action.busy} onClick={()=>void action.run(async()=>{
+            await request(`/api/attendance-sessions/${selected}`,"PATCH",{status:"closed"});
+            await load(); await loadRecords();setCreated(null);
+          },"Đã đóng phiên. Sinh viên chưa điểm danh được tính vắng.")}>Kết thúc phiên điểm danh</button>}
         </section>
+        </Modal>
       )}
     </div>
   );

@@ -16,6 +16,7 @@ export default function AttendanceScanner({
   const generation = useRef(0);
   const [active, setActive] = useState(false),
     [error, setError] = useState("");
+  const [reading,setReading]=useState(false);
   function stop() {
     generation.current++;
     controls.current?.stop();
@@ -76,23 +77,23 @@ export default function AttendanceScanner({
     if (!file) return;
     stop();
     setError("");
-    if (file.size > 10 * 1024 * 1024) {
-      setError("Chọn ảnh nhỏ hơn 10 MB.");
+    if (file.size > 25 * 1024 * 1024) {
+      setError("Chọn ảnh nhỏ hơn 25 MB.");
       return;
     }
     const version = generation.current;
-    const url = URL.createObjectURL(file);
+    setReading(true);
     try {
-      const { BrowserQRCodeReader } = await import("@zxing/browser");
-      const result = await new BrowserQRCodeReader().decodeFromImageUrl(url);
-      if (version === generation.current) onScan(result.getText());
-    } catch {
+      const { decodeQrImage } = await import("@/lib/decodeQrImage");
+      const text=await decodeQrImage(file);
+      if (version === generation.current) onScan(text);
+    } catch (e) {
       if (version === generation.current)
         setError(
-          "Không đọc được QR trong ảnh. Hãy chụp rõ toàn bộ mã rồi thử lại.",
+          e instanceof Error ? e.message : "Không đọc được QR trong ảnh. Hãy chụp rõ toàn bộ mã rồi thử lại.",
         );
     } finally {
-      URL.revokeObjectURL(url);
+      setReading(false);
     }
   }
   return (
@@ -118,7 +119,7 @@ export default function AttendanceScanner({
       <div className="actions">
         <button
           type="button"
-          disabled={disabled || active}
+          disabled={disabled || active || reading}
           onClick={() => {
             if (
               window.isSecureContext &&
@@ -133,7 +134,7 @@ export default function AttendanceScanner({
         <button
           type="button"
           className="secondary"
-          disabled={disabled || active}
+          disabled={disabled || active || reading}
           onClick={() => galleryInput.current?.click()}
         >
           Chọn ảnh QR có sẵn
@@ -174,6 +175,7 @@ export default function AttendanceScanner({
           {error}
         </p>
       )}
+      {reading && <p role="status">Đang đọc ảnh QR…</p>}
     </div>
   );
 }

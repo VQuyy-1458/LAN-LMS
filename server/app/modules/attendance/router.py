@@ -90,7 +90,8 @@ def create(
 
     path = f"/student/courses?attendance={row.id}&token={token}"
     qr = qrcode.make(
-        (request.app.state.settings.public_origin or request.headers["origin"]) + path, image_factory=qrcode.image.svg.SvgPathImage
+        (request.app.state.settings.public_origin or request.headers["origin"]) + path, image_factory=qrcode.image.svg.SvgPathFillImage,
+        error_correction=qrcode.constants.ERROR_CORRECT_M, border=4
     )
     stream = io.BytesIO()
     qr.save(stream)
@@ -109,8 +110,10 @@ def detail(sid: int, db=Depends(get_db), user=Depends(learning_user)):
 
 @router.patch("/attendance-sessions/{sid}")
 def close(sid: int, body: Close, db=Depends(get_db), user=Depends(learning_user)):
+    idempotency.write_lock(db)
     row = session(db, user, sid, True)
     row.status = "closed"
+    emit(db,"attendance.updated",row.course_id,{"session_id":sid,"status":"closed"})
     db.get(Courses, row.course_id).grades_published = False
     audit(db, user.user_id, "close", "attendance", row.id)
     db.commit()

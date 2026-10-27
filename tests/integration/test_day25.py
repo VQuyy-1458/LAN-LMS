@@ -269,7 +269,7 @@ def test_assignment_history_grade_visibility_and_retry(context):
         .status_code
         == 200
     )
-    assert c["s"].get(path).json()["items"][-1]["score"] is None
+    assert c["s"].get(path).json()["items"][-1]["score"] == 8
     assert (
         c["outsider"].get(f"/api/assignment-submissions/{sid}/download").status_code
         == 403

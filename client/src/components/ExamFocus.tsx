@@ -70,6 +70,8 @@ export default function ExamFocus({ sessionId }: { sessionId: number }) {
     document.addEventListener("fullscreenchange", change);
     window.addEventListener("blur", blur);
     window.addEventListener("online", flush);
+    const leaving=(event:BeforeUnloadEvent)=>{event.preventDefault();event.returnValue=""};
+    window.addEventListener("beforeunload",leaving);
     const timer = setInterval(() => void flush(), 5000);
     void flush();
     return () => {
@@ -78,6 +80,7 @@ export default function ExamFocus({ sessionId }: { sessionId: number }) {
       document.removeEventListener("fullscreenchange", change);
       window.removeEventListener("blur", blur);
       window.removeEventListener("online", flush);
+      window.removeEventListener("beforeunload",leaving);
     };
   }, [sessionId]);
   return (

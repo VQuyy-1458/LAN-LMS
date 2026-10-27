@@ -82,11 +82,11 @@ def scores(db, cid, sid):
         if closed
         else 0
     )
-    result["attendance"] = 10 * present / len(closed) if closed else None
+    result["attendance"] = max(0, 10 - (len(closed) - present))
     assignments = list(
         db.scalars(
             select(Assignments).where(
-                Assignments.course_id == cid, Assignments.due_at <= now
+                Assignments.course_id == cid
             )
         )
     )
@@ -101,7 +101,9 @@ def scores(db, cid, sid):
             .order_by(AssignmentSubmissions.attempt_no.desc())
             .limit(1)
         )
-        homework.append(sub.score if sub else 0)
+        value = assignment_score(db, a, sid, sub)
+        if a.due_at <= now or value is not None:
+            homework.append(value)
     result["homework"] = (
         (sum(homework) / len(homework))
         if homework and all(x is not None for x in homework)
@@ -120,6 +122,18 @@ def scores(db, cid, sid):
     ):
         result[component.component_code] = grade.score
     return result
+
+
+def assignment_score(db, assignment, sid, submission=None):
+    override = db.scalar(select(AssignmentGrades).where(
+        AssignmentGrades.assignment_id == assignment.id, AssignmentGrades.student_id == sid))
+    if override:
+        return override.score
+    if submission is None:
+        submission = db.scalar(select(AssignmentSubmissions).where(
+            AssignmentSubmissions.assignment_id == assignment.id,
+            AssignmentSubmissions.student_id == sid).order_by(AssignmentSubmissions.attempt_no.desc()).limit(1))
+    return submission.score if submission else (0 if assignment.due_at <= time.time() else None)
 
 
 def round_score(value):

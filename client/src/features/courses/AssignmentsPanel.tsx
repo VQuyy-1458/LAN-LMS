@@ -9,6 +9,9 @@ import {
 import { apiRequest } from "@/lib/api";
 import { date, key, localInput, localISO, request, type Page } from "@/lib/lms";
 import { useAction } from "@/lib/useAction";
+import FilePreview from "@/components/FilePreview";
+import AssignmentProgress from "./AssignmentProgress";
+import { useRealtime } from "@/components/Realtime";
 import Feedback from "@/components/Feedback";
 type Assignment = {
   id: number;
@@ -116,6 +119,7 @@ function AssignmentCard({
     [page, setPage] = useState(1),
     [total, setTotal] = useState(0),
     [open, setOpen] = useState(false);
+  const [preview,setPreview]=useState<{id:number;original_filename:string;kind?:"attachment"}|null>(null);
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -154,6 +158,7 @@ function AssignmentCard({
   }
   return (
     <section className="panel">
+      {preview&&<FilePreview id={preview.id} kind={preview.kind} name={preview.original_filename} onClose={()=>setPreview(null)}/>}
       <div className="panel-title">
         <div>
           <h2>{a.title}</h2>
@@ -181,6 +186,7 @@ function AssignmentCard({
       <Feedback error={action.error} message={action.message} />
       {a.attachment_filename && (
         <p>
+          <button className="secondary" onClick={()=>setPreview({id:a.id,original_filename:a.attachment_filename!,kind:"attachment"})}>Xem đề trực tiếp</button>{" "}
           <a href={`/api/assignments/${a.id}/attachment`}>
             Tải đề bài: {a.attachment_filename}
           </a>
@@ -282,6 +288,7 @@ function AssignmentCard({
                   <tr key={r.id}>
                     <td>{r.student_id}</td>
                     <td>
+                      <button className="secondary" onClick={()=>setPreview(r)}>Xem trực tiếp</button>
                       <a
                         className="download"
                         href={`/api/assignment-submissions/${r.id}/download`}
@@ -306,7 +313,7 @@ function AssignmentCard({
                                 },
                               );
                               await load();
-                            }, "Đã lưu điểm và thu hồi công bố bảng điểm.");
+                            }, "Đã lưu điểm và cập nhật kết quả cho sinh viên.");
                           }}
                         >
                           <label>
@@ -338,7 +345,7 @@ function AssignmentCard({
                         </form>
                       ) : (
                         <>
-                          <strong>{r.score ?? "Chưa công bố"}</strong>
+                          <strong>{r.score ?? "Chưa chấm"}</strong>
                           <p className="section-note">{r.feedback}</p>
                         </>
                       )}
@@ -381,16 +388,18 @@ export default function AssignmentsPanel({
   const [rows, setRows] = useState<Assignment[]>([]),
     [page, setPage] = useState(1),
     [total, setTotal] = useState(0);
-  type Filter = "all" | "not_submitted" | "submitted" | "overdue";
+  type Filter = "all" | "not_submitted" | "submitted" | "overdue" | "within" | "progress";
   const [filter, setFilter] = useState<Filter>("all");
   const [counts, setCounts] = useState<Record<Filter, number>>({
-    all: 0,
+    all: 0, within:0, progress:0,
     not_submitted: 0,
     submitted: 0,
     overdue: 0,
   });
   const action = useAction();
+  const {revision}=useRealtime();
   const load = useCallback(async () => {
+    if(filter==="progress")return;
     const r = await apiRequest<
       Page<Assignment> & { counts: Record<Filter, number> }
     >(
@@ -403,7 +412,7 @@ export default function AssignmentsPanel({
   }, [courseId, page, filter]);
   useEffect(() => {
     load().catch(action.setError);
-  }, [load, action.setError]);
+  }, [load, revision, action.setError]);
   return (
     <div className="stack">
       <Feedback error={action.error} message={action.message} />
@@ -430,12 +439,12 @@ export default function AssignmentsPanel({
       )}
       <nav className="tabs" aria-label="Lọc bài tập">
         {(
-          [
+          (teacher ? [["all","Tổng số"],["within","Trong hạn"],["overdue","Quá hạn"],["progress","Tiến độ"]] : [
             ["all", "Tổng số"],
             ["not_submitted", "Chưa nộp"],
             ["submitted", teacher ? "Đã nộp đủ" : "Đã nộp"],
             ["overdue", "Quá hạn"],
-          ] as [Filter, string][]
+          ]) as [Filter, string][]
         ).map(([value, label]) => (
           <button
             key={value}
@@ -445,16 +454,11 @@ export default function AssignmentsPanel({
               setPage(1);
             }}
           >
-            {label} ({counts[value]})
+            {label} {value!=="progress"&&`(${counts[value]??0})`}
           </button>
         ))}
       </nav>
-      {teacher && (
-        <p className="section-note">
-          Tiến độ tính theo số sinh viên đã nộp trong lớp. Quá hạn là bài đã hết
-          thời gian nhưng lớp chưa nộp đủ.
-        </p>
-      )}
+      {filter==="progress"?<AssignmentProgress courseId={courseId} teacher={teacher}/>:<>
       {rows.map((a) => (
         <AssignmentCard
           key={a.id}
@@ -483,6 +487,7 @@ export default function AssignmentsPanel({
           Sau
         </button>
       </div>
+      </>}
     </div>
   );
 }

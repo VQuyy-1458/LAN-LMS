@@ -16,7 +16,7 @@ def assignment_view(r):
 
 def submission_view(db, r, user, course):
     s = db.get(Students, r.student_id)
-    visible = user.role == "teacher" or course.grades_published
+    visible = True
     return dict(
         id=r.id,
         assignment_id=r.assignment_id,

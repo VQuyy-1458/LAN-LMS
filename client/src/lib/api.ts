@@ -1,4 +1,5 @@
 import type { ApiErrorResponse } from "@/types/api";
+import { sessionTab } from "./sessionScope";
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -20,6 +21,7 @@ export async function apiRequest<T>(
   init: RequestInit = {},
 ): Promise<T> {
   const headers = new Headers(init.headers);
+  headers.set("X-Session-Tab", sessionTab());
   headers.set("Accept", "application/json");
   if (init.body && !(init.body instanceof FormData))
     headers.set("Content-Type", "application/json");
@@ -30,6 +32,7 @@ export async function apiRequest<T>(
     path !== "/api/auth/login"
   ) {
     const csrf = await fetch("/api/auth/csrf", {
+      headers: { "X-Session-Tab": sessionTab() },
       credentials: "same-origin",
       cache: "no-store",
     });

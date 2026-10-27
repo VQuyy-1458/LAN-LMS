@@ -21,3 +21,7 @@ Hai khóa học có 40 tài khoản mẫu, PDF tự soạn, assignment có file 
 Hai khóa thực hành dùng mã LTM-2026-01 và CTDL-2026-01, mỗi khóa 20 sinh viên, 12 buổi học, 4 thông báo, 6 bài tập và 4 đề lập trình. Danh sách sinh viên của giảng viên có ngày sinh DD/MM/YYYY. Tài khoản tạo mới qua CSV dùng mật khẩu ngày sinh DDMMYYYY và bắt đổi ở lần đăng nhập đầu. Xem [hướng dẫn dữ liệu lớp](CLASSROOM_DEMO.md) và file thông tin cấp tài khoản riêng trong `.runtime/classroom-20261027/accounts.csv`; không commit thông tin đăng nhập.
 
 Sinh viên chỉ mở camera/quét QR để điểm danh; giảng viên chọn buổi học và xem cập nhật danh sách. Các bộ lọc bài tập đếm toàn bộ dữ liệu trước phân trang. Tổng quan có lịch tuần, lịch tháng và hoạt động; danh sách khóa học nằm ở mục Khóa học.
+
+## Phòng thi, điểm danh và bảng điểm
+
+Đã bổ sung phòng thi riêng, phiên đăng nhập theo tab, điểm danh bằng hộp thoại QR, tiến độ bài tập chỉnh sửa tại bảng, nhập/xuất CSV và điểm sinh viên cập nhật trực tiếp. Chuyên cần mặc định 10, trừ 1 mỗi buổi vắng. Xem [quy trình sử dụng và giới hạn định dạng xem trước](PRACTICAL_WORKFLOWS.md).

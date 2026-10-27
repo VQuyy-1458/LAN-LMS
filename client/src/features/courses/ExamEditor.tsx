@@ -295,6 +295,12 @@ function TestEditor({
         {rows.reduce((s, r) => s + r.points, 0)} trọng số
       </h3>
       <Feedback error={action.error} message={action.message} />
+      {editable && <form onSubmit={event=>{event.preventDefault();const form=event.currentTarget;const values=new FormData(form),body=new FormData();
+        body.set("input_file",new File([String(values.get("input")??"")],"input.in",{type:"text/plain"}));
+        body.set("expected_output_file",new File([String(values.get("output")??"")],"output.out",{type:"text/plain"}));
+        body.set("points",String(values.get("points")));body.set("ordinal",String(rows.length+1));body.set("is_hidden",values.has("hidden")?"true":"false");
+        void action.run(async()=>{await apiRequest(`/api/problems/${problemId}/test-cases`,{method:"POST",body});form.reset();await load()},"Đã thêm testcase.");
+      }}><h4>Thêm testcase bằng nội dung</h4><div className="form-grid"><label>Input<textarea name="input" rows={4}/></label><label>Output mong đợi<textarea name="output" rows={4}/></label><label>Trọng số test<input name="points" type="number" min={0} max={10000} step="0.01" defaultValue={100} required/></label><label className="check-label"><input name="hidden" type="checkbox" defaultChecked/>Test ẩn</label></div><button disabled={action.busy}>Lưu testcase</button><p className="section-note">Có thể để input/output rỗng nếu đề yêu cầu. Tổng trọng số tất cả test phải bằng điểm tối đa câu hỏi trước khi mở thi.</p></form>}
       <div className="table-wrap">
         <table>
           <thead>
@@ -611,7 +617,7 @@ export default function ExamEditor({
       </section>
       {editable && (
         <section className="panel">
-          <details>
+          <details open>
             <summary>
               Thêm bài lập trình ({problems.length}/{exam.problem_count})
             </summary>
@@ -678,7 +684,7 @@ export default function ExamEditor({
               <p className="statement">{p.statement}</p>
             )}
           </details>
-          <details style={{ marginTop: 15 }}>
+          <details open style={{ marginTop: 15 }}>
             <summary>Quản lý test case</summary>
             <TestEditor problemId={p.id} editable={editable} />
           </details>
@@ -687,6 +693,7 @@ export default function ExamEditor({
       <section className="panel">
         <div className="panel-title">
           <h2>Theo dõi phiên thi</h2>
+          <a className="button-link" href={`/api/coding-exams/${exam.id}/export-csv`}>Xuất điểm thi CSV ↓</a>
           <span className="badge">
             {sessions.length} phiên · cập nhật mỗi 5 giây
           </span>

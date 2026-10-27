@@ -4,6 +4,7 @@ import { apiRequest } from "@/lib/api";
 import { request } from "@/lib/lms";
 import { useAction } from "@/lib/useAction";
 import { useRealtime } from "@/components/Realtime";
+import ScoreCell from "@/components/ScoreCell";
 import Feedback from "@/components/Feedback";
 type Weights = {
   attendance: number;
@@ -48,7 +49,7 @@ export default function GradebookPanel({
   const load = useCallback(async () => {
     const r = await apiRequest<Book>(`/api/courses/${courseId}/gradebook`);
     setBook(r);
-    setWeights(r.weights);
+
   }, [courseId]);
   useEffect(() => {
     load().catch(action.setError);
@@ -63,8 +64,8 @@ export default function GradebookPanel({
       <Feedback error={action.error} message={action.message} />
       {teacher && (
         <section className="panel">
-          <details>
-            <summary>Cấu hình trọng số và điều chỉnh điểm</summary>
+          <details onToggle={e=>{if(e.currentTarget.open&&book)setWeights(book.weights)}}>
+            <summary>Cấu hình trọng số</summary>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -75,7 +76,7 @@ export default function GradebookPanel({
                     weights,
                   );
                   await load();
-                }, "Đã lưu trọng số. Bảng điểm cần được công bố lại.");
+                }, "Đã cập nhật trọng số và điểm tổng kết.");
               }}
             >
               <div className="form-grid">
@@ -108,78 +109,10 @@ export default function GradebookPanel({
                 <span className="badge">Tổng {total}% / 100%</span>
               </div>
             </form>
-            <div className="details-box">
-              <h3>Điều chỉnh điểm thành phần</h3>
-              <p className="section-note">
-                Điểm để trống sẽ bỏ điều chỉnh thủ công và dùng lại điểm tự
-                động. Mọi thay đổi đều lưu lý do và thu hồi công bố.
-              </p>
-              <form
-                style={{ marginTop: 15 }}
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const form = e.currentTarget,
-                    f = new FormData(form),
-                    v = String(f.get("score"));
-                  void action.run(async () => {
-                    await request(`/api/courses/${courseId}/grades`, "PATCH", {
-                      items: [
-                        {
-                          student_id: f.get("student_id"),
-                          component: f.get("component"),
-                          score: v === "" ? null : Number(v),
-                          reason: f.get("reason"),
-                        },
-                      ],
-                    });
-                    form.reset();
-                    await load();
-                  }, "Đã lưu điều chỉnh điểm.");
-                }}
-              >
-                <div className="form-grid">
-                  <label>
-                    Mã sinh viên
-                    <input name="student_id" required />
-                  </label>
-                  <label>
-                    Thành phần
-                    <select name="component">
-                      {Object.entries(names).map(([k, n]) => (
-                        <option key={k} value={k}>
-                          {n}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    Điểm (0–10)
-                    <input
-                      name="score"
-                      type="number"
-                      min={0}
-                      max={10}
-                      step="0.01"
-                    />
-                  </label>
-                  <label>
-                    Lý do
-                    <input
-                      name="reason"
-                      required
-                      minLength={3}
-                      maxLength={1000}
-                    />
-                  </label>
-                </div>
-                <div className="actions">
-                  <button disabled={action.busy}>Lưu điều chỉnh</button>
-                </div>
-              </form>
-            </div>
           </details>
         </section>
       )}
+      {teacher && <section className="panel"><h2>Nhập điểm CSV</h2><p className="section-note">Dùng bảng điểm xuất bên dưới làm mẫu. Cần student_id và các cột điểm muốn nhập; ô trống giữ nguyên. Chấp nhận bảng điểm chưa đủ đầu điểm.</p><form onSubmit={e=>{e.preventDefault();const form=e.currentTarget;void action.run(async()=>{await apiRequest(`/api/courses/${courseId}/gradebook/import-csv`,{method:"POST",body:new FormData(form)});form.reset();await load()},"Đã nhập điểm CSV.")}}><label>File CSV<input type="file" name="file" accept=".csv" required/></label><button disabled={action.busy}>Nhập điểm</button></form></section>}
       <section className="panel">
         <div className="panel-title">
           <div>
@@ -187,11 +120,11 @@ export default function GradebookPanel({
               {teacher ? "Bảng điểm khóa học" : "Kết quả học tập của tôi"}
             </h2>
             <p className="section-note">
-              Thang điểm 10 · Điểm trống là chưa đủ dữ liệu.
+              Thang điểm 10 · Điểm trống là chưa đủ dữ liệu. {teacher && "Sửa trực tiếp từng ô, nhấn Enter hoặc chuyển ô để lưu."}
             </p>
           </div>
           <span className="badge">
-            {book?.published ? "Đã công bố" : "Chưa công bố"}
+            {book?.published ? "Đã xác nhận tổng kết" : "Điểm cập nhật trực tiếp"}
           </span>
         </div>
         {teacher && (
@@ -216,12 +149,12 @@ export default function GradebookPanel({
                       await load();
                     },
                     book?.published
-                      ? "Đã thu hồi công bố."
-                      : "Đã công bố bảng điểm.",
+                      ? "Đã hủy xác nhận tổng kết."
+                      : "Đã xác nhận bảng điểm tổng kết.",
                   )
                 }
               >
-                {book?.published ? "Thu hồi công bố" : "Công bố điểm"}
+                {book?.published ? "Hủy xác nhận tổng kết" : "Xác nhận tổng kết"}
               </button>
               <a
                 className="button-link"
@@ -241,7 +174,7 @@ export default function GradebookPanel({
         {!teacher && !book?.published && (
           <p className="section-note">
             Điểm thi tự cập nhật khi bạn kết thúc phiên và các bài đã chấm xong.
-            Điểm tổng kết được giảng viên công bố sau.
+            Các đầu điểm cập nhật trực tiếp khi giảng viên lưu.
           </p>
         )}
         <div className="table-wrap">
@@ -276,7 +209,7 @@ export default function GradebookPanel({
                     <td>{r.full_name}</td>
                     <td>{r.class_name}</td>
                     {(Object.keys(names) as (keyof Weights)[]).map((k) => (
-                      <td key={k}>{r[`${k}_score`] ?? "—"}</td>
+                      <td key={k}>{teacher ? <ScoreCell key={`${r.student_id}-${k}-${r[`${k}_score`]}`} value={r[`${k}_score`]} label={`${r.student_id} ${names[k]}`} save={async score=>{await request(`/api/courses/${courseId}/grades`,"PATCH",{items:[{student_id:r.student_id,component:k,score}]});await load()}}/> : r[`${k}_score`] ?? "—"}</td>
                     ))}
                     <td>
                       <strong style={{ color: "var(--primary)" }}>
@@ -292,7 +225,7 @@ export default function GradebookPanel({
           <div className="empty">
             {teacher
               ? "Chưa có sinh viên trong khóa."
-              : "Giảng viên chưa công bố bảng điểm."}
+              : "Chưa có dữ liệu điểm."}
           </div>
         )}
         <p className="section-note">

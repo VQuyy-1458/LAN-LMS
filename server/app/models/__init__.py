@@ -295,7 +295,16 @@ class Grades(Base):
     reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     graded_by: Mapped[int | None] = mapped_column(ForeignKey("teachers.id", ondelete="RESTRICT"), nullable=True, index=True)
 
-__all__ = ['Base', 'User', 'AuthSession', 'LoginAttempt', 'Classes', 'Courses', 'CourseClasses', 'Teachers', 'CsvImportPreviews', 'CourseMaterials', 'CalendarEvents', 'AttendanceSessions', 'Assignments', 'CodingExams', 'Problems', 'TestCases', 'IdempotencyKeys', 'GradeComponents', 'AuditLogs', 'Students', 'CourseTeachers', 'CourseEnrollments', 'AttendanceRecords', 'AssignmentSubmissions', 'ExamRegistrations', 'ExamSessions', 'CodeSubmissions', 'JudgeJobs', 'JudgeResults', 'Grades']
+class AssignmentGrades(Base):
+    __tablename__ = "assignment_grades"
+    __table_args__ = (UniqueConstraint("assignment_id", "student_id", name="uq_assignment_grade"),)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    assignment_id: Mapped[int] = mapped_column(ForeignKey("assignments.id"), nullable=False)
+    student_id: Mapped[int] = mapped_column(ForeignKey("students.id"), nullable=False)
+    score: Mapped[float] = mapped_column(Float, nullable=False)
+    graded_by: Mapped[int] = mapped_column(ForeignKey("teachers.id"), nullable=False)
+
+__all__ = ['Base', 'User', 'AuthSession', 'LoginAttempt', 'Classes', 'Courses', 'CourseClasses', 'Teachers', 'CsvImportPreviews', 'CourseMaterials', 'CalendarEvents', 'AttendanceSessions', 'Assignments', 'CodingExams', 'Problems', 'TestCases', 'IdempotencyKeys', 'GradeComponents', 'AuditLogs', 'Students', 'CourseTeachers', 'CourseEnrollments', 'AttendanceRecords', 'AssignmentSubmissions', 'AssignmentGrades', 'ExamRegistrations', 'ExamSessions', 'CodeSubmissions', 'JudgeJobs', 'JudgeResults', 'Grades']
 
 
 class RealtimeEvents(Base):

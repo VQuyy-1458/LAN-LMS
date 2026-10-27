@@ -53,7 +53,7 @@ def test_assignment_filters_use_own_submission_and_count_before_paging(context):
     assert result["total"]==4 and len(result["items"])==1
     assert clients["s"].get(path+"?status=submitted").json()["items"][0]["id"]==ids[1]
     assert clients["s"].get(path+"?status=overdue").json()["items"][0]["id"]==ids[2]
-    assert clients["t"].get(path).json()["counts"]=={"all":4,"not_submitted":3,"submitted":0,"overdue":1}
+    assert clients["t"].get(path).json()["counts"]=={"all":4,"not_submitted":3,"submitted":0,"overdue":1,"within":3}
     assert clients["s"].get(path+"?status=invalid").status_code==422
 
 

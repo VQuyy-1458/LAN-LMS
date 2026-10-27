@@ -21,11 +21,11 @@ class Entry(BaseModel):
     student_id: str
     component: Literal["attendance", "homework", "midterm", "final"]
     score: float | None = Field(default=None, ge=0, le=10)
-    reason: str = Field(min_length=3, max_length=1000)
+    reason: str = Field(default="", max_length=1000)
 
 
 class Update(BaseModel):
-    items: list[Entry] = Field(min_length=1, max_length=2000)
+    items: list[Entry] = Field(min_length=1, max_length=8000)
 
 
 class Publish(BaseModel):

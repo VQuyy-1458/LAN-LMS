@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy import delete, func, select, update
 
 from ...core.database import AuthSession, LoginAttempt, User
-from ...core.security import COOKIE, check_origin, current_user, digest, fail, hasher, verify
+from ...core.security import COOKIE, cookie_name, session_token, check_origin, current_user, digest, fail, hasher, verify
 
 from .schemas import Login, ChangePassword, UserResponse, LoginResponse, CsrfResponse
 
@@ -53,13 +53,13 @@ def login(body: Login, request: Request, response: Response):
             user.password_hash = hasher.hash(body.password)
         db.delete(attempt)
         db.execute(delete(AuthSession).where(AuthSession.expires_at <= now))
-        old_token = request.cookies.get(COOKIE)
+        old_token = session_token(request)
         if old_token:
             db.execute(delete(AuthSession).where(AuthSession.token_hash == digest(old_token)))
         token = secrets.token_urlsafe(32)
         db.add(AuthSession(token_hash=digest(token), user_id=user.id, expires_at=now + request.app.state.settings.session_seconds))
         db.commit()
-        response.set_cookie(COOKIE, token, max_age=request.app.state.settings.session_seconds,
+        response.set_cookie(cookie_name(request), token, max_age=request.app.state.settings.session_seconds,
                             httponly=True, secure=request.app.state.settings.secure_cookie, samesite='lax', path='/')
         return {'user': dict(user_id=user.id, username=user.username, role=user.role, must_change_password=user.must_change_password)}
 
@@ -72,7 +72,7 @@ def me(user=Depends(current_user)):
 @router.get('/csrf', response_model=CsrfResponse)
 def csrf(request: Request, user=Depends(current_user)):
     # Stable within a session so tabs do not invalidate each other's CSRF token.
-    token = hmac.new(request.cookies[COOKIE].encode(), b'lan-lms-csrf-v1', hashlib.sha256).hexdigest()
+    token = hmac.new(session_token(request).encode(), b'lan-lms-csrf-v1', hashlib.sha256).hexdigest()
     with request.app.state.sessions() as db:
         session = db.get(AuthSession, user.session_hash)
         if not session or session.expires_at <= time.time():
@@ -89,7 +89,7 @@ def logout(request: Request, user=Depends(current_user)):
         db.commit()
     anyio.from_thread.run(request.app.state.hub.revoke, user.user_id, user.session_hash)
     response = Response(status_code=204)
-    response.delete_cookie(COOKIE, path='/')
+    response.delete_cookie(cookie_name(request), path='/')
     return response
 
 
@@ -111,5 +111,5 @@ def change_password(body: ChangePassword, request: Request, user=Depends(current
         db.commit()
     anyio.from_thread.run(request.app.state.hub.revoke, user.user_id)
     response = Response(status_code=204)
-    response.delete_cookie(COOKIE, path='/')
+    response.delete_cookie(cookie_name(request), path='/')
     return response

@@ -9,16 +9,19 @@ from ...core.database import get_db
 from ...core.security import learning_user, fail
 from ...models import Assignments, AssignmentSubmissions, Students, AuditLogs, CourseEnrollments
 from ...services import access, idempotency
+from ...services.activity import emit
 from ...services.files import read_upload, save, resolve
 from ...schemas.common import Pagination
 from typing import Literal
 from .schemas import AssignmentInput, AssignmentPatch, GradeInput
 
 router = APIRouter(prefix="/api", tags=["assignments"])
+from .progress import router as progress_router
+router.include_router(progress_router)
 
 
 @router.get("/courses/{course_id}/assignments")
-def listing(course_id: int, status: Literal["all", "not_submitted", "submitted", "overdue"] = "all",
+def listing(course_id: int, status: Literal["all", "not_submitted", "submitted", "overdue", "within"] = "all",
             db=Depends(get_db), user=Depends(learning_user), p=Depends(Pagination)):
     access.course(db, user, course_id)
     student=access.student(db,user) if user.role=="student" else None
@@ -32,8 +35,15 @@ def listing(course_id: int, status: Literal["all", "not_submitted", "submitted",
     counts={"all":0,"not_submitted":0,"submitted":0,"overdue":0}
     for label,count in db.execute(select(state,func.count(Assignments.id)).where(Assignments.course_id==course_id).group_by(state)):
         counts[label]=count;counts["all"]+=count
+    if not student:
+        counts["within"] = db.scalar(select(func.count(Assignments.id)).where(Assignments.course_id==course_id, Assignments.due_at>time.time()))
+        counts["overdue"] = counts["all"] - counts["within"]
     query=select(Assignments,submitted_count,state).where(Assignments.course_id==course_id)
-    if status!="all":query=query.where(state==status)
+    if status == "within":
+        if student: fail(403, "FORBIDDEN", "Bộ lọc dành cho giảng viên")
+        query=query.where(Assignments.due_at>time.time())
+    elif status == "overdue" and not student: query=query.where(Assignments.due_at<=time.time())
+    elif status!="all":query=query.where(state==status)
     items=[]
     for row,n,label in db.execute(query.order_by(Assignments.due_at,Assignments.id).offset(p.offset).limit(p.page_size)):
         items.append({**assignment_view(row),"submission_status":label,"submitted_count":n,"total_students":total_students})
@@ -239,6 +249,11 @@ def grade(
     r.score = body.score
     r.feedback = body.feedback
     c.grades_published = False
+    from ...models import AssignmentGrades
+    override = db.scalar(select(AssignmentGrades).where(AssignmentGrades.assignment_id==a.id,AssignmentGrades.student_id==r.student_id))
+    if override: db.delete(override)
+    student = db.get(Students,r.student_id)
+    emit(db,"grade.updated",a.course_id,{"assignment_id":a.id},student.user_id)
     db.add(
         AuditLogs(
             user_id=user.user_id,
@@ -250,6 +265,27 @@ def grade(
     )
     db.commit()
     return submission_view(db, r, user, c)
+
+
+@router.get("/assignment-submissions/{sid}/preview")
+def preview_submission(sid: int, request: Request, entry: str | None = None, db=Depends(get_db), user=Depends(learning_user)):
+    row=db.get(AssignmentSubmissions,sid)
+    if not row: fail(404,"NOT_FOUND","Không tìm thấy bài nộp")
+    assignment=db.get(Assignments,row.assignment_id)
+    access.course(db,user,assignment.course_id)
+    if user.role=="student" and access.student(db,user).id!=row.student_id: fail(403,"FORBIDDEN","Không được xem bài người khác")
+    from ...services.file_preview import preview
+    return preview(resolve(request.app.state.storage_root,row.storage_path),row.original_filename,entry)
+
+
+@router.get("/assignment-submissions/{sid}/view")
+def view_submission(sid: int, request: Request, db=Depends(get_db), user=Depends(learning_user)):
+    row=db.get(AssignmentSubmissions,sid)
+    if not row: fail(404,"NOT_FOUND","Không tìm thấy bài nộp")
+    assignment=db.get(Assignments,row.assignment_id);access.course(db,user,assignment.course_id)
+    if user.role=="student" and access.student(db,user).id!=row.student_id: fail(403,"FORBIDDEN","Không được xem bài người khác")
+    if Path(row.original_filename).suffix.lower()!=".pdf": fail(422,"PREVIEW_UNSUPPORTED","Chỉ đọc PDF tại đường dẫn này")
+    return FileResponse(resolve(request.app.state.storage_root,row.storage_path),media_type="application/pdf",headers={"Content-Disposition":"inline","X-Content-Type-Options":"nosniff"})
 
 
 @router.post("/assignments/{aid}/attachment")
@@ -280,3 +316,21 @@ def download_attachment(aid: int, request: Request, db=Depends(get_db), user=Dep
     if not assignment or not assignment.attachment_path: fail(404, "NOT_FOUND", "Chưa có file đề bài")
     access.course(db, user, assignment.course_id)
     return FileResponse(resolve(request.app.state.storage_root, assignment.attachment_path), filename=assignment.attachment_filename, media_type="application/octet-stream")
+
+
+@router.get("/assignments/{aid}/attachment/preview")
+def preview_attachment(aid: int, request: Request, entry: str | None = None, db=Depends(get_db), user=Depends(learning_user)):
+    assignment=db.get(Assignments,aid)
+    if not assignment or not assignment.attachment_path: fail(404,"NOT_FOUND","Chưa có file đề bài")
+    access.course(db,user,assignment.course_id)
+    from ...services.file_preview import preview
+    return preview(resolve(request.app.state.storage_root,assignment.attachment_path),assignment.attachment_filename,entry)
+
+
+@router.get("/assignments/{aid}/attachment/view")
+def view_attachment(aid: int, request: Request, db=Depends(get_db), user=Depends(learning_user)):
+    assignment=db.get(Assignments,aid)
+    if not assignment or not assignment.attachment_path: fail(404,"NOT_FOUND","Chưa có file đề bài")
+    access.course(db,user,assignment.course_id)
+    if Path(assignment.attachment_filename).suffix.lower()!=".pdf": fail(422,"PREVIEW_UNSUPPORTED","Chỉ đọc PDF tại đường dẫn này")
+    return FileResponse(resolve(request.app.state.storage_root,assignment.attachment_path),media_type="application/pdf",headers={"Content-Disposition":"inline","X-Content-Type-Options":"nosniff"})

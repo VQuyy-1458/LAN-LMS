@@ -28,6 +28,35 @@ router = APIRouter(prefix="/api", tags=["coding-exams"])
 router.include_router(testcase_files_router)
 
 
+@router.get("/my/active-exam")
+def active_exam(db=Depends(get_db), user=Depends(learning_user)):
+    student=access.student(db,user)
+    row=db.execute(select(ExamSessions,CodingExams).join(ExamRegistrations,ExamSessions.registration_id==ExamRegistrations.id)
+        .join(CodingExams,ExamRegistrations.exam_id==CodingExams.id).where(
+            ExamRegistrations.student_id==student.id,ExamSessions.status=="active",ExamSessions.ends_at>time.time(),
+            CodingExams.status!="closed",CodingExams.ends_at>time.time()).order_by(ExamSessions.id).limit(1)).first()
+    return {"exam_id":row[1].id,"session_id":row[0].id} if row else None
+
+
+@router.get("/coding-exams/{eid}/export-csv")
+def export_exam(eid: int, db=Depends(get_db), user=Depends(learning_user)):
+    import csv,io
+    from ...models import CourseEnrollments,Classes
+    from ..gradebook.service import single_exam_score,round_score
+    from ..gradebook.router import safe_text
+    exam=svc.exam(db,user,eid,True)
+    output=io.StringIO(newline="")
+    writer=csv.writer(output);writer.writerow(["student_id","full_name","class_name","accepted_count","score","status"])
+    for student in db.scalars(select(Students).join(CourseEnrollments).where(CourseEnrollments.course_id==exam.course_id,CourseEnrollments.status=="active").order_by(Students.student_code)):
+        registration=db.scalar(select(ExamRegistrations).where(ExamRegistrations.exam_id==eid,ExamRegistrations.student_id==student.id))
+        session=db.scalar(select(ExamSessions).where(ExamSessions.registration_id==registration.id)) if registration else None
+        count=db.scalar(select(func.count(func.distinct(CodeSubmissions.problem_id))).join(Problems,CodeSubmissions.problem_id==Problems.id).where(Problems.exam_id==eid,CodeSubmissions.student_id==student.id,CodeSubmissions.status=="Accepted"))
+        cls=db.get(Classes,student.class_id) if student.class_id else None
+        score=single_exam_score(db,exam,student.id)
+        writer.writerow([safe_text(student.student_code),safe_text(student.full_name),safe_text(cls.class_code if cls else ""),count,round_score(score) if score is not None else "",session.status if session else "not_started"])
+    return Response(("\ufeff"+output.getvalue()).encode("utf-8"),media_type="text/csv; charset=utf-8",headers={"Content-Disposition":f'attachment; filename="exam-{eid}.csv"'})
+
+
 @router.get("/courses/{course_id}/judge-status")
 def judge_status(course_id: int, request: Request, db=Depends(get_db), user=Depends(learning_user)):
     access.course(db, user, course_id)
@@ -343,6 +372,8 @@ def start(eid: int, request: Request, db=Depends(get_db), user=Depends(learning_
     )
     if old:
         return svc.session_payload(db, old, reg, e, s, request.app.state.hub)
+    if active_exam(db,user):
+        fail(409,"ACTIVE_EXAM","Bạn cần kết thúc phiên thi hiện tại trước khi vào đề khác")
     if svc.state(e) != "open":
         fail(409, "EXAM_NOT_OPEN", "Kỳ thi chưa mở hoặc đã kết thúc")
     svc.ready(db, e)

@@ -1,6 +1,7 @@
 import hashlib
 import secrets
 import time
+import re
 from dataclasses import dataclass
 
 from argon2 import PasswordHasher
@@ -11,6 +12,19 @@ from .database import AuthSession, User
 
 hasher = PasswordHasher()
 COOKIE = 'lan_lms_session'
+
+
+def cookie_name(request):
+    tab = request.headers.get('x-session-tab') or request.query_params.get('session_tab')
+    if tab is None:
+        return COOKIE  # Compatibility with API clients and existing integrations.
+    if not re.fullmatch(r'[a-f0-9]{32}', tab):
+        fail(400, 'INVALID_SESSION_TAB', 'Phiên tab không hợp lệ')
+    return COOKIE + '_' + tab
+
+
+def session_token(request):
+    return request.cookies.get(cookie_name(request))
 
 
 def digest(value):
@@ -56,7 +70,7 @@ def lookup(app, token):
 
 
 def current_user(request: Request):
-    principal = lookup(request.app, request.cookies.get(COOKIE))
+    principal = lookup(request.app, session_token(request))
     if not principal:
         fail(401, 'UNAUTHENTICATED', 'Vui lòng đăng nhập')
     if request.method not in ('GET', 'HEAD', 'OPTIONS'):

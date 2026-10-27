@@ -30,7 +30,7 @@ Giảng viên và sinh viên dùng trình duyệt. Máy chủ chạy Next.js, Fa
 | Vai trò | Chức năng |
 |---|---|
 | Khách | Xem trang chủ và danh mục; đăng nhập khi mở khóa học |
-| Giảng viên | Khóa học, sinh viên, import, tài liệu, lịch, QR, bài tập/chấm tay, đề/test, theo dõi thi, trọng số/công bố/xuất điểm |
+| Giảng viên | Khóa học, sinh viên, import, tài liệu, lịch, QR, bài tập/chấm tay, đề/test, theo dõi thi, trọng số, sửa điểm và nhập/xuất CSV |
 | Sinh viên | Đổi mật khẩu, học liệu/lịch, điểm danh, nộp file, thi code, xem lịch sử và điểm riêng |
 | Worker | Nhận job qua SQLite, biên dịch/chạy sandbox, ghi aggregate result và sự kiện |
 
@@ -233,14 +233,14 @@ Không đặt `RUN_DOCKER_TESTS=1` khi engine/image chưa sẵn sàng. Các test
 - Teacher tạo/sửa khóa, import CSV UTF-8/BOM theo preview → confirm, tạo tài khoản mới với mật khẩu DOB DDMMYYYY và bắt buộc đổi; giữ mật khẩu tài khoản cũ.
 - Tài liệu riêng tư; file/ZIP tối đa 20 MiB, tên lưu UUID, không giải nén/thực thi file upload.
 - Lịch học, hạn nộp, lịch thi và thông báo; dashboard đọc dữ liệu thật.
-- Tạo QR từ lịch học; sinh viên quét camera hoặc ảnh QR để tự gửi điểm danh, có nhập mã dự phòng. Token ngẫu nhiên 60–3600 giây; chống trùng; giảng viên đánh dấu trực tiếp có mặt/đến muộn/vắng cho toàn bộ danh sách lớp, có audit. Token chỉ trả khi tạo phiên, DB chỉ lưu hash. Đến muộn hiện được tính là có tham gia khi tính chuyên cần.
+- Tạo QR từ lịch học; sinh viên quét camera hoặc ảnh QR để tự gửi điểm danh, không phải chọn buổi hoặc nhập mã thủ công. Token ngẫu nhiên 60–3600 giây; chống trùng; giảng viên đánh dấu trực tiếp có mặt/đến muộn/vắng cho toàn bộ danh sách lớp, có audit. Token chỉ trả khi tạo phiên, DB chỉ lưu hash. Đến muộn hiện được tính là có tham gia khi tính chuyên cần.
 - Bài tập file có deadline, cho phép nộp lại theo cấu hình, lưu lịch sử và chấm tay 0–10/feedback. Bản nộp cuối hợp lệ là bản hiệu lực để tính homework.
 - Mỗi khóa có nhiều đề test/giữa kỳ và tối đa một cuối kỳ. Giữa kỳ lấy trung bình các đề được chọn. Giảng viên cấu hình số bài qua bảng quy đổi, mặc định `[0,5,7,8,9,10]` cho đề 5 bài.
 - Thi code có Pending/Compiling/Running rồi **AC, WA, CE, TLE, MLE, RTE, SE**. C17/C++17/Java17, stdin/stdout hoặc file I/O. Java dùng public class Main, không package.
 - Chỉ bài **AC toàn bộ test** được tính là đã giải; một bài có nhiều AC vẫn tính một lần. Lần sai sau AC không làm mất bài đã giải. Mặc định 0/1/2/3/4/5 bài AC → 0/5/7/8/9/10 điểm thi. Không cộng điểm test lẻ vào điểm thi.
 - Chuyên cần = 10 × số phiên có mặt / số phiên đã đóng; homework trung bình bản nộp cuối của các bài đã hết hạn, thiếu bài nộp tính 0 sau hạn, chưa chấm thì null. Không có phiên/bài đã đóng thì null.
 - Trọng số mặc định 10/10/10/70 cho chuyên cần/bài tập/giữa kỳ/cuối kỳ; teacher sửa, tổng phải 100. Thành phần trọng số 0 được bỏ qua; thiếu điểm ở thành phần trọng số dương thì tổng null. Làm tròn cuối cùng hai chữ số.
-- Sửa điểm cần lý do, ghi audit và thu hồi công bố; điểm override để trống trả về tính tự động. Student chỉ xem dòng của mình khi đã công bố. Xuất CSV BOM có chống công thức; import cột mã dạng Text để giữ số 0 đầu.
+- Sửa điểm trực tiếp không cần lý do, có audit; điểm override để trống trả về tính tự động. Student chỉ xem dòng của mình và nhận cập nhật trực tiếp. Xuất CSV BOM có chống công thức; import cột mã dạng Text để giữ số 0 đầu.
 
 ## 13. Experimental Setup
 
@@ -363,3 +363,7 @@ Hai khóa học có 40 tài khoản mẫu, PDF tự soạn, assignment có file 
 Hai khóa thực hành dùng mã LTM-2026-01 và CTDL-2026-01, mỗi khóa 20 sinh viên, 12 buổi học, 4 thông báo, 6 bài tập và 4 đề lập trình. Danh sách sinh viên của giảng viên có ngày sinh DD/MM/YYYY. Tài khoản tạo mới qua CSV dùng mật khẩu ngày sinh DDMMYYYY và bắt đổi ở lần đăng nhập đầu. Xem [hướng dẫn dữ liệu lớp](docs/CLASSROOM_DEMO.md) và file thông tin cấp tài khoản riêng trong `.runtime/classroom-20261027/accounts.csv`; không commit thông tin đăng nhập.
 
 Sinh viên chỉ mở camera/quét QR để điểm danh; giảng viên chọn buổi học và xem cập nhật danh sách. Các bộ lọc bài tập đếm toàn bộ dữ liệu trước phân trang. Tổng quan có lịch tuần, lịch tháng và hoạt động; danh sách khóa học nằm ở mục Khóa học.
+
+## Phòng thi, điểm danh và bảng điểm
+
+Đã bổ sung phòng thi riêng, phiên đăng nhập theo tab, điểm danh bằng hộp thoại QR, tiến độ bài tập chỉnh sửa tại bảng, nhập/xuất CSV và điểm sinh viên cập nhật trực tiếp. Chuyên cần mặc định 10, trừ 1 mỗi buổi vắng. Xem [quy trình sử dụng và giới hạn định dạng xem trước](docs/PRACTICAL_WORKFLOWS.md).

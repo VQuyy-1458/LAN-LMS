@@ -1,5 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
+import { scopedUrl } from "@/lib/sessionScope";
 import {
   createContext,
   useContext,
@@ -22,7 +23,7 @@ export default function Realtime({ children }: { children: ReactNode }) {
       if (!live) return;
       setStatus("connecting");
       socket = new WebSocket(
-        `${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}/ws`,
+        `${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}${scopedUrl("/ws")}`,
       );
       socket.onopen = () => {
         attempt = 0;

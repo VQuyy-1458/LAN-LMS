@@ -1,7 +1,7 @@
 from .schemas import Weights, Entry, Update, Publish
 import csv
 import io
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Response, UploadFile, File
 from pydantic import BaseModel, Field, ConfigDict, model_validator
 from typing import Literal
 from sqlalchemy import select
@@ -16,7 +16,7 @@ from ...models import (
     Assignments,
 )
 from ...services import access, idempotency
-from ...services.activity import audit
+from ...services.activity import audit, emit
 from . import service as svc
 
 router = APIRouter(prefix="/api", tags=["gradebook"])
@@ -55,13 +55,7 @@ def change_weights(
 def gradebook(cid: int, db=Depends(get_db), user=Depends(learning_user)):
     course = access.course(db, user, cid)
     student = access.student(db, user) if user.role == "student" else None
-    items = (
-        svc.rows(db, cid, student.id if student else None)
-        if user.role == "teacher" or course.grades_published
-        else [dict(row, attendance_score=None, homework_score=None, total_score=None,
-                   midterm_score=svc.round_score(svc.exam_score(db,cid,student.id,"midterm")),
-                   final_score=svc.round_score(svc.exam_score(db,cid,student.id,"final"))) for row in svc.rows(db, cid, student.id)]
-    )
+    items = svc.rows(db, cid, student.id if student else None)
     return dict(
         weights=svc.weights(db, cid), published=course.grades_published, items=items
     )
@@ -123,6 +117,7 @@ def override(cid: int, body: Update, db=Depends(get_db), user=Depends(learning_u
             },
         )
     course.grades_published = False
+    emit(db, "grade.updated", cid, {"course_id": cid})
     db.commit()
     return {"updated_count": len(body.items)}
 
@@ -175,6 +170,33 @@ def safe_text(value):
         or text.startswith(("\t", "\r"))
         else text
     )
+
+
+@router.post("/courses/{cid}/gradebook/import-csv")
+async def import_csv(cid: int, file: UploadFile = File(...), db=Depends(get_db), user=Depends(learning_user)):
+    from ...services.files import read_upload
+    from pydantic import ValidationError
+    _, data = await read_upload(file, 2 * 1024 * 1024, {".csv"})
+    try:
+        reader = csv.DictReader(io.StringIO(data.decode("utf-8-sig"), newline=""))
+        columns = reader.fieldnames or []
+        valid = {k + "_score": k for k in svc.DEFAULT_WEIGHTS}
+        if len(columns) != len(set(columns)) or "student_id" not in columns or not set(columns) & set(valid):
+            raise ValueError("Cần student_id và ít nhất một cột attendance_score, homework_score, midterm_score, final_score")
+        items = []
+        for number, row in enumerate(reader, 2):
+            if number > 2001 or None in row:
+                raise ValueError("CSV quá 2.000 dòng hoặc sai số cột")
+            for column, component in valid.items():
+                value = (row.get(column) or "").strip()
+                if value:
+                    items.append(Entry(student_id=row["student_id"].strip(), component=component, score=float(value)))
+        if not items:
+            raise ValueError("Không có điểm để nhập; ô trống giữ nguyên điểm hiện có")
+        body = Update(items=items)
+    except (UnicodeError, ValueError, ValidationError, csv.Error) as error:
+        fail(422, "INVALID_GRADE_CSV", str(error))
+    return override(cid, body, db, user)
 
 
 @router.get("/courses/{cid}/gradebook/export-csv")
