@@ -54,6 +54,13 @@ export default function AppShell({
                 key={href}
                 href={`/${role}/${href}`}
                 className={path.startsWith(`/${role}/${href}`) ? "active" : ""}
+                onClick={(event) => {
+                  if (href === "courses" && path === `/${role}/courses` && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) {
+                    event.preventDefault();
+                    window.history.pushState(null, "", `/${role}/courses`);
+                    window.dispatchEvent(new PopStateEvent("popstate"));
+                  }
+                }}
               >
                 <span className="nav-number">
                   {String(i + 1).padStart(2, "0")}

@@ -128,6 +128,7 @@ export default function Workspace({
     [token, setToken] = useState(""),
     [loaded, setLoaded] = useState(false);
   const [semesterFilter,setSemesterFilter]=useState(""),[yearFilter,setYearFilter]=useState("");
+  const [statusFilter,setStatusFilter]=useState("");
   const action = useAction();
   const [attendanceLesson, setAttendanceLesson] = useState<Event | undefined>();
   const load = useCallback(async () => {
@@ -161,7 +162,10 @@ export default function Workspace({
     syncLocation();
     window.addEventListener("popstate", syncLocation);
     window.addEventListener("course-finalized",load);
-    return () => window.removeEventListener("popstate", syncLocation);
+    return () => {
+      window.removeEventListener("popstate", syncLocation);
+      window.removeEventListener("course-finalized", load);
+    };
   }, [load, action.setError, teacher, initialTab]);
   useEffect(() => {
     if (!selected || !loaded || courses.some((c) => c.id === selected)) return;
@@ -180,7 +184,7 @@ export default function Workspace({
   }, [selected, loaded, courses, action.setError]);
   const course = courses.find((c) => c.id === selected),
     filtered = courses.filter((c) =>
-      `${c.course_code} ${c.name}`.toLowerCase().includes(search.toLowerCase()) && (!semesterFilter||c.semester===semesterFilter) && (!yearFilter||c.academic_year===yearFilter),
+      `${c.course_code} ${c.name}`.toLowerCase().includes(search.toLowerCase()) && (!semesterFilter||c.semester===semesterFilter) && (!yearFilter||c.academic_year===yearFilter) && (!statusFilter||(c.status==="finalized"?"completed":"active")===statusFilter),
     );
   const choose = (id: number) => {
     setSelected(id);
@@ -261,12 +265,13 @@ export default function Workspace({
             />
             <select aria-label="Lọc học kỳ" value={semesterFilter} onChange={e=>setSemesterFilter(e.target.value)}><option value="">Tất cả học kỳ</option><option value="1">Kỳ 1</option><option value="2">Kỳ 2</option><option value="summer">Kỳ hè</option></select>
             <select aria-label="Lọc năm học" value={yearFilter} onChange={e=>setYearFilter(e.target.value)}><option value="">Tất cả năm học</option>{Array.from(new Set(courses.map(c=>c.academic_year))).sort().map(y=><option key={y}>{y}</option>)}</select>
+            <select aria-label="Lọc trạng thái khóa học" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}><option value="">Tất cả trạng thái</option><option value="active">Đang học</option><option value="completed">Đã học</option></select>
             <span className="muted">{filtered.length} khóa học</span>
           </div>
           {!loaded ? (
             <div className="loading">Đang tải khóa học…</div>
           ) : filtered.length ? (
-            <PaginatedList className="grid-3" key={`${search}-${semesterFilter}-${yearFilter}`}>
+            <PaginatedList className="grid-3" key={`${search}-${semesterFilter}-${yearFilter}-${statusFilter}`}>
               {filtered.map((c) => (
                 <button
                   className="panel course-card"
@@ -283,7 +288,7 @@ export default function Workspace({
                       {c.semester==="summer"?"Kỳ hè":"Học kỳ "+c.semester} · {c.academic_year}
                     </p>
                     <div className="course-footer">
-                      <span>Mở khóa học</span>
+                      <span>{c.status==="finalized"?"Đã học":"Đang học"}</span>
                       <span>→</span>
                     </div>
                   </div>
@@ -292,7 +297,7 @@ export default function Workspace({
             </PaginatedList>
           ) : (
             <div className="empty">
-              {search
+              {search || semesterFilter || yearFilter || statusFilter
                 ? "Không có khóa học phù hợp."
                 : "Chưa có khóa học trong danh sách."}
             </div>
