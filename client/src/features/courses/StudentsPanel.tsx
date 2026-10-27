@@ -7,6 +7,7 @@ import Feedback from "@/components/Feedback";
 type Student = {
   student_id: string;
   full_name: string;
+  date_of_birth: string | null;
   class_name: string;
   email: string | null;
 };
@@ -200,6 +201,7 @@ export default function StudentsPanel({ courseId }: { courseId: number }) {
               <tr>
                 <th>Mã sinh viên</th>
                 <th>Họ tên</th>
+                <th>Ngày sinh</th>
                 <th>Lớp</th>
                 <th>Email</th>
               </tr>
@@ -209,6 +211,12 @@ export default function StudentsPanel({ courseId }: { courseId: number }) {
                 <tr key={s.student_id}>
                   <td>{s.student_id}</td>
                   <td>{s.full_name}</td>
+                  <td>
+                    {s.date_of_birth?.replace(
+                      /^(\d{2})(\d{2})(\d{4})$/,
+                      "$1/$2/$3",
+                    ) || "—"}
+                  </td>
                   <td>{s.class_name}</td>
                   <td>{s.email || "—"}</td>
                 </tr>

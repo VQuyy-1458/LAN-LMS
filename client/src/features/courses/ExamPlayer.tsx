@@ -173,7 +173,7 @@ function Solver({
               onClick={() => {
                 if (
                   !source.trim() ||
-                  confirm("Thay nội dung hiện tại bằng khung mã mẫu?")
+                  confirm("Thay nội dung hiện tại bằng khung mã mặc định?")
                 )
                   setSource(template[language]);
               }}

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { apiRequest } from "@/lib/api";
 import { date, type Course, type Event, type Exam } from "@/lib/lms";
+import WeeklySchedule from "@/components/WeeklySchedule";
 import Feedback from "@/components/Feedback";
 import { useRealtime } from "@/components/Realtime";
 type Assignment = {
@@ -36,9 +37,7 @@ const dayKey = (d: Date) =>
   }).format(d);
 export default function Dashboard({ teacher = false }: { teacher?: boolean }) {
   const [data, setData] = useState<DashboardData | null>(null),
-    [error, setError] = useState(""),
-    [search, setSearch] = useState(""),
-    [term, setTerm] = useState("all");
+    [error, setError] = useState("");
   const [month, setMonth] = useState(
       () => new Date(new Date().getFullYear(), new Date().getMonth(), 1),
     ),
@@ -62,13 +61,29 @@ export default function Dashboard({ teacher = false }: { teacher?: boolean }) {
     () =>
       data
         ? [
-            ...data.events.map((e) => ({
-              key: `e${e.id}`,
-              title: e.title,
-              at: e.starts_at,
-              course_id: e.course_id,
-              kind: e.event_type === "announcement" ? "Thông báo" : "Lịch học",
-            })),
+            ...data.events
+              .filter(
+                (event) =>
+                  event.event_type !== "exam" ||
+                  !data.exams.some(
+                    (exam) =>
+                      exam.course_id === event.course_id &&
+                      new Date(exam.starts_at).getTime() ===
+                        new Date(event.starts_at).getTime(),
+                  ),
+              )
+              .map((e) => ({
+                key: `e${e.id}`,
+                title: e.title,
+                at: e.starts_at,
+                course_id: e.course_id,
+                kind:
+                  e.event_type === "announcement"
+                    ? "Thông báo"
+                    : e.event_type === "exam"
+                      ? "Thi lập trình"
+                      : "Lịch học",
+              })),
             ...data.exams.map((e) => ({
               key: `x${e.id}`,
               title: e.title,
@@ -92,17 +107,6 @@ export default function Dashboard({ teacher = false }: { teacher?: boolean }) {
     ),
     days = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate(),
     offset = (month.getDay() + 6) % 7;
-  const terms = [
-    ...new Set(data?.courses.map((c) => `${c.semester}|${c.academic_year}`)),
-  ];
-  const courses =
-    data?.courses.filter(
-      (c) =>
-        (term === "all" || `${c.semester}|${c.academic_year}` === term) &&
-        `${c.name} ${c.course_code}`
-          .toLowerCase()
-          .includes(search.toLowerCase()),
-    ) ?? [];
   if (!data)
     return (
       <>
@@ -117,9 +121,7 @@ export default function Dashboard({ teacher = false }: { teacher?: boolean }) {
     <div className="stack">
       <div className="page-heading">
         <div>
-          <div className="eyebrow">
-            {teacher ? "TEACHING SPACE" : "MY LEARNING"}
-          </div>
+          <div className="eyebrow">{teacher ? "GIẢNG DẠY" : "HỌC TẬP"}</div>
           <h1>{teacher ? "Không gian giảng dạy" : "Không gian học tập"}</h1>
           <p>
             {date(new Date().toISOString(), {
@@ -142,7 +144,7 @@ export default function Dashboard({ teacher = false }: { teacher?: boolean }) {
               : "Mỗi ngày một bước tiến trên hành trình học tập."}
           </p>
           <span className="badge" style={{ marginTop: 14 }}>
-            Học tập trong mạng LAN
+            Học kỳ hiện tại
           </span>
         </div>
         <div className="welcome-stats">
@@ -237,7 +239,10 @@ export default function Dashboard({ teacher = false }: { teacher?: boolean }) {
           </div>
           {selectedEvents.length ? (
             selectedEvents.map((e) => (
-              <Link href={`/${role}/courses?course=${e.course_id}`} key={e.key}>
+              <Link
+                href={`/${role}/courses?course=${e.course_id}&tab=${e.kind === "Thi lập trình" ? "exams" : e.kind === "Hạn nộp bài" ? "assignments" : "calendar"}`}
+                key={e.key}
+              >
                 <div className="event-item">
                   <span className="badge">{e.kind}</span>
                   <h3 style={{ marginTop: 5 }}>{e.title}</h3>
@@ -262,64 +267,14 @@ export default function Dashboard({ teacher = false }: { teacher?: boolean }) {
           )}
         </section>
       </div>
-      <section>
-        <div className="panel-title">
-          <h2>{teacher ? "Khóa học phụ trách" : "Khóa học của tôi"}</h2>
-          <span className="muted">{courses.length} khóa học</span>
-        </div>
-        <div className="toolbar">
-          <input
-            aria-label="Tìm khóa học"
-            placeholder="Tìm tên hoặc mã khóa học…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <select
-            aria-label="Học kỳ"
-            style={{ maxWidth: 260 }}
-            value={term}
-            onChange={(e) => setTerm(e.target.value)}
-          >
-            <option value="all">Tất cả học kỳ</option>
-            {terms.map((t) => (
-              <option key={t} value={t}>
-                Học kỳ {t.split("|")[0]} · {t.split("|")[1]}
-              </option>
-            ))}
-          </select>
-        </div>
-        {courses.length ? (
-          <div className="grid-3">
-            {courses.map((c) => (
-              <Link
-                className="panel course-card"
-                href={`/${role}/courses?course=${c.id}`}
-                key={c.id}
-              >
-                <div className="course-cover">
-                  <small>{c.course_code}</small>
-                  <h3>{c.name}</h3>
-                </div>
-                <div className="course-body">
-                  <p>
-                    Học kỳ {c.semester} · {c.academic_year}
-                  </p>
-                  <div className="course-footer">
-                    <span>Vào khóa học</span>
-                    <span>→</span>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        ) : (
-          <div className="empty">
-            {search
-              ? "Không tìm thấy khóa học phù hợp."
-              : "Chưa có khóa học. Danh sách sẽ xuất hiện khi có đăng ký."}
-          </div>
-        )}
-      </section>
+      <WeeklySchedule
+        entries={entries.map((entry) => ({
+          ...entry,
+          href: `/${role}/courses?course=${entry.course_id}&tab=${entry.kind === "Thi lập trình" ? "exams" : entry.kind === "Hạn nộp bài" ? "assignments" : "calendar"}`,
+          course: data.courses.find((course) => course.id === entry.course_id)
+            ?.course_code,
+        }))}
+      />
     </div>
   );
 }

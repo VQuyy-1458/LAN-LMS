@@ -35,10 +35,10 @@ def test_two_classrooms_are_complete_idempotent_and_preserve_old_users(context,t
             assert overview["students"]==20 and overview["materials"]==3 and overview["exams"]==4
             assert overview["awaiting_grades"]==7
             assert clients["outsider"].get(f"/api/courses/{cid}/overview").status_code==403
-            assert clients["t"].get(f"/api/courses/{cid}/events").json()["total"]==11
+            assert clients["t"].get(f"/api/courses/{cid}/events").json()["total"]==20
             assert clients["outsider"].get(f"/api/courses/{cid}").status_code==403
             assignments=list(db.scalars(select(Assignments).where(Assignments.course_id==cid)))
-            assert len(assignments)==3 and all(x.attachment_path for x in assignments)
+            assert len(assignments)==6 and all(x.attachment_path for x in assignments)
         rows=list(csv.DictReader(io.StringIO(credentials.decode("utf-8-sig"))))
         assert len(rows)==40
         for row in rows:

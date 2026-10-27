@@ -18,6 +18,7 @@ def payload(row):
     return dict(
         id=row.id,
         course_id=row.course_id,
+        event_id=row.event_id,
         title=row.title,
         status=(
             "closed"

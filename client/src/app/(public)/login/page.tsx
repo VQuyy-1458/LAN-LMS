@@ -79,7 +79,7 @@ export default function Login() {
           className="panel"
           style={{ width: "100%", maxWidth: 440, padding: 36 }}
         >
-          <div className="eyebrow">WELCOME BACK</div>
+          <div className="eyebrow">ĐĂNG NHẬP HỆ THỐNG</div>
           <h1>Đăng nhập</h1>
           <p className="muted" style={{ margin: "8px 0 26px" }}>
             Truy cập khóa học, bài tập và kỳ thi của bạn.

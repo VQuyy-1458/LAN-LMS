@@ -58,6 +58,7 @@ def create(
     db=Depends(get_db),
     user=Depends(learning_user),
 ):
+    idempotency.write_lock(db)
     access.course(db, user, course_id, True)
     t = access.teacher(db, user)
     if body.event_id is not None:
@@ -67,17 +68,19 @@ def create(
         body.title = event.title
     token = secrets.token_urlsafe(24)
     now = time.time()
-    row = AttendanceSessions(
-        course_id=course_id,
-        created_by=t.id,
-        title=body.title,
-        token_hash=digest(token),
-        starts_at=now,
-        expires_at=now + body.duration_seconds,
-        status="open",
-    )
-    db.add(row)
-    db.flush()
+    row = db.scalar(select(AttendanceSessions).where(AttendanceSessions.event_id == body.event_id)) if body.event_id else None
+    if row:
+        # Reissue QR for the same lesson, preserving the roster and grade denominator.
+        row.token_hash = digest(token)
+        row.expires_at = now + body.duration_seconds
+        row.status = "open"
+        row.title = body.title
+    else:
+        row = AttendanceSessions(course_id=course_id, event_id=body.event_id, created_by=t.id,
+            title=body.title, token_hash=digest(token), starts_at=now,
+            expires_at=now + body.duration_seconds, status="open")
+        db.add(row)
+        db.flush()
     audit(db, user.user_id, "create", "attendance", row.id)
     db.get(Courses, course_id).grades_published = False
     db.commit()

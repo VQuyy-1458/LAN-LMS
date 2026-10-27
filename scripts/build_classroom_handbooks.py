@@ -33,7 +33,7 @@ def build():
             canvas.setFont("BodyBold",9);canvas.setFillColor(ink);canvas.drawString(46,height-42,"LAN-LMS / HỌC LIỆU TỰ SOẠN")
             canvas.setStrokeColor(colors.HexColor("#dfe6ee"));canvas.line(46,48,width-46,48)
             canvas.setFont("Body",8);canvas.setFillColor(muted)
-            canvas.drawString(46,32,"Dữ liệu lớp mẫu | 27/10/2026 | Tài liệu do nhóm tự biên soạn")
+            canvas.drawString(46,32,"LAN-LMS | Học liệu học phần | Năm học 2026-2027")
             canvas.drawRightString(width-46,32,f"{doc.page} / 6")
         story=[]
         for index,(heading,paragraphs) in enumerate(course["sections"]):

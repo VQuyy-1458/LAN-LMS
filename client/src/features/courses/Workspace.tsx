@@ -214,7 +214,7 @@ export default function Workspace({
       <div className="page-heading">
         <div>
           <div className="eyebrow">
-            {teacher ? "COURSE MANAGEMENT" : "MY COURSES"}
+            {teacher ? "QUẢN LÝ KHÓA HỌC" : "KHÓA HỌC"}
           </div>
           <h1>{course ? course.name : "Khóa học"}</h1>
           <p>
@@ -397,7 +397,8 @@ export default function Workspace({
                     <h2>Điểm danh theo buổi học</h2>
                     <p className="section-note">
                       Tạo hoặc chọn buổi học trong Lịch & Thông báo, sau đó tạo
-                      mã QR. Bạn cũng có thể mở phiên trực tiếp bên dưới.
+                      mã QR. Chọn đúng buổi học để tạo mã và theo dõi danh sách
+                      điểm danh.
                     </p>
                     <button
                       className="secondary"

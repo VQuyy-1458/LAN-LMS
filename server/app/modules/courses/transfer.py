@@ -111,6 +111,8 @@ def read_package(data):
                 rows = tables[model.__tablename__]
                 ids = set()
                 for row in rows:
+                    if model == m.AttendanceSessions:
+                        row.setdefault("event_id", None)
                     if model == m.Assignments:
                         row.setdefault("attachment_path", None)
                         row.setdefault("attachment_filename", None)

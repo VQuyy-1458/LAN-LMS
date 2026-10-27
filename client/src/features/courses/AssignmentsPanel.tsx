@@ -17,6 +17,9 @@ type Assignment = {
   due_at: string;
   allow_resubmit: boolean;
   attachment_filename: string | null;
+  submission_status?: string;
+  submitted_count?: number;
+  total_students?: number;
 };
 type FileSub = {
   id: number;
@@ -165,6 +168,15 @@ function AssignmentCard({
       </div>
       <p className="statement">
         {a.description || "Giảng viên chưa thêm mô tả."}
+      </p>
+      <p className="section-note">
+        {teacher
+          ? `${a.submitted_count || 0}/${a.total_students || 0} sinh viên đã nộp`
+          : a.submission_status === "submitted"
+            ? "Đã nộp bài"
+            : a.submission_status === "overdue"
+              ? "Đã quá hạn nộp"
+              : "Chưa nộp bài"}
       </p>
       <Feedback error={action.error} message={action.message} />
       {a.attachment_filename && (
@@ -369,14 +381,26 @@ export default function AssignmentsPanel({
   const [rows, setRows] = useState<Assignment[]>([]),
     [page, setPage] = useState(1),
     [total, setTotal] = useState(0);
+  type Filter = "all" | "not_submitted" | "submitted" | "overdue";
+  const [filter, setFilter] = useState<Filter>("all");
+  const [counts, setCounts] = useState<Record<Filter, number>>({
+    all: 0,
+    not_submitted: 0,
+    submitted: 0,
+    overdue: 0,
+  });
   const action = useAction();
   const load = useCallback(async () => {
-    const r = await apiRequest<Page<Assignment>>(
-      `/api/courses/${courseId}/assignments?page=${page}&page_size=20`,
+    const r = await apiRequest<
+      Page<Assignment> & { counts: Record<Filter, number> }
+    >(
+      `/api/courses/${courseId}/assignments?page=${page}&page_size=20&status=${filter}`,
     );
     setRows(r.items);
+    setCounts(r.counts);
+    if (page > 1 && (page - 1) * 20 >= r.total) setPage(1);
     setTotal(r.total);
-  }, [courseId, page]);
+  }, [courseId, page, filter]);
   useEffect(() => {
     load().catch(action.setError);
   }, [load, action.setError]);
@@ -404,6 +428,33 @@ export default function AssignmentsPanel({
           </details>
         </section>
       )}
+      <nav className="tabs" aria-label="Lọc bài tập">
+        {(
+          [
+            ["all", "Tổng số"],
+            ["not_submitted", "Chưa nộp"],
+            ["submitted", teacher ? "Đã nộp đủ" : "Đã nộp"],
+            ["overdue", "Quá hạn"],
+          ] as [Filter, string][]
+        ).map(([value, label]) => (
+          <button
+            key={value}
+            className={filter === value ? "active" : ""}
+            onClick={() => {
+              setFilter(value);
+              setPage(1);
+            }}
+          >
+            {label} ({counts[value]})
+          </button>
+        ))}
+      </nav>
+      {teacher && (
+        <p className="section-note">
+          Tiến độ tính theo số sinh viên đã nộp trong lớp. Quá hạn là bài đã hết
+          thời gian nhưng lớp chưa nộp đủ.
+        </p>
+      )}
       {rows.map((a) => (
         <AssignmentCard
           key={a.id}
@@ -413,7 +464,7 @@ export default function AssignmentsPanel({
         />
       ))}
       {!rows.length && (
-        <div className="empty">Chưa có bài tập trong khóa học.</div>
+        <div className="empty">Không có bài tập trong mục này.</div>
       )}
       <div className="actions">
         <button

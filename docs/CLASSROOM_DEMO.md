@@ -1,10 +1,10 @@
 # Hai khóa học thực hành có dữ liệu đầy đủ
 
-Toàn bộ tên, mã sinh viên, lớp, email, bài nộp file, nhận xét và lịch sử điểm danh trong hai khóa `DEMO-LTM-2026` và `DEMO-CTDL-2026` là **giả lập**, không phải hồ sơ hay kết quả học tập thật. Lời giải chuẩn được chạy kiểm thử; không seed verdict AC hoặc số liệu chấm giả vào ứng dụng.
+Toàn bộ tên, mã sinh viên, lớp, ngày sinh, bài nộp file, nhận xét và lịch sử điểm danh trong hai khóa `LTM-2026-01` và `CTDL-2026-01` là **giả lập**, không phải hồ sơ hay kết quả học tập thật. Lời giải chuẩn được chạy kiểm thử; không seed verdict AC hoặc số liệu chấm giả vào ứng dụng.
 
 ## Nội dung
 
-Mỗi khóa có 20 sinh viên, chia 2 lớp thực hành; 3 học liệu (sổ tay PDF 6 chuyên đề, đề cương TXT, ZIP khung source C/C++/Java); 6 buổi học, thông báo và lịch thi; 2 phiên điểm danh cũ đủ 20 trạng thái mẫu; 3 assignment có file đề tải được, 19 bài nộp file mẫu (12 đã chấm, 7 chờ chấm).
+Mỗi khóa có 20 sinh viên, chia 2 lớp thực hành; 3 học liệu (sổ tay PDF 6 chuyên đề, đề cương TXT, ZIP khung source C/C++/Java); 12 buổi học theo tuần, 4 thông báo và 4 lịch thi; 2 phiên điểm danh cũ đủ 20 trạng thái mẫu; 6 assignment có file đề tải được, 19 bài nộp file mẫu (12 đã chấm, 7 chờ chấm).
 
 Mỗi khóa có 4 đề: luyện tập mở trong 30 ngày từ lúc tạo; giữa kỳ 1 sau 5 ngày; giữa kỳ 2 sau 15 ngày; cuối kỳ sau 25 ngày. Các đề chính thức kéo dài 90 phút. Có 24 câu trong các đề (20 bài gốc, 4 câu luyện tập dùng lại để làm quen) và 152 testcase. Student chỉ thấy câu khi đề mở; teacher xem/sửa trước giờ bắt đầu. Muốn đổi lịch, sửa trước khi mở hoặc tạo đề test mới.
 
@@ -20,7 +20,7 @@ Sau migration mới nhất, chạy ở gốc project:
 
 Script tự chọn DB/storage giống launcher (nếu có DB demo thì dùng DB demo). Có thể chỉ định `--database-url`, `--storage-root`, `--output` để dùng môi trường khác. Chỉ tạo khóa mới; không reset khóa, hồ sơ hoặc mật khẩu đang có. Chạy lại giữ nguyên dữ liệu đã học/nộp, không kéo dài lịch thi cũ. Xung đột mã lớp/tài khoản thuộc dữ liệu khác thì dừng để tránh ghi đè.
 
-Thông tin cấp tài khoản nằm tại `.runtime/classroom-20261027/accounts.csv`. Mỗi tài khoản có mật khẩu tạm ngẫu nhiên riêng, bắt buộc đổi ở lần đăng nhập đầu. Chỉ giao dòng tương ứng cho từng sinh viên; không phát toàn bộ danh sách mật khẩu cho lớp, không commit file lên GitHub. Tài khoản teacher có sẵn được giữ nguyên.
+Thông tin cấp tài khoản nằm tại `.runtime/classroom-20261027/accounts.csv`. Mã đăng nhập là B26DCCN001–B26DCCN040. Mật khẩu ban đầu là ngày sinh viết liền DDMMYYYY (giữ số 0 đầu), bắt buộc đổi ở lần đăng nhập đầu. Ngày sinh hiển thị DD/MM/YYYY trong danh sách lớp của giảng viên. Chỉ giao dòng tương ứng cho từng sinh viên; không phát toàn bộ danh sách mật khẩu cho lớp, không commit file lên GitHub. Tài khoản teacher có sẵn được giữ nguyên.
 
 `teacher-question-bank.zip` ở cùng thư mục chỉ dành cho giảng viên: statement, reference.cpp và tests.zip cho từng bài. **Không đưa ZIP này vào Tài liệu của sinh viên**, vì có đáp án và test ẩn. ZIP starter-code trong học liệu chỉ có khung mã, không có lời giải.
 
@@ -41,3 +41,11 @@ Khi WSL/Docker không phản hồi, bài nộp được lưu chờ xử lý; ch�
 ## Tham khảo luồng sử dụng
 
 Thiết kế giao bài/file đề và bài nộp tham khảo [Moodle Assignment](https://docs.moodle.org/503/en/Assignment_activity); cách chọn bài, ngôn ngữ, xem giới hạn và verdict tham khảo [DOMjudge Team Manual](https://www.domjudge.org/docs/manual/main/team.html). Không sao chép nội dung đề hoặc giao diện của các hệ thống này. Nội dung học liệu và dữ liệu mẫu do nhóm tự soạn cho LAN-LMS.
+
+## Cập nhật lớp đã tạo trước đây
+
+Sao lưu DB/storage trước, chạy migration mới nhất rồi `python -m scripts.refresh_classroom --rename-students`. Cờ này chỉ đổi 40 hồ sơ do bộ tạo lớp cũ sinh ra, giữ ID nội bộ, bài nộp và điểm; đặt mật khẩu theo ngày sinh, bắt đổi mật khẩu và thu hồi phiên đăng nhập cũ. Không đổi tài khoản giảng viên hoặc sinh viên ngoài hai lớp. Không dùng để reset mật khẩu thường xuyên.
+
+Tổng quan chỉ hiển thị lịch và số liệu; truy cập khóa học từ thanh điều hướng. Sinh viên quét QR để tự nhận buổi học, không chọn buổi hoặc nhập mã thủ công. Giảng viên chọn buổi học để tạo QR; tạo lại mã cùng buổi giữ nguyên danh sách điểm danh. Trên HTTP điện thoại, nút camera mở chức năng chụp ảnh của thiết bị; camera liên tục cần HTTPS được thiết bị tin cậy.
+
+Bộ lọc bài tập của sinh viên chia thành đã nộp, chưa nộp còn hạn, quá hạn chưa nộp. Giảng viên xem đã nộp đủ cả lớp, chưa đủ còn hạn, hoặc quá hạn chưa đủ. Số đếm bao gồm toàn bộ trang kết quả.

@@ -17,6 +17,7 @@ from server.app.models import (Assignments, AssignmentSubmissions, AttendanceRec
     Courses, CourseTeachers, GradeComponents, Problems, Students, Teachers, TestCases)
 from server.app.services import files, idempotency
 from demo.classroom_content import COURSES
+from demo.classroom_updates import enrich, submission_text
 from demo.classroom_problems import bank, exam_groups
 
 TZ = timezone(timedelta(hours=7))
@@ -27,7 +28,7 @@ GIVEN_NAMES = ["Minh Anh", "Tuấn Anh", "Bảo Châu", "Ngọc Diệp", "Gia Hu
 def starter_zip(course):
     output=io.BytesIO()
     with zipfile.ZipFile(output,"w",zipfile.ZIP_DEFLATED) as z:
-        z.writestr("README.txt", "Tài liệu thực hành tự soạn - LAN-LMS\n"+course["name"]+"\n"
+        z.writestr("README.txt", "Học liệu thực hành - LAN-LMS\n"+course["name"]+"\n"
             "C: gcc -std=c17 Main.c -o main\nC++: g++ -std=c++17 Main.cpp -o main\nJava: javac Main.java && java Main\n"
             "Đọc đề, kiểm tra giới hạn, tự viết lời giải. Không in lời nhắc input. Java không khai báo package.\n"
             "Nếu đề yêu cầu file, dùng đúng tên file phân biệt hoa/thường.\n")
@@ -86,32 +87,33 @@ def seed(sessions, storage, teacher_username, output, now=None):
                 db.add(CourseTeachers(course_id=course.id,teacher_id=teacher.id,role="primary"))
                 classes=[]
                 for group in range(2):
-                    code=f"DEMO-{'NET' if course_index==0 else 'ALG'}-{group+1:02d}"
+                    code=f"D26CQCN{course_index*2+group+1:02d}-B"
                     if db.scalar(select(Classes.id).where(Classes.class_code==code)): raise ValueError("Sample class code already exists; existing data preserved")
-                    cls=Classes(class_code=code,class_name=f"Lớp thực hành mẫu {code}",academic_year="2026-2027")
+                    cls=Classes(class_code=code,class_name=f"Lớp thực hành {code}",academic_year="2026-2027")
                     db.add(cls);db.flush();classes.append(cls)
                     db.add(CourseClasses(course_id=course.id,class_id=cls.id))
                 students=[]
                 for index in range(20):
                     number=course_index*20+index
-                    username=f"DEMO-{'NET' if course_index==0 else 'ALG'}-{index+1:03d}"
+                    username=f"B26DCCN{course_index*20+index+1:03d}"
                     if db.scalar(select(User.id).where(User.username==username)) or db.scalar(select(Students.id).where(Students.student_code==username)):
                         raise ValueError("Sample student code exists outside these courses; no password/profile overwritten")
-                    password=secrets.token_urlsafe(9)
+                    birthday=f"{number%28+1:02d}{(number*5)%12+1:02d}{2006-number%2}"
+                    password=birthday
                     user=User(username=username,password_hash=hasher.hash(password),role="student",must_change_password=True,active=True)
                     db.add(user);db.flush()
                     name=SURNAMES[number//len(GIVEN_NAMES)]+" "+GIVEN_NAMES[number%len(GIVEN_NAMES)]
                     student=Students(user_id=user.id,student_code=username,full_name=name,class_id=classes[index//10].id,
-                        date_of_birth="06062006",email=username.lower()+"@example.invalid")
+                        date_of_birth=birthday,email=None)
                     db.add(student);db.flush();students.append(student)
                     db.add(CourseEnrollments(course_id=course.id,student_id=student.id,status="active"))
                     credentials.append({"course_code":content["code"],"student_id":username,"full_name":name,
-                        "class_name":classes[index//10].class_code,"temporary_password":password,"must_change_password":"yes"})
+                        "class_name":classes[index//10].class_code,"date_of_birth":birthday,"temporary_password":password,"must_change_password":"yes"})
                 def save(directory,data):
                     path=files.save(storage,directory,data);saved.append(path);return path
                 for title,filename,data in [("Sổ tay học phần - 6 chuyên đề",content["key"]+"-handbook.pdf",pdfs[content["key"]].read_bytes()),
                     ("Khung source C/C++/Java và checklist","starter-code.zip",starter_zip(content)),
-                    ("Đề cương và cách đánh giá","de-cuong.txt",("DỮ LIỆU MẪU - "+content["name"]+"\n\n"+"\n".join(f"{i+1}. {title}" for i,title in enumerate(content["lessons"]))+
+                    ("Đề cương và cách đánh giá","de-cuong.txt",(content["name"]+"\n\n"+"\n".join(f"{i+1}. {title}" for i,title in enumerate(content["lessons"]))+
                         "\n\nChuyên cần 10%, bài tập 10%, trung bình giữa kỳ 10%, cuối kỳ 70%.\nTest luyện tập không tính tổng kết.\n").encode("utf-8"))]:
                     db.add(CourseMaterials(course_id=course.id,uploaded_by=teacher.user_id,title=title,
                         original_filename=filename,storage_path=save("course_materials",data),size_bytes=len(data),uploaded_at=now))
@@ -119,13 +121,13 @@ def seed(sessions, storage, teacher_username, output, now=None):
                 for index,title in enumerate(content["lessons"]):
                     start=(anchor+timedelta(days=(index-2)*7)).timestamp()
                     db.add(CalendarEvents(course_id=course.id,created_by=teacher.user_id,title=f"Buổi {index+1}: {title}",
-                        description="Lịch thực hành mẫu. Mang laptop, đọc chuyên đề tương ứng, điểm danh QR khi giảng viên mở phiên.",
+                        description="Mang laptop, đọc chuyên đề tương ứng, điểm danh QR khi giảng viên mở phiên.",
                         event_type="lesson",starts_at=start,ends_at=start+2*3600))
                 db.add(CalendarEvents(course_id=course.id,created_by=teacher.user_id,title="Thông báo: Quy định nộp bài và giữ tab thi",
                     description="Đọc kỹ input/output; source chỉ được tính khi đã gửi chấm. Khi thi bật toàn màn hình; rời tab được ghi nhật ký. Nộp sớm sẽ khóa gửi thêm bài.",
                     event_type="announcement",starts_at=now,ends_at=now+86400))
                 for session_index in range(2):
-                    attendance=AttendanceSessions(course_id=course.id,created_by=teacher.id,title=f"[Mẫu] Điểm danh buổi {session_index+1}",
+                    attendance=AttendanceSessions(course_id=course.id,created_by=teacher.id,title=f"Buổi {session_index+1}: {content['lessons'][session_index]}",
                         token_hash=secrets.token_hex(32),starts_at=now-(14-session_index*7)*86400,
                         expires_at=now-(14-session_index*7)*86400+900,status="closed")
                     db.add(attendance);db.flush()
@@ -134,22 +136,19 @@ def seed(sessions, storage, teacher_username, output, now=None):
                         db.add(AttendanceRecords(session_id=attendance.id,student_id=student.id,status=status,
                             checked_in_at=attendance.starts_at+(600 if status=="late" else 120)))
                 for assignment_index,(title,description,days) in enumerate(content["assignments"]):
-                    handout=("ĐỀ BÀI TẬP TỰ SOẠN - "+content["name"]+"\n\n"+title+"\n\n"+description+
+                    handout=("BÀI TẬP HỌC PHẦN - "+content["name"]+"\n\n"+title+"\n\n"+description+
                         "\n\nYÊU CẦU NỘP\n1. Ghi mã SV, tên và lớp trong README.\n2. Nộp file hoặc ZIP tối đa 20 MiB.\n3. Kèm cách chạy và testcase tự thiết kế.\n"
                         "RUBRIC 10 ĐIỂM\nĐúng yêu cầu 4; giải thích thiết kế 2; test biên 2; hướng dẫn tái lập 2.\n").encode("utf-8")
                     assignment=Assignments(course_id=course.id,created_by=teacher.id,title=title,description=description,due_at=now+days*86400,allow_resubmit=True,
                         attachment_path=save("assignment_handouts",handout),attachment_filename=f"de-bt{assignment_index+1:02d}.txt")
                     db.add(assignment);db.flush()
                     for index,student in enumerate(students[:15 if assignment_index==0 else 4 if assignment_index==1 else 0]):
-                        text=("BÀI NỘP GIẢ LẬP - không phải bài làm/điểm thật của sinh viên\n"+student.student_code+" - "+student.full_name+
-                            "\n"+title+"\n\nThiết kế: chia xử lý input, logic và output; kiểm tra dữ liệu biên.\n"
-                            "Test đã mô phỏng: input tối thiểu, dữ liệu trùng, giá trị lớn, dữ liệu không hợp lệ.\n"
-                            "Đây là dữ liệu để thử luồng tải bài, chấm điểm và nhập/xuất khóa học.\n").encode("utf-8")
+                        text=submission_text(content["key"],student.student_code,student.full_name,title).encode("utf-8")
                         db.add(AssignmentSubmissions(assignment_id=assignment.id,student_id=student.id,attempt_no=1,
                             original_filename=student.student_code+"-baocao.txt",size_bytes=len(text),storage_path=save("submissions",text),
                             received_at=assignment.due_at-3600 if assignment_index==0 else now-600,
                             score=round(7+(index%6)*0.5,1) if assignment_index==0 and index<12 else None,
-                            feedback="[Nhận xét mẫu] Đã có thiết kế và test; bổ sung bằng chứng chạy thực tế." if assignment_index==0 and index<12 else None))
+                            feedback="Đã trình bày thiết kế và bộ kiểm thử; cần bổ sung minh chứng chạy chương trình." if assignment_index==0 and index<12 else None))
                 exams=[]
                 for exam_index,(component,title,specs) in enumerate(exam_groups(questions[content["key"]])):
                     start=now-300 if component=="practice" else now+{1:5,2:15,3:25}[exam_index]*86400
@@ -169,6 +168,7 @@ def seed(sessions, storage, teacher_username, output, now=None):
                     exams.append({"id":exam.id,"component":component,"questions":len(specs)})
                     db.add(CalendarEvents(course_id=course.id,created_by=teacher.user_id,title="Thi: "+title,
                         description="Vào Thi lập trình để xem đề và bắt đầu phiên khi đến giờ.",event_type="exam",starts_at=start,ends_at=end))
+                enrich(db,course,teacher,content,anchor,now,save)
                 for code,weight in [("attendance",10),("homework",10),("midterm",10),("final",70)]:
                     db.add(GradeComponents(course_id=course.id,component_code=code,weight=weight,max_score=10))
                 db.add(AuditLogs(user_id=teacher.user_id,action="seed-demo-classroom",entity_type="course",entity_id=course.id,

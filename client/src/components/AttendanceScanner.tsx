@@ -34,7 +34,7 @@ export default function AttendanceScanner({
     setError("");
     if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
       setError(
-        "Quét liên tục cần HTTPS hoặc localhost. Với LAN HTTP, dùng nút Chụp QR để điểm danh ở trên; không cần cài chứng chỉ.",
+        "Trình duyệt chưa cho phép quét trực tiếp. Bạn có thể chụp ảnh mã QR để điểm danh.",
       );
       return;
     }
@@ -44,8 +44,8 @@ export default function AttendanceScanner({
       const { BrowserQRCodeReader } = await import("@zxing/browser");
       if (version !== generation.current || !video.current) return;
       const reader = new BrowserQRCodeReader();
-      const handle = await reader.decodeFromVideoDevice(
-        undefined,
+      const handle = await reader.decodeFromConstraints(
+        { video: { facingMode: { ideal: "environment" } }, audio: false },
         video.current,
         (result, _, scanner) => {
           if (version !== generation.current) {
@@ -99,9 +99,8 @@ export default function AttendanceScanner({
     <div className="details-box">
       <h3>Quét QR điểm danh</h3>
       <p className="section-note">
-        Bấm Chụp QR để mở camera điện thoại, chụp rõ mã giảng viên đang hiển thị
-        rồi dùng ảnh đó. Hệ thống tự đọc mã và cập nhật Có mặt, không cần nhập
-        mã hay xác nhận thêm trên web.
+        Hướng camera vào mã QR của giảng viên. Sau khi đọc được mã, hệ thống tự
+        ghi nhận điểm danh.
       </p>
       <video
         ref={video}
@@ -120,9 +119,16 @@ export default function AttendanceScanner({
         <button
           type="button"
           disabled={disabled || active}
-          onClick={() => photoInput.current?.click()}
+          onClick={() => {
+            if (
+              window.isSecureContext &&
+              typeof navigator.mediaDevices?.getUserMedia === "function"
+            )
+              void start();
+            else photoInput.current?.click();
+          }}
         >
-          Chụp QR để điểm danh
+          Bật camera quét QR
         </button>
         <button
           type="button"
@@ -133,10 +139,11 @@ export default function AttendanceScanner({
           Chọn ảnh QR có sẵn
         </button>
       </div>
-      <p className="section-note">
-        Dùng được trên LAN HTTP, không cần cài chứng chỉ. Tùy điện thoại, chọn
-        Camera nếu hiện bảng lựa chọn; trên máy tính có thể chọn ảnh QR.
-      </p>
+      {active && (
+        <button type="button" className="secondary" onClick={stop}>
+          Tắt camera
+        </button>
+      )}
       <input
         ref={photoInput}
         type="file"
@@ -162,23 +169,6 @@ export default function AttendanceScanner({
           void readImage(file);
         }}
       />
-      <details style={{ marginTop: 16 }}>
-        <summary>Quét liên tục bằng camera trong web (HTTPS)</summary>
-        <div className="actions">
-          <button
-            type="button"
-            disabled={disabled || active}
-            onClick={() => void start()}
-          >
-            Mở camera quét liên tục
-          </button>
-          {active && (
-            <button type="button" className="secondary" onClick={stop}>
-              Tắt camera
-            </button>
-          )}
-        </div>
-      </details>
       {error && (
         <p className="alert error" role="alert">
           {error}

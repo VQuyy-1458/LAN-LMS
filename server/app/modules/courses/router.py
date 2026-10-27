@@ -169,6 +169,7 @@ def students(
             dict(
                 student_id=s.student_code,
                 full_name=s.full_name,
+                date_of_birth=s.date_of_birth,
                 class_name=cls.class_code if cls else "",
                 email=s.email,
             )

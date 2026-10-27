@@ -1,8 +1,8 @@
 """Original Vietnamese teaching notes and assessment briefs for the sample courses."""
 COURSES = [
     {
-        "key": "network", "code": "DEMO-LTM-2026", "name": "Lập trình mạng - Thực hành Client/Server",
-        "summary": "[DỮ LIỆU MẪU] Từ socket TCP/UDP đến HTTP, WebSocket và xử lý nhiều client. 20 sinh viên giả lập; tài liệu, bài tập, điểm danh và đề thi do nhóm tự soạn.",
+        "key": "network", "code": "LTM-2026-01", "name": "Lập trình mạng",
+        "summary": "Nghiên cứu mô hình Client/Server, socket TCP/UDP, HTTP và WebSocket. Học phần kết hợp lý thuyết, thực hành tại phòng máy, bài tập và đánh giá lập trình.",
         "lessons": ["Mô hình Client/Server và địa chỉ mạng", "Socket TCP, framing và xử lý ngắt kết nối", "UDP, timeout và truyền lại", "HTTP: request, response và mã trạng thái", "WebSocket và cập nhật thời gian thực", "Tích hợp, kiểm thử tải và triển khai LAN"],
         "sections": [
             ("Mục tiêu và cách học", [
@@ -43,8 +43,8 @@ COURSES = [
         ],
     },
     {
-        "key": "algorithms", "code": "DEMO-CTDL-2026", "name": "Cấu trúc dữ liệu & Giải thuật - Thực hành C/C++/Java",
-        "summary": "[DỮ LIỆU MẪU] Luyện tư duy thuật toán qua mảng, chuỗi, stack, tìm kiếm, prefix sum, đồ thị và tham lam. 20 sinh viên giả lập, có bài tập file và bộ đề chấm tự động.",
+        "key": "algorithms", "code": "CTDL-2026-01", "name": "Cấu trúc dữ liệu và Giải thuật",
+        "summary": "Phát triển tư duy thuật toán qua mảng, chuỗi, stack, tìm kiếm, prefix sum, đồ thị và tham lam. Thực hành C/C++/Java, phân tích độ phức tạp và kiểm thử chương trình.",
         "lessons": ["Độ phức tạp, kiểu dữ liệu và nhập/xuất", "Mảng, sắp xếp và tìm kiếm nhị phân", "Chuỗi và cấu trúc stack", "Prefix sum và đọc/ghi file", "Đồ thị: BFS và đường đi", "Thuật toán tham lam và ôn tập tổng hợp"],
         "sections": [
             ("Mục tiêu và quy tắc nộp bài", [

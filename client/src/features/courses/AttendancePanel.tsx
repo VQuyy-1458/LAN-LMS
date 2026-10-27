@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { apiRequest } from "@/lib/api";
-import { date, request, type Page, type Event } from "@/lib/lms";
+import { allPages, date, request, type Page, type Event } from "@/lib/lms";
 import AttendanceScanner from "@/components/AttendanceScanner";
 import { parseAttendanceQr } from "@/lib/attendanceQr";
 import { courseHref } from "@/lib/courseNavigation";
@@ -42,9 +42,11 @@ export default function AttendancePanel({
     [created, setCreated] = useState<Created | null>(null),
     [selected, setSelected] = useState<number>(initialSession || 0),
     [records, setRecords] = useState<Record[]>([]),
-    [token, setToken] = useState(initialToken || ""),
     [recordPage, setRecordPage] = useState(1),
     [recordTotal, setRecordTotal] = useState(0);
+  const [lessons, setLessons] = useState<Event[]>([]);
+  const [lessonId, setLessonId] = useState(lesson?.id || 0);
+  const chosenLesson = lesson || lessons.find((event) => event.id === lessonId);
   const action = useAction();
   const autoCheck = useRef("");
   const { revision } = useRealtime();
@@ -57,6 +59,14 @@ export default function AttendancePanel({
       ).items,
     );
   }, [courseId]);
+  useEffect(() => {
+    if (teacher)
+      allPages<Event>(`/api/courses/${courseId}/events`)
+        .then((events) =>
+          setLessons(events.filter((event) => event.event_type === "lesson")),
+        )
+        .catch(action.setError);
+  }, [teacher, courseId, action.setError]);
   const loadRecords = useCallback(async () => {
     if (teacher && selected) {
       const r = await apiRequest<Page<Record>>(
@@ -98,23 +108,26 @@ export default function AttendancePanel({
         "",
         courseHref(false, courseId, "attendance"),
       );
-    }, "Đã quét QR và cập nhật điểm danh thành công.");
+    }, "Điểm danh thành công. Giảng viên đã nhận được kết quả.");
   }, [teacher, initialSession, initialToken, courseId, load, action]);
   useEffect(() => {
-    if (lesson)
+    if (chosenLesson)
       document
         .getElementById("attendance-create")
         ?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [lesson]);
+  }, [chosenLesson]);
   return (
     <div className="stack">
       <Feedback error={action.error} message={action.message} />
       {teacher ? (
         <section className="panel" id="attendance-create">
-          <h2>Tạo QR điểm danh{lesson ? ` · ${lesson.title}` : ""}</h2>
-          {lesson && (
+          <h2>
+            Tạo QR điểm danh{chosenLesson ? ` · ${chosenLesson.title}` : ""}
+          </h2>
+          {chosenLesson && (
             <p className="section-note">
-              Lịch học: {date(lesson.starts_at)} → {date(lesson.ends_at)}
+              Lịch học: {date(chosenLesson.starts_at)} →{" "}
+              {date(chosenLesson.ends_at)}
             </p>
           )}
           <form
@@ -126,9 +139,9 @@ export default function AttendancePanel({
                   `/api/courses/${courseId}/attendance-sessions`,
                   "POST",
                   {
-                    title: f.get("title"),
+                    title: chosenLesson?.title,
                     duration_seconds: Number(f.get("duration_seconds")),
-                    event_id: lesson?.id,
+                    event_id: chosenLesson?.id,
                   },
                 );
                 setCreated(r);
@@ -141,13 +154,20 @@ export default function AttendancePanel({
             <div className="form-grid" style={{ marginTop: 15 }}>
               <label>
                 Tên buổi học
-                <input
-                  name="title"
-                  defaultValue={lesson?.title || "Điểm danh buổi học"}
-                  readOnly={!!lesson}
-                  maxLength={200}
+                <select
+                  aria-label="Buổi học để tạo QR"
                   required
-                />
+                  value={chosenLesson?.id || ""}
+                  onChange={(event) => setLessonId(Number(event.target.value))}
+                  disabled={!!lesson}
+                >
+                  <option value="">Chọn buổi học trong lịch</option>
+                  {lessons.map((event) => (
+                    <option key={event.id} value={event.id}>
+                      {date(event.starts_at)} · {event.title}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label>
                 Thời hạn mã (giây)
@@ -162,7 +182,9 @@ export default function AttendancePanel({
               </label>
             </div>
             <div className="actions">
-              <button disabled={action.busy}>Mở phiên điểm danh</button>
+              <button disabled={action.busy || !chosenLesson}>
+                Tạo mã QR điểm danh
+              </button>
             </div>
           </form>
           {created && created.id === selected && (
@@ -180,10 +202,11 @@ export default function AttendancePanel({
               <p className="section-note">
                 Sinh viên mở mục Điểm danh trong khóa học để quét QR này.
               </p>
-              <p className="token">{created.token}</p>
+
               <p className="section-note">
-                Phiên #{created.id} · Hết hạn {date(created.expires_at)}. Mã chỉ
-                hiển thị khi vừa tạo phiên.
+                Mã QR có hiệu lực đến {date(created.expires_at)}. Tạo lại mã cho
+                cùng buổi học để tiếp tục điểm danh; danh sách đã ghi nhận được
+                giữ nguyên.
               </p>
             </div>
           )}
@@ -199,80 +222,30 @@ export default function AttendancePanel({
                 const session = await apiRequest<
                   Attendance & { course_id: number }
                 >(`/api/attendance-sessions/${qr.sessionId}`);
-                if (session.course_id !== courseId)
-                  throw new Error(
-                    "QR thuộc khóa học khác. Hãy mở đúng khóa học rồi quét lại.",
-                  );
-                setSelected(qr.sessionId);
-                setToken(qr.token);
                 const result = await request<Record>(
                   `/api/attendance-sessions/${qr.sessionId}/check-in`,
                   "POST",
                   { token: qr.token },
                 );
-                await load();
                 if (result.status !== "present" && result.status !== "late")
                   throw new Error(
                     "Giảng viên đã ghi nhận bạn vắng. Vui lòng liên hệ giảng viên để điều chỉnh.",
                   );
-              }, "Điểm danh bằng QR thành công.");
+                if (session.course_id !== courseId) {
+                  window.location.assign(
+                    courseHref(false, session.course_id, "attendance"),
+                  );
+                  return;
+                }
+                await load();
+
+              }, "Điểm danh thành công. Giảng viên đã nhận được kết quả.");
             }}
           />
           <p className="section-note">
-            Có thể nhập mã khi không sử dụng được camera. Nếu mở từ QR, mã đã
-            được điền sẵn.
+            Quét mã giảng viên đang hiển thị. Hệ thống tự nhận buổi học và ghi
+            nhận có mặt.
           </p>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              void action.run(async () => {
-                const result = await request<Record>(
-                  `/api/attendance-sessions/${selected}/check-in`,
-                  "POST",
-                  { token },
-                );
-                await load();
-                if (result.status !== "present" && result.status !== "late")
-                  throw new Error(
-                    "Giảng viên đã ghi nhận bạn vắng. Vui lòng liên hệ giảng viên để điều chỉnh.",
-                  );
-              }, "Điểm danh thành công.");
-            }}
-          >
-            <div className="form-grid" style={{ marginTop: 15 }}>
-              <label>
-                Phiên điểm danh
-                <select
-                  required
-                  value={selected || ""}
-                  onChange={(e) => setSelected(Number(e.target.value))}
-                >
-                  <option value="">Chọn buổi học</option>
-                  {rows.map((r) => (
-                    <option key={r.id} value={r.id}>
-                      #{r.id} · {r.title} ·{" "}
-                      {r.status === "open" ? "Đang mở" : "Đã đóng"}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Mã điểm danh
-                <input
-                  value={token}
-                  onChange={(e) => setToken(e.target.value)}
-                  required
-                  autoComplete="off"
-                  maxLength={200}
-                />
-              </label>
-            </div>
-            <div className="actions">
-              <button disabled={action.busy || !selected}>
-                Xác nhận điểm danh
-              </button>
-            </div>
-          </form>
         </section>
       )}
       <section className="panel">

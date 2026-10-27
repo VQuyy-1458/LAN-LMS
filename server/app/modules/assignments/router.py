@@ -4,36 +4,40 @@ from datetime import datetime, timezone
 from pathlib import Path
 from fastapi import APIRouter, Depends, Request, UploadFile, File, Header
 from fastapi.responses import FileResponse, JSONResponse
-from sqlalchemy import select, func
+from sqlalchemy import select, func, case
 from ...core.database import get_db
 from ...core.security import learning_user, fail
-from ...models import Assignments, AssignmentSubmissions, Students, AuditLogs
+from ...models import Assignments, AssignmentSubmissions, Students, AuditLogs, CourseEnrollments
 from ...services import access, idempotency
 from ...services.files import read_upload, save, resolve
 from ...schemas.common import Pagination
+from typing import Literal
 from .schemas import AssignmentInput, AssignmentPatch, GradeInput
 
 router = APIRouter(prefix="/api", tags=["assignments"])
 
 
 @router.get("/courses/{course_id}/assignments")
-def listing(
-    course_id: int,
-    db=Depends(get_db),
-    user=Depends(learning_user),
-    p=Depends(Pagination),
-):
+def listing(course_id: int, status: Literal["all", "not_submitted", "submitted", "overdue"] = "all",
+            db=Depends(get_db), user=Depends(learning_user), p=Depends(Pagination)):
     access.course(db, user, course_id)
-    q = select(Assignments).where(Assignments.course_id == course_id)
-    return p.response(
-        [
-            assignment_view(r)
-            for r in db.scalars(
-                q.order_by(Assignments.id).offset(p.offset).limit(p.page_size)
-            )
-        ],
-        db.scalar(select(func.count()).select_from(q.subquery())),
-    )
+    student=access.student(db,user) if user.role=="student" else None
+    active=select(CourseEnrollments.student_id).where(CourseEnrollments.course_id==course_id,CourseEnrollments.status=="active")
+    total_students=db.scalar(select(func.count()).select_from(active.subquery()))
+    submission_count=select(func.count(func.distinct(AssignmentSubmissions.student_id))).where(AssignmentSubmissions.assignment_id==Assignments.id)
+    submission_count=submission_count.where(AssignmentSubmissions.student_id==student.id) if student else submission_count.where(AssignmentSubmissions.student_id.in_(active))
+    submitted_count=submission_count.correlate(Assignments).scalar_subquery()
+    complete=submitted_count>0 if student else (submitted_count>=total_students) & (total_students>0)
+    state=case((complete,"submitted"),(Assignments.due_at<=time.time(),"overdue"),else_="not_submitted")
+    counts={"all":0,"not_submitted":0,"submitted":0,"overdue":0}
+    for label,count in db.execute(select(state,func.count(Assignments.id)).where(Assignments.course_id==course_id).group_by(state)):
+        counts[label]=count;counts["all"]+=count
+    query=select(Assignments,submitted_count,state).where(Assignments.course_id==course_id)
+    if status!="all":query=query.where(state==status)
+    items=[]
+    for row,n,label in db.execute(query.order_by(Assignments.due_at,Assignments.id).offset(p.offset).limit(p.page_size)):
+        items.append({**assignment_view(row),"submission_status":label,"submitted_count":n,"total_students":total_students})
+    return {**p.response(items,counts[status]).model_dump(),"counts":counts}
 
 
 @router.post("/courses/{course_id}/assignments", status_code=201)

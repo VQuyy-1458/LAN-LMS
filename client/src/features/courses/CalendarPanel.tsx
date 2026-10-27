@@ -1,15 +1,15 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { apiRequest } from "@/lib/api";
 import {
+  allPages,
   date,
   localInput,
   localISO,
   request,
-  type Page,
   type Event,
 } from "@/lib/lms";
 import { useAction } from "@/lib/useAction";
+import WeeklySchedule from "@/components/WeeklySchedule";
 import Feedback from "@/components/Feedback";
 function EventForm({
   event,
@@ -112,10 +112,7 @@ export default function CalendarPanel({
   const [rows, setRows] = useState<Event[]>([]);
   const action = useAction();
   const load = useCallback(async () => {
-    const r = await apiRequest<Page<Event>>(
-      `/api/courses/${courseId}/events?page_size=100`,
-    );
-    setRows(r.items);
+    setRows(await allPages<Event>(`/api/courses/${courseId}/events`));
   }, [courseId]);
   useEffect(() => {
     load().catch(action.setError);
@@ -144,6 +141,20 @@ export default function CalendarPanel({
           </details>
         </section>
       )}
+      <WeeklySchedule
+        entries={rows.map((event) => ({
+          key: String(event.id),
+          title: event.title,
+          at: event.starts_at,
+          kind:
+            event.event_type === "lesson"
+              ? "Lịch học"
+              : event.event_type === "exam"
+                ? "Lịch thi"
+                : "Sự kiện",
+          href: `/${teacher ? "teacher" : "student"}/courses?course=${courseId}&tab=calendar`,
+        }))}
+      />
       {rows.map((e) => (
         <section className="panel" key={e.id}>
           <span className="badge">

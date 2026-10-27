@@ -78,6 +78,7 @@ class AttendanceSessions(Base):
     __tablename__ = "attendance_sessions"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     course_id: Mapped[int] = mapped_column(ForeignKey("courses.id", ondelete="RESTRICT"), nullable=False, index=True)
+    event_id: Mapped[int | None] = mapped_column(ForeignKey("calendar_events.id"), nullable=True, unique=True)
     created_by: Mapped[int] = mapped_column(ForeignKey("teachers.id", ondelete="RESTRICT"), nullable=False, index=True)
     title: Mapped[str] = mapped_column(Text, default="Điểm danh", server_default="Điểm danh")
     token_hash: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)

@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field, model_validator
 from sqlalchemy import select, func
 from ...core.database import get_db
 from ...core.security import learning_user, fail
-from ...models import CalendarEvents
+from ...models import CalendarEvents, AttendanceSessions
 from ...schemas.common import Pagination
 from ...services import access
 from ...services.activity import iso, audit
@@ -105,6 +105,8 @@ def delete(event_id: int, db=Depends(get_db), user=Depends(learning_user)):
     if not row:
         fail(404, "NOT_FOUND", "Không tìm thấy sự kiện")
     access.course(db, user, row.course_id, True)
+    if db.scalar(select(AttendanceSessions.id).where(AttendanceSessions.event_id==event_id)):
+        fail(409,"LESSON_HAS_ATTENDANCE","Buổi học đã có điểm danh; hãy giữ lịch để bảo toàn kết quả")
     audit(db, user.user_id, "delete", "event", row.id)
     db.delete(row)
     db.commit()
