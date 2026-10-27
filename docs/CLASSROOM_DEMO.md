@@ -6,7 +6,7 @@ Toàn bộ tên, mã sinh viên, lớp, email, bài nộp file, nhận xét và 
 
 Mỗi khóa có 20 sinh viên, chia 2 lớp thực hành; 3 học liệu (sổ tay PDF 6 chuyên đề, đề cương TXT, ZIP khung source C/C++/Java); 6 buổi học, thông báo và lịch thi; 2 phiên điểm danh cũ đủ 20 trạng thái mẫu; 3 assignment có file đề tải được, 19 bài nộp file mẫu (12 đã chấm, 7 chờ chấm).
 
-Mỗi khóa có 4 đề: luyện tập mở trong 30 ngày từ lúc tạo; giữa kỳ 1 sau 3 ngày; giữa kỳ 2 sau 6 ngày; cuối kỳ sau 9 ngày. Các đề chính thức kéo dài 90 phút. Có 24 câu trong các đề (20 bài gốc, 4 câu luyện tập dùng lại để làm quen) và 152 testcase. Student chỉ thấy câu khi đề mở; teacher xem/sửa trước giờ bắt đầu. Muốn đổi lịch, sửa trước khi mở hoặc tạo đề test mới.
+Mỗi khóa có 4 đề: luyện tập mở trong 30 ngày từ lúc tạo; giữa kỳ 1 sau 5 ngày; giữa kỳ 2 sau 15 ngày; cuối kỳ sau 25 ngày. Các đề chính thức kéo dài 90 phút. Có 24 câu trong các đề (20 bài gốc, 4 câu luyện tập dùng lại để làm quen) và 152 testcase. Student chỉ thấy câu khi đề mở; teacher xem/sửa trước giờ bắt đầu. Muốn đổi lịch, sửa trước khi mở hoặc tạo đề test mới.
 
 Ngân hàng 20 bài gốc có 126 testcase gồm biên, số lớn, rỗng theo ràng buộc, giá trị trùng, không tới được và trường hợp hiệu năng. Bài A07 đọc `DATA.INP`, ghi `RESULT.OUT`; các bài còn lại dùng stdin/stdout. Mỗi bài hỗ trợ C17/C++17/Java17, ví dụ công khai và test ẩn. File `demo/classroom_problems.py` chứa dữ liệu tự soạn và lời giải C++; kiểm thử `test_classroom_bank.py` chạy Docker cho từng lời giải với toàn bộ test.
 

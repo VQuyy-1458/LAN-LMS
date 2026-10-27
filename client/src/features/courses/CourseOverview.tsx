@@ -73,7 +73,7 @@ export default function CourseOverview({
       </div>
       <section className="panel">
         <div className="panel-title">
-          <h2>Hoạt động sắp tới</h2>
+            <h2>Đang diễn ra & Sắp tới</h2>
           <button className="ghost" onClick={() => open("calendar")}>
             Xem lịch →
           </button>

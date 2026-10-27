@@ -79,6 +79,8 @@ def seed(sessions, storage, teacher_username, output, now=None):
                         raise ValueError("Existing sample course belongs to another teacher")
                     result.append({"id":old.id,"code":content["code"],"created":False});continue
                 course=Courses(course_code=content["code"],course_name=content["name"],description=content["summary"],
+                    start_date=(datetime.fromtimestamp(now,TZ)-timedelta(days=14)).date().isoformat(),
+                    end_date=(datetime.fromtimestamp(now,TZ)+timedelta(days=30)).date().isoformat(),
                     semester="1",academic_year="2026-2027",status="active",grades_published=False,final_grade_policy="single_final_exam")
                 db.add(course);db.flush()
                 db.add(CourseTeachers(course_id=course.id,teacher_id=teacher.id,role="primary"))
@@ -150,7 +152,7 @@ def seed(sessions, storage, teacher_username, output, now=None):
                             feedback="[Nhận xét mẫu] Đã có thiết kế và test; bổ sung bằng chứng chạy thực tế." if assignment_index==0 and index<12 else None))
                 exams=[]
                 for exam_index,(component,title,specs) in enumerate(exam_groups(questions[content["key"]])):
-                    start=now-300 if component=="practice" else now+(exam_index*3)*86400
+                    start=now-300 if component=="practice" else now+{1:5,2:15,3:25}[exam_index]*86400
                     end=now+30*86400 if component=="practice" else start+90*60
                     ladder=[0,5,7,8,9,10] if len(specs)==5 else [round(10*i/len(specs),2) for i in range(len(specs)+1)]
                     exam=CodingExams(course_id=course.id,created_by=teacher.id,title=title,grade_component=component,
