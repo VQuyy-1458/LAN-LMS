@@ -1,45 +1,33 @@
-"""Original Vietnamese teaching notes and assessment briefs for the sample courses."""
+"""Original teaching notes for programming and algorithms classrooms."""
 COURSES = [
     {
-        "key": "network", "code": "LTM-2026-01", "name": "Lập trình mạng",
-        "summary": "Nghiên cứu mô hình Client/Server, socket TCP/UDP, HTTP và WebSocket. Học phần kết hợp lý thuyết, thực hành tại phòng máy, bài tập và đánh giá lập trình.",
-        "lessons": ["Mô hình Client/Server và địa chỉ mạng", "Socket TCP, framing và xử lý ngắt kết nối", "UDP, timeout và truyền lại", "HTTP: request, response và mã trạng thái", "WebSocket và cập nhật thời gian thực", "Tích hợp, kiểm thử tải và triển khai LAN"],
+        "key": "programming", "code": "LT-2026-01", "name": "Lập trình C, C++ và Java",
+        "summary": "Nền tảng C17, C++17 và Java 17: nhập xuất, kiểu dữ liệu, điều kiện, vòng lặp, hàm, mảng và chuỗi. Thực hành giải bài theo input/output và kiểm thử chương trình.",
+        "lessons": ["Môi trường biên dịch và nhập xuất", "Kiểu dữ liệu và cấu trúc điều kiện", "Vòng lặp và số học", "Hàm và phân rã bài toán", "Mảng và chuỗi", "Đọc ghi file và ôn tập tổng hợp"],
         "sections": [
-            ("Mục tiêu và cách học", [
-                "Sau khóa học, sinh viên phân biệt TCP/UDP, xây dựng dịch vụ nhiều client, mô tả giao thức ứng dụng và kiểm tra lỗi mất kết nối.",
-                "Mỗi buổi: đọc tài liệu, điểm danh QR, thực hành theo cặp, gửi bài tập file và luyện code. Các bài code mô phỏng xử lý dữ liệu mạng; chương trình nộp không cần tự tạo socket.",
-                "Đánh giá: chuyên cần 10%, bài tập 10%, trung bình các bài giữa kỳ 10%, cuối kỳ 70%. Đề test chỉ luyện tập. Teacher có thể cấu hình lại trước khi dùng cho lớp thật.",
-                "Bài làm C17/C++17/Java 17 phải theo đúng input/output. Java dùng public class Main, không khai báo package. Chỉ AC toàn bộ testcase được tính là giải đúng."]),
-            ("TCP và giao thức đóng khung", [
-                "TCP cung cấp luồng byte có thứ tự; một lần send không tương ứng một lần recv. Client phải có bộ đệm và quy tắc xác định ranh giới bản tin.",
-                "Ví dụ giao thức length-prefix: 5:hello3:LAN. Đọc phần độ dài đến dấu :, chờ đủ payload rồi giữ phần thừa cho khung kế tiếp. Khung thiếu phải chờ thêm hoặc báo lỗi khi kết nối đóng.",
-                "Quy định giới hạn độ dài bản tin trước khi cấp phát bộ nhớ. Mọi bản tin nên có loại thao tác, request_id và dữ liệu. Response phải phân biệt lỗi giao thức với lỗi nghiệp vụ.",
-                "Thực hành: gửi một khung thành ba đoạn; gửi hai khung trong một lần; ngắt kết nối giữa payload. Máy chủ phải tránh treo và không ghép nhầm bản tin."]),
-            ("UDP, timeout và tính lặp an toàn", [
-                "UDP giữ ranh giới datagram nhưng không đảm bảo đến nơi, thứ tự hay tránh trùng. Dùng sequence number và ACK nếu ứng dụng cần theo dõi việc nhận.",
-                "Timeout quá ngắn gây gửi lại nhiều; quá dài làm người dùng chờ. Thử giới hạn số lần gửi lại, tăng thời gian chờ và trả trạng thái cuối rõ ràng.",
-                "Gửi lại không đồng nghĩa thực hiện lại nghiệp vụ. Ví dụ nộp bài dùng Idempotency-Key để cùng một yêu cầu chỉ tạo một submission dù response bị mất.",
-                "Bài tập suy nghĩ: server đã lưu bài nhưng client mất kết nối trước khi nhận HTTP 202. Client phải truy vấn hoặc retry cùng key thay vì tạo bài nộp mới vô hạn."]),
-            ("HTTP và WebSocket trong LAN-LMS", [
-                "HTTP phù hợp các thao tác có kết quả rõ như đăng nhập, tải tài liệu và gửi source. API chấp nhận bài vào hàng đợi rồi trả 202 cùng submission_id; không giữ request chờ compiler.",
-                "WebSocket giữ kết nối để báo submission.updated, attendance.updated và thay đổi phiên thi. Cookie, Origin và quyền khóa học vẫn phải được kiểm tra.",
-                "WebSocket có thể mất sự kiện khi ngắt mạng. Sau reconnect, client gọi REST lấy trạng thái hiện tại; dữ liệu trong SQLite là nguồn quyết định.",
-                "Mở DevTools/Network: quan sát request nộp source, response 202, frame WebSocket, chuỗi Pending -> Compiling -> Running -> AC/WA. Không gửi testcase ẩn hoặc Docker socket tới trình duyệt."]),
-            ("Kiểm thử và triển khai", [
-                "Kiểm thử ít nhất: hai client đồng thời, source không biên dịch, vòng lặp vô hạn, output sai, mất mạng rồi nộp lại, hết giờ và nộp sớm.",
-                "Một máy chủ giữ API, SQLite và private storage; Nginx phục vụ cùng origin. Các máy sinh viên cùng LAN chỉ cần trình duyệt và dùng IP máy chủ mới.",
-                "Docker sandbox giới hạn CPU, RAM, tiến trình và tắt mạng. Không chạy source sinh viên trực tiếp trên máy chủ. Theo dõi hàng đợi và trạng thái worker trước giờ thi.",
-                "Khi chuyển phòng: xuất gói khóa, dừng nhận bài trên máy cũ, chạy máy mới rồi nhập gói. Kiểm tra roster, file, giờ thi, điểm và thử một bài AC thật trước khi dùng."]),
-            ("Bài thực hành tổng hợp", [
-                "Xây dựng TCP server nhận bản tin có độ dài; dùng hai client gửi đồng thời. Mỗi response chứa request_id, trạng thái và thời gian xử lý.",
-                "Tự thiết kế sơ đồ luồng, định dạng message, timeout và cách phát hiện client ngắt kết nối. Không dùng sleep cố định để giả lập việc đồng bộ.",
-                "Nộp ZIP: source/, README.txt, protocol.txt, test-log.txt và ảnh kết quả. README phải có lệnh chạy server/client, IP/cổng, dependency và các tình huống lỗi đã thử.",
-                "Rubric 10 điểm: đúng giao thức 3; nhiều client 2; xử lý lỗi 2; kiểm thử có bằng chứng 2; hướng dẫn tái lập 1. Không ghi số liệu chưa đo."]),
+            ("Biên dịch và nộp bài", [
+                "Chọn đúng ngôn ngữ: C17, C++17 hoặc Java 17. Java dùng public class Main, không khai báo package. Đọc stdin và ghi stdout trừ khi đề yêu cầu file.",
+                "C dùng scanf/printf; C++ dùng cin/cout; Java dùng BufferedReader hoặc Scanner. Không in lời nhắc nhập dữ liệu. AC mới được tính một câu đúng; điểm theo bảng quy đổi giảng viên cấu hình."]),
+            ("Kiểu dữ liệu và điều kiện", [
+                "Dùng long long trong C/C++ hoặc long trong Java khi tổng vượt miền số nguyên 32 bit. Kiểm tra biên bằng nhau, số âm và số không.",
+                "Viết if/else rõ ràng, không dùng phép gán thay so sánh. Kiểm tra mẫu số trước phép chia; chú ý chia nguyên và thứ tự ưu tiên toán tử."]),
+            ("Vòng lặp và số học", [
+                "Dùng for khi biết số lần lặp, while khi dừng theo điều kiện. Xác định bất biến và cập nhật biến điều khiển để tránh vòng lặp vô hạn.",
+                "Kiểm tra số nguyên tố bằng thử ước tới căn bậc hai; tìm ước chung lớn nhất bằng Euclid. Tách chữ số bằng chia và lấy dư; xử lý riêng số 0."]),
+            ("Hàm và kiểm thử", [
+                "Mỗi hàm thực hiện một nhiệm vụ rõ ràng. Xác định đầu vào, đầu ra và điều kiện hợp lệ. Tránh thay đổi biến toàn cục khi không cần thiết.",
+                "Tự thiết kế test nhỏ, giá trị biên và phần tử trùng. CE là lỗi biên dịch, WA là sai kết quả, RTE là lỗi khi chạy, TLE là quá thời gian."]),
+            ("Mảng và chuỗi", [
+                "Chỉ số bắt đầu từ 0; không truy cập ngoài mảng. Khởi tạo cực trị bằng phần tử đầu để xử lý dãy toàn âm.",
+                "Đọc cả dòng bằng fgets, getline hoặc BufferedReader. Giữ dấu cách và xử lý chữ hoa thường theo đúng yêu cầu đề. Không tự chuẩn hóa dữ liệu khi đề không cho phép."]),
+            ("File và đánh giá", [
+                "Đề yêu cầu file thì dùng đúng tên phân biệt hoa thường; không dùng đường dẫn tuyệt đối. Bài thông thường vẫn dùng stdin/stdout.",
+                "Bài tập file nộp source, README và ít nhất 5 test. Trọng số chuyên cần/bài tập/giữa kỳ/cuối kỳ mặc định 10/10/10/70, giảng viên được cấu hình."]),
         ],
         "assignments": [
-            ("BT01 - Đặc tả giao thức TCP", "Soạn protocol.txt cho dịch vụ cộng hai số dùng TCP. Quy định framing, request_id, lỗi dữ liệu và ví dụ trao đổi. Nộp ZIP chứa đặc tả và README chạy thử.", -2),
-            ("BT02 - Quan sát HTTP và WebSocket", "Ghi lại một lượt nộp code và một lần điểm danh QR. Giải thích HTTP 202, submission_id, WebSocket event và thao tác khôi phục sau mất mạng. Nộp PDF hoặc ZIP ảnh kèm phân tích.", 3),
-            ("BT03 - TCP server nhiều client", "Xây dựng server xử lý tối thiểu hai client đồng thời. Thử bản tin chia nhỏ, ghép nhiều khung, timeout và ngắt kết nối. Nộp source và hướng dẫn theo rubric tài liệu.", 10),
+            ("BT01 - Nhập xuất và kiểu dữ liệu", "Tính tổng, hiệu, tích hai số nguyên bằng C, C++ hoặc Java. Giải thích lựa chọn kiểu dữ liệu; kiểm tra số âm, 0 và số lớn. Nộp ZIP gồm source, README và 5 testcase.", -2),
+            ("BT02 - Điều kiện và vòng lặp", "Kiểm tra số nguyên tố, tính tổng chữ số và tìm ước chung lớn nhất. Trình bày thuật toán; kiểm tra 0, 1 và hai số bằng nhau. Nộp source và báo cáo PDF.", 3),
+            ("BT03 - Hàm, mảng và chuỗi", "Tách chương trình thành hàm xử lý mảng và chuỗi: cực trị, tần suất, chuỗi đối xứng. Nộp ZIP kèm hướng dẫn biên dịch và bộ test biên.", 10),
         ],
     },
     {

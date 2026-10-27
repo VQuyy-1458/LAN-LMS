@@ -2,11 +2,15 @@
 from dataclasses import dataclass
 from collections import deque
 import random
-from .network_exam import PracticeProblem, problems as networking
 
 
 @dataclass(frozen=True)
-class Question(PracticeProblem):
+class Question:
+    code: str
+    title: str
+    statement: str
+    cases: tuple[tuple[str, str], ...]
+    solution: str
     io_mode: str = "stdio"
     input_filename: str | None = None
     output_filename: str | None = None
@@ -93,10 +97,24 @@ def algorithms():
     ]
 
 
+def fundamentals():
+    import math
+    pairs=[(2,3),(0,0),(-9,4),(-7,-8),(10**9,10**9),(1,-1)]
+    values=[0,1,2,9,10,97,100,999983]
+    return [
+        question("P01","Tổng hai số nguyên","Tính tổng hai số nguyên a và b.","Hai số nguyên trong [-10^9,10^9].","Một số nguyên a+b.",[(f"{a} {b}\n",f"{a+b}\n") for a,b in pairs],r'int main(){long long a,b;cin>>a>>b;cout<<a+b<<"\n";}'),
+        question("P02","Giá trị lớn nhất của ba số","Tìm số lớn nhất trong ba số nguyên.","Ba số nguyên trong [-10^9,10^9].","Giá trị lớn nhất.",[(f"{a} {b} {c}\n",f"{max(a,b,c)}\n") for a,b,c in [(1,2,3),(-8,-3,-9),(0,0,0),(7,7,1),(10**9,0,-10**9),(-2,5,5)]],r'int main(){long long a,b,c;cin>>a>>b>>c;cout<<max(a,max(b,c))<<"\n";}'),
+        question("P03","Tổng từ 1 đến n","Tính 1+2+...+n; n=0 có tổng bằng 0.","n (0..10^9).","Tổng dạng số nguyên 64 bit.",[(f"{n}\n",f"{n*(n+1)//2}\n") for n in [0,1,2,10,100000,10**9]],r'int main(){long long n;cin>>n;cout<<n*(n+1)/2<<"\n";}'),
+        question("P04","Giai thừa","Tính n! với quy ước 0!=1.","n (0..20).","Một số nguyên n!.",[(f"{n}\n",f"{math.factorial(n)}\n") for n in [0,1,2,5,12,20]],r'int main(){int n;cin>>n;long long f=1;for(int i=2;i<=n;i++)f*=i;cout<<f<<"\n";}'),
+        question("P05","Tổng chữ số","Tính tổng các chữ số thập phân của n.","n (0..10^18).","Tổng chữ số.",[(f"{n}\n",f"{sum(map(int,str(n)))}\n") for n in [0,7,10,10001,999999999999999999,10**18]],r'int main(){long long n,s=0;cin>>n;while(n){s+=n%10;n/=10;}cout<<s<<"\n";}'),
+        question("P06","Ước chung lớn nhất","Tính gcd(a,b), quy ước gcd(0,0)=0.","a,b (0..10^9).","Ước chung lớn nhất.",[(f"{a} {b}\n",f"{math.gcd(a,b)}\n") for a,b in [(12,18),(0,0),(0,7),(9,0),(999983,97),(10**9,10**9)]],r'int main(){long long a,b;cin>>a>>b;while(b){long long t=a%b;a=b;b=t;}cout<<a<<"\n";}'),
+        question("P07","Kiểm tra số nguyên tố","Số nguyên tố là số lớn hơn 1 chỉ có hai ước dương.","n (0..10^9).","YES nếu n nguyên tố, ngược lại NO.",[(f"{n}\n",("YES" if n>=2 and all(n%d for d in range(2,math.isqrt(n)+1)) else "NO")+"\n") for n in values+[10**9]],r'int main(){long long n;cin>>n;bool ok=n>=2;for(long long d=2;d*d<=n;d++)if(n%d==0){ok=0;break;}cout<<(ok?"YES":"NO")<<"\n";}'),
+        *[Question(**{**vars(q),"code":f"P{i:02d}"}) for i,q in enumerate([algorithms()[0],algorithms()[2],algorithms()[3]],8)],
+    ]
+
+
 def bank():
-    groups = networking()
-    network = [Question(**vars(p)) for p in groups["midterm"] + groups["final"]]
-    return {"network": network, "algorithms": algorithms()}
+    return {"programming": fundamentals(), "algorithms": algorithms()}
 
 
 def exam_groups(questions):

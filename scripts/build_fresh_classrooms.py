@@ -12,7 +12,7 @@ from scripts.seed_classroom import seed,TZ
 
 NAMES=["Nguyễn Hoàng Anh","Trần Đức Bảo","Lê Minh Châu","Phạm Khánh Chi","Hoàng Tiến Dũng","Vũ Thùy Dương","Đặng Quang Huy","Bùi Ngọc Hà","Đỗ Minh Hiếu","Ngô Thu Hương","Dương Gia Khánh","Phan Bảo Linh","Nguyễn Đức Long","Trần Hải Nam","Lê Bảo Ngọc","Phạm Minh Phúc","Vũ Anh Quân","Đặng Phương Thảo","Bùi Minh Tuấn","Đỗ Hải Yến","Nguyễn Minh Bảo","Trần Ngọc Bích","Lê Đức Cường","Phạm Thùy Dung","Hoàng Minh Đức","Vũ Hương Giang","Đặng Trung Hiếu","Bùi Khánh Hòa","Đỗ Quang Hưng","Ngô Gia Hân","Dương Tuấn Kiệt","Phan Thảo Linh","Nguyễn Hoài Nam","Trần Hà My","Lê Quang Phúc","Phạm Anh Quân","Vũ Đức Sơn","Đặng Hoài Thương","Bùi Anh Tú","Đỗ Minh Trang"]
 TASKS=[
- ["Truyền file qua TCP","Thông báo trong mạng UDP","Máy chủ xử lý nhiều kết nối","Gửi lại yêu cầu an toàn","Theo dõi sự kiện WebSocket","Tích hợp và triển khai trong LAN"],
+ ["Số học và ước chung lớn nhất","Hàm và đệ quy","Mảng một chiều","Chuỗi ký tự","Đọc ghi file dữ liệu","Tổng hợp kỹ thuật lập trình"],
  ["Danh sách liên kết","Hàng đợi tác vụ","Bảng băm và tra cứu","Cây tìm kiếm","Sắp xếp topo","Quy hoạch động"]]
 
 def normalize_times(sessions):
@@ -61,7 +61,7 @@ def build(output,now=None):
                     sub.storage_path=files.save(storage,"submissions",data);sub.size_bytes=len(data);sub.original_filename=code+"-baocao.txt"
                 credentials.append(dict(student_id=code,full_name=student.full_name,class_name=cls.class_code,date_of_birth=student.date_of_birth,password=student.date_of_birth))
             for number,course in enumerate(db.scalars(select(Courses).order_by(Courses.id))):
-                course.course_code=["LTM-D24-01","CTDL-D24-01"][number]
+                course.course_code=["LT-D24-01","CTDL-D24-01"][number]
                 course.end_date=(datetime.fromtimestamp(now,TZ)+timedelta(days=56)).date().isoformat()
                 # Eliminate manually copied exam events; the calendar derives them now.
                 db.execute(delete(CalendarEvents).where(CalendarEvents.course_id==course.id,CalendarEvents.event_type.in_(["exam","deadline"])))
@@ -72,7 +72,7 @@ def build(output,now=None):
                     session.event_id=event.id;session.starts_at=event.starts_at;session.expires_at=event.starts_at+900
                 anchor=datetime.fromtimestamp(lectures[2].starts_at,TZ)
                 for week in [7,8]:
-                    for offset,title in [(0,"Tích hợp hệ thống" if week==7 else "Ôn tập và đánh giá"),(2,"Thực hành và báo cáo nhóm")]:
+                    for offset,title in [(0,"Thực hành tổng hợp" if week==7 else "Ôn tập và đánh giá"),(2,"Thực hành và báo cáo nhóm")]:
                         start=(anchor+timedelta(days=(week-3)*7+offset)).timestamp()
                         db.add(CalendarEvents(course_id=course.id,created_by=user.id,event_type="lesson",title=f"Tuần {week}: {title}",description="Chuẩn bị source và báo cáo trước buổi học. Điểm danh QR theo hướng dẫn của giảng viên.",starts_at=start,ends_at=start+7200))
                 for i,title in enumerate(TASKS[number],7):

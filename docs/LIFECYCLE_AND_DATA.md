@@ -28,7 +28,7 @@ Bài tập hỗ trợ tối đa 10 file đề/hướng dẫn, mỗi file 20 MiB,
 
 ## Bộ dữ liệu ngày 28/10/2026
 
-Bộ đang chạy mới hoàn toàn có hai học phần Lập trình mạng (`LTM-D24-01`) và Cấu trúc dữ liệu và Giải thuật (`CTDL-D24-01`). Mỗi khóa: 20 sinh viên, 16 buổi học, 4 thông báo, 12 bài tập với 24 file đề/hướng dẫn, 4 đề code (luyện tập, hai giữa kỳ, một cuối kỳ), 3 học liệu và lịch sử bài tập/điểm danh. Mỗi lịch khóa có 36 mục gồm lịch học, thông báo, đề thi và hạn bài tập. Hạn bài tập đặt 23:59; thi chính thức 08:00; lịch điểm danh khớp giờ buổi học. C/C++/Java và bộ testcase gốc đã được kiểm thử; không sinh verdict AC giả.
+Bộ dữ liệu ban đầu ngày 28/10 có hai học phần Lập trình mạng (`LTM-D24-01`) và Cấu trúc dữ liệu và Giải thuật (`CTDL-D24-01`). Mỗi khóa: 20 sinh viên, 16 buổi học, 4 thông báo, 12 bài tập với 24 file đề/hướng dẫn, 4 đề code (luyện tập, hai giữa kỳ, một cuối kỳ), 3 học liệu và lịch sử bài tập/điểm danh. Mỗi lịch khóa có 36 mục gồm lịch học, thông báo, đề thi và hạn bài tập. Hạn bài tập đặt 23:59; thi chính thức 08:00; lịch điểm danh khớp giờ buổi học. C/C++/Java và bộ testcase gốc đã được kiểm thử; không sinh verdict AC giả.
 
 Tên, ngày sinh và lịch sử học tập do nhóm tự soạn, không phải hồ sơ của sinh viên thật. Thông tin này nằm trong tài liệu bàn giao, không chèn nhãn thử nghiệm vào màn học tập.
 
@@ -37,3 +37,8 @@ Giảng viên `GV001`, mật khẩu được tạo riêng trong `.runtime/classr
 Dữ liệu cũ được sao lưu tại `.runtime/backups/before-activation-20261028`; bản file gốc nằm tại `.runtime/backups/reset-original-files-20261028`. Không đưa database, storage hoặc mật khẩu lên Git. Để dựng thêm bộ mới vào thư mục trống: `python -m scripts.build_fresh_classrooms --output .runtime/new-classrooms`. Lệnh này chỉ dựng riêng, không tự ghi đè DB đang chạy. Sao lưu và dừng web trước khi thay dữ liệu.
 
 Migration `0009_lifecycle_attachments` thêm dấu xóa và bảng `assignment_attachments`; gói chuyển khóa bao gồm các bảng/cột mới và vẫn đọc gói phiên bản 1 cũ. Bộ tạo dữ liệu không thay tài khoản hay khóa sẵn có: đích phải là thư mục mới.
+
+
+### Thay khóa mạng bằng lập trình nền tảng
+
+Bản đang chạy đã thay `LTM-D24-01` bằng `LT-D24-01` (Lập trình C, C++ và Java), 20 tài khoản được dùng lại và giữ nguyên mật khẩu. Khóa CTDL và lớp C++ do giảng viên tạo được giữ nguyên, kể cả trạng thái đã tổng kết. Khóa mới có 6 bài tập, 12 buổi học, 4 thông báo, 4 đề code, 3 học liệu; điểm và lịch sử của khóa mạng không được chuyển sang. Bản sao lưu trước chuyển đổi: `.runtime/backups/before-programming-switch-20261028`. Khóa mạng được ẩn bằng soft-delete. Chỉ chạy `scripts.switch_programming_curriculum` sau khi dừng API/worker và sao lưu, theo mô tả trong file script.

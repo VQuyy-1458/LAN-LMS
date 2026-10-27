@@ -356,11 +356,11 @@ Nhóm tự điền đầu mối liên hệ và giảng viên ở mục 1. Không
 Quy định mới và chuyển khóa học/USB ngày 27/10: xem [CHANGES_20261027.md](docs/CHANGES_20261027.md).
 
 
-Hai khóa học có 40 tài khoản mẫu, PDF tự soạn, assignment có file đề, nhập testcase ZIP và ví dụ công khai: xem [CLASSROOM_DEMO.md](docs/CLASSROOM_DEMO.md). Migration 0006 thêm file đề assignment; gói chuyển khóa phiên bản 1 cũ vẫn được đọc với attachment rỗng.
+Hai khóa học có 40 tài khoản mẫu, học liệu tự soạn, assignment có file đề, nhập testcase ZIP và ví dụ công khai: xem [CLASSROOM_DEMO.md](docs/CLASSROOM_DEMO.md). Migration 0006 thêm file đề assignment; gói chuyển khóa phiên bản 1 cũ vẫn được đọc với attachment rỗng.
 
 ### Lịch tuần, điểm danh và tài khoản sinh viên
 
-Hai khóa thực hành dùng mã LTM-2026-01 và CTDL-2026-01, mỗi khóa 20 sinh viên, 12 buổi học, 4 thông báo, 6 bài tập và 4 đề lập trình. Danh sách sinh viên của giảng viên có ngày sinh DD/MM/YYYY. Tài khoản tạo mới qua CSV dùng mật khẩu ngày sinh DDMMYYYY và bắt đổi ở lần đăng nhập đầu. Xem [hướng dẫn dữ liệu lớp](docs/CLASSROOM_DEMO.md) và file thông tin cấp tài khoản riêng trong `.runtime/classroom-20261027/accounts.csv`; không commit thông tin đăng nhập.
+Hai khóa thực hành dùng mã LT-2026-01 và CTDL-2026-01, mỗi khóa 20 sinh viên, 12 buổi học, 4 thông báo, 6 bài tập và 4 đề lập trình. Danh sách sinh viên của giảng viên có ngày sinh DD/MM/YYYY. Tài khoản tạo mới qua CSV dùng mật khẩu ngày sinh DDMMYYYY và bắt đổi ở lần đăng nhập đầu. Xem [hướng dẫn dữ liệu lớp](docs/CLASSROOM_DEMO.md) và file thông tin cấp tài khoản riêng trong `.runtime/classroom-20261027/accounts.csv`; không commit thông tin đăng nhập.
 
 Sinh viên chỉ mở camera/quét QR để điểm danh; giảng viên chọn buổi học và xem cập nhật danh sách. Các bộ lọc bài tập đếm toàn bộ dữ liệu trước phân trang. Tổng quan có lịch tuần, lịch tháng và hoạt động; danh sách khóa học nằm ở mục Khóa học.
 
@@ -371,3 +371,10 @@ Sinh viên chỉ mở camera/quét QR để điểm danh; giảng viên chọn b
 ## Cập nhật vòng đời và dữ liệu 28/10/2026
 
 Quy tắc mới thay thế phần hướng dẫn cũ về mở lại đề, chỉnh điểm danh lịch sử và hủy tổng kết. Khóa đã chốt chỉ được xem/xuất; phiên điểm danh đã chốt không sửa hay tạo lại; danh sách phân trang 10 mục. Xem [hướng dẫn hiện hành và tài khoản bộ dữ liệu mới](docs/LIFECYCLE_AND_DATA.md).
+
+
+### Phạm vi nội dung học trên LMS
+
+LMS phục vụ C17, C++17, Java 17 và cấu trúc dữ liệu/giải thuật. Khóa Lập trình mạng đã được gỡ khỏi bộ dữ liệu đang chạy, thay bằng Lập trình C, C++ và Java (`LT-D24-01`), giữ tài khoản sinh viên và các lớp khác. Ngân hàng mặc định có 20 bài gốc và 130 testcase, không yêu cầu chương trình sinh viên tạo kết nối mạng. Các thành phần HTTP, WebSocket, hàng đợi và sandbox của chính hệ thống vẫn là nội dung kỹ thuật của bài tập lớn Lập trình mạng. Xem [dữ liệu hiện hành](docs/CLASSROOM_DEMO.md).
+
+Bộ lọc khóa học gồm Tất cả trạng thái, Đang học và Đã học; Đã học tương ứng khóa đã chốt tổng kết.

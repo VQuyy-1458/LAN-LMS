@@ -59,13 +59,13 @@ def export_question_bank(output, questions):
     return path
 
 
-def seed(sessions, storage, teacher_username, output, now=None):
+def seed(sessions, storage, teacher_username, output, now=None, *, contents=None, student_ids=None):
     now=time.time() if now is None else now
     output=Path(output);output.mkdir(parents=True,exist_ok=True)
     storage=Path(storage)
     questions=bank()
-    pdfs={course["key"]:PROJECT_ROOT/"demo/materials"/(course["key"]+"-handbook.pdf") for course in COURSES}
-    if any(not p.is_file() for p in pdfs.values()): raise ValueError("Missing authored PDF handbooks; keep demo/materials with the source")
+    contents=COURSES if contents is None else contents
+    handbooks={content["key"]:(content["name"]+"\n\n"+"\n\n".join(title+"\n"+"\n".join(paragraphs) for title,paragraphs in content["sections"])).encode("utf-8") for content in contents}
     saved=[];credentials=[];result=[];temporary=output/"accounts.pending.csv"
     committed=False
     try:
@@ -73,7 +73,7 @@ def seed(sessions, storage, teacher_username, output, now=None):
             idempotency.write_lock(db)
             teacher=db.scalar(select(Teachers).join(User).where(User.username==teacher_username))
             if not teacher: raise ValueError("Teacher account must exist; no teacher password is changed")
-            for course_index, content in enumerate(COURSES):
+            for course_index, content in enumerate(contents):
                 old=db.scalar(select(Courses).where(Courses.course_code==content["code"]))
                 if old:
                     if not db.scalar(select(CourseTeachers.id).where(CourseTeachers.course_id==old.id,CourseTeachers.teacher_id==teacher.id)):
@@ -85,33 +85,42 @@ def seed(sessions, storage, teacher_username, output, now=None):
                     semester="1",academic_year="2026-2027",status="active",grades_published=False,final_grade_policy="single_final_exam")
                 db.add(course);db.flush()
                 db.add(CourseTeachers(course_id=course.id,teacher_id=teacher.id,role="primary"))
-                classes=[]
-                for group in range(2):
-                    code=f"D26CQCN{course_index*2+group+1:02d}-B"
-                    if db.scalar(select(Classes.id).where(Classes.class_code==code)): raise ValueError("Sample class code already exists; existing data preserved")
-                    cls=Classes(class_code=code,class_name=f"Lớp thực hành {code}",academic_year="2026-2027")
-                    db.add(cls);db.flush();classes.append(cls)
-                    db.add(CourseClasses(course_id=course.id,class_id=cls.id))
-                students=[]
-                for index in range(20):
-                    number=course_index*20+index
-                    username=f"B26DCCN{course_index*20+index+1:03d}"
-                    if db.scalar(select(User.id).where(User.username==username)) or db.scalar(select(Students.id).where(Students.student_code==username)):
-                        raise ValueError("Sample student code exists outside these courses; no password/profile overwritten")
-                    birthday=f"{number%28+1:02d}{(number*5)%12+1:02d}{2006-number%2}"
-                    password=birthday
-                    user=User(username=username,password_hash=hasher.hash(password),role="student",must_change_password=True,active=True)
-                    db.add(user);db.flush()
-                    name=SURNAMES[number//len(GIVEN_NAMES)]+" "+GIVEN_NAMES[number%len(GIVEN_NAMES)]
-                    student=Students(user_id=user.id,student_code=username,full_name=name,class_id=classes[index//10].id,
-                        date_of_birth=birthday,email=None)
-                    db.add(student);db.flush();students.append(student)
-                    db.add(CourseEnrollments(course_id=course.id,student_id=student.id,status="active"))
-                    credentials.append({"course_code":content["code"],"student_id":username,"full_name":name,
-                        "class_name":classes[index//10].class_code,"date_of_birth":birthday,"temporary_password":password,"must_change_password":"yes"})
+                if student_ids is not None:
+                    students=list(db.scalars(select(Students).where(Students.id.in_(student_ids)).order_by(Students.id)))
+                    if len(students)!=20 or len(set(student_ids))!=20:
+                        raise ValueError("Choose exactly 20 existing students; no credentials are changed")
+                    for class_id in sorted({student.class_id for student in students if student.class_id}):
+                        db.add(CourseClasses(course_id=course.id,class_id=class_id))
+                    for student in students:
+                        db.add(CourseEnrollments(course_id=course.id,student_id=student.id,status="active"))
+                else:
+                    classes=[]
+                    for group in range(2):
+                        code=f"D26CQCN{course_index*2+group+1:02d}-B"
+                        if db.scalar(select(Classes.id).where(Classes.class_code==code)): raise ValueError("Sample class code already exists; existing data preserved")
+                        cls=Classes(class_code=code,class_name=f"Lớp thực hành {code}",academic_year="2026-2027")
+                        db.add(cls);db.flush();classes.append(cls)
+                        db.add(CourseClasses(course_id=course.id,class_id=cls.id))
+                    students=[]
+                    for index in range(20):
+                        number=course_index*20+index
+                        username=f"B26DCCN{course_index*20+index+1:03d}"
+                        if db.scalar(select(User.id).where(User.username==username)) or db.scalar(select(Students.id).where(Students.student_code==username)):
+                            raise ValueError("Sample student code exists outside these courses; no password/profile overwritten")
+                        birthday=f"{number%28+1:02d}{(number*5)%12+1:02d}{2006-number%2}"
+                        password=birthday
+                        user=User(username=username,password_hash=hasher.hash(password),role="student",must_change_password=True,active=True)
+                        db.add(user);db.flush()
+                        name=SURNAMES[number//len(GIVEN_NAMES)]+" "+GIVEN_NAMES[number%len(GIVEN_NAMES)]
+                        student=Students(user_id=user.id,student_code=username,full_name=name,class_id=classes[index//10].id,
+                            date_of_birth=birthday,email=None)
+                        db.add(student);db.flush();students.append(student)
+                        db.add(CourseEnrollments(course_id=course.id,student_id=student.id,status="active"))
+                        credentials.append({"course_code":content["code"],"student_id":username,"full_name":name,
+                            "class_name":classes[index//10].class_code,"date_of_birth":birthday,"temporary_password":password,"must_change_password":"yes"})
                 def save(directory,data):
                     path=files.save(storage,directory,data);saved.append(path);return path
-                for title,filename,data in [("Sổ tay học phần - 6 chuyên đề",content["key"]+"-handbook.pdf",pdfs[content["key"]].read_bytes()),
+                for title,filename,data in [("Sổ tay học phần - 6 chuyên đề",content["key"]+"-handbook.txt",handbooks[content["key"]]),
                     ("Khung source C/C++/Java và checklist","starter-code.zip",starter_zip(content)),
                     ("Đề cương và cách đánh giá","de-cuong.txt",(content["name"]+"\n\n"+"\n".join(f"{i+1}. {title}" for i,title in enumerate(content["lessons"]))+
                         "\n\nChuyên cần 10%, bài tập 10%, trung bình giữa kỳ 10%, cuối kỳ 70%.\nTest luyện tập không tính tổng kết.\n").encode("utf-8"))]:
@@ -126,7 +135,7 @@ def seed(sessions, storage, teacher_username, output, now=None):
                 db.add(CalendarEvents(course_id=course.id,created_by=teacher.user_id,title="Thông báo: Quy định nộp bài và giữ tab thi",
                     description="Đọc kỹ input/output; source chỉ được tính khi đã gửi chấm. Khi thi bật toàn màn hình; rời tab được ghi nhật ký. Nộp sớm sẽ khóa gửi thêm bài.",
                     event_type="announcement",starts_at=now,ends_at=now+86400))
-                for session_index in range(2):
+                for session_index in range(2 if student_ids is None else 0):
                     attendance=AttendanceSessions(course_id=course.id,created_by=teacher.id,title=f"Buổi {session_index+1}: {content['lessons'][session_index]}",
                         token_hash=secrets.token_hex(32),starts_at=now-(14-session_index*7)*86400,
                         expires_at=now-(14-session_index*7)*86400+900,status="closed")
@@ -142,7 +151,7 @@ def seed(sessions, storage, teacher_username, output, now=None):
                     assignment=Assignments(course_id=course.id,created_by=teacher.id,title=title,description=description,due_at=now+days*86400,allow_resubmit=True,
                         attachment_path=save("assignment_handouts",handout),attachment_filename=f"de-bt{assignment_index+1:02d}.txt")
                     db.add(assignment);db.flush()
-                    for index,student in enumerate(students[:15 if assignment_index==0 else 4 if assignment_index==1 else 0]):
+                    for index,student in enumerate(students[:15 if assignment_index==0 else 4 if assignment_index==1 else 0] if student_ids is None else []):
                         text=submission_text(content["key"],student.student_code,student.full_name,title).encode("utf-8")
                         db.add(AssignmentSubmissions(assignment_id=assignment.id,student_id=student.id,attempt_no=1,
                             original_filename=student.student_code+"-baocao.txt",size_bytes=len(text),storage_path=save("submissions",text),
@@ -173,7 +182,7 @@ def seed(sessions, storage, teacher_username, output, now=None):
                     db.add(GradeComponents(course_id=course.id,component_code=code,weight=weight,max_score=10))
                 db.add(AuditLogs(user_id=teacher.user_id,action="seed-demo-classroom",entity_type="course",entity_id=course.id,
                     details_json=json.dumps({"fictional":True,"students":20,"attendance_and_homework_are_sample_data":True}),created_at=now))
-                result.append({"id":course.id,"code":content["code"],"created":True,"students":20,"exams":exams})
+                result.append({"id":course.id,"code":content["code"],"created":True,"students":len(students),"exams":exams})
             if credentials:
                 previous=[]
                 destination=output/"accounts.csv"
@@ -185,7 +194,7 @@ def seed(sessions, storage, teacher_username, output, now=None):
             committed=True
         if credentials: temporary.replace(output/"accounts.csv")
         export_question_bank(output,questions)
-        summary={"fictional_data":True,"courses":result,"new_students":len(credentials),"credentials_file":str(output/"accounts.csv")}
+        summary={"fictional_data":True,"courses":result,"new_students":len(credentials),"credentials_file":str(output/"accounts.csv") if (output/"accounts.csv").exists() else None}
         (output/"summary.json").write_text(json.dumps(summary,ensure_ascii=False,indent=2),encoding="utf-8")
         return summary
     except BaseException:

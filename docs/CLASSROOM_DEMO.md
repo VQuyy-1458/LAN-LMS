@@ -1,14 +1,14 @@
 # Hai khóa học thực hành có dữ liệu đầy đủ
 
-Toàn bộ tên, mã sinh viên, lớp, ngày sinh, bài nộp file, nhận xét và lịch sử điểm danh trong hai khóa `LTM-2026-01` và `CTDL-2026-01` là **giả lập**, không phải hồ sơ hay kết quả học tập thật. Lời giải chuẩn được chạy kiểm thử; không seed verdict AC hoặc số liệu chấm giả vào ứng dụng.
+Toàn bộ tên, mã sinh viên, lớp, ngày sinh, bài nộp file, nhận xét và lịch sử điểm danh trong hai khóa `LT-2026-01` và `CTDL-2026-01` là **giả lập**, không phải hồ sơ hay kết quả học tập thật. Lời giải chuẩn được chạy kiểm thử; không seed verdict AC hoặc số liệu chấm giả vào ứng dụng.
 
 ## Nội dung
 
-Mỗi khóa có 20 sinh viên, chia 2 lớp thực hành; 3 học liệu (sổ tay PDF 6 chuyên đề, đề cương TXT, ZIP khung source C/C++/Java); 12 buổi học theo tuần, 4 thông báo và 4 lịch thi; 2 phiên điểm danh cũ đủ 20 trạng thái mẫu; 6 assignment có file đề tải được, 19 bài nộp file mẫu (12 đã chấm, 7 chờ chấm).
+Mỗi khóa có 20 sinh viên, chia 2 lớp thực hành; 3 học liệu (sổ tay TXT 6 chuyên đề, đề cương TXT, ZIP khung source C/C++/Java); 12 buổi học theo tuần, 4 thông báo và 4 lịch thi; 2 phiên điểm danh cũ đủ 20 trạng thái mẫu; 6 assignment có file đề tải được, 19 bài nộp file mẫu (12 đã chấm, 7 chờ chấm).
 
-Mỗi khóa có 4 đề: luyện tập mở trong 30 ngày từ lúc tạo; giữa kỳ 1 sau 5 ngày; giữa kỳ 2 sau 15 ngày; cuối kỳ sau 25 ngày. Các đề chính thức kéo dài 90 phút. Có 24 câu trong các đề (20 bài gốc, 4 câu luyện tập dùng lại để làm quen) và 152 testcase. Student chỉ thấy câu khi đề mở; teacher xem/sửa trước giờ bắt đầu. Muốn đổi lịch, sửa trước khi mở hoặc tạo đề test mới.
+Mỗi khóa có 4 đề: luyện tập mở trong 30 ngày từ lúc tạo; giữa kỳ 1 sau 5 ngày; giữa kỳ 2 sau 15 ngày; cuối kỳ sau 25 ngày. Các đề chính thức kéo dài 90 phút. Có 24 câu trong các đề (20 bài gốc, 4 câu luyện tập dùng lại để làm quen) và 156 testcase. Student chỉ thấy câu khi đề mở; teacher xem/sửa trước giờ bắt đầu. Muốn đổi lịch, sửa trước khi mở hoặc tạo đề test mới.
 
-Ngân hàng 20 bài gốc có 126 testcase gồm biên, số lớn, rỗng theo ràng buộc, giá trị trùng, không tới được và trường hợp hiệu năng. Bài A07 đọc `DATA.INP`, ghi `RESULT.OUT`; các bài còn lại dùng stdin/stdout. Mỗi bài hỗ trợ C17/C++17/Java17, ví dụ công khai và test ẩn. File `demo/classroom_problems.py` chứa dữ liệu tự soạn và lời giải C++; kiểm thử `test_classroom_bank.py` chạy Docker cho từng lời giải với toàn bộ test.
+Ngân hàng 20 bài gốc có 130 testcase gồm biên, số lớn, rỗng theo ràng buộc, giá trị trùng, không tới được và trường hợp hiệu năng. Bài A07 đọc `DATA.INP`, ghi `RESULT.OUT`; các bài còn lại dùng stdin/stdout. Mỗi bài hỗ trợ C17/C++17/Java17, ví dụ công khai và test ẩn. File `demo/classroom_problems.py` chứa dữ liệu tự soạn và lời giải C++; kiểm thử `test_classroom_bank.py` chạy Docker cho từng lời giải với toàn bộ test.
 
 ## Tạo dữ liệu trên máy đang chạy
 
@@ -49,3 +49,10 @@ Sao lưu DB/storage trước, chạy migration mới nhất rồi `python -m scr
 Tổng quan chỉ hiển thị lịch và số liệu; truy cập khóa học từ thanh điều hướng. Sinh viên quét QR để tự nhận buổi học, không chọn buổi hoặc nhập mã thủ công. Giảng viên chọn buổi học để tạo QR; tạo lại mã cùng buổi giữ nguyên danh sách điểm danh. Trên HTTP điện thoại, nút camera mở chức năng chụp ảnh của thiết bị; camera liên tục cần HTTPS được thiết bị tin cậy.
 
 Bộ lọc bài tập của sinh viên chia thành đã nộp, chưa nộp còn hạn, quá hạn chưa nộp. Giảng viên xem đã nộp đủ cả lớp, chưa đủ còn hạn, hoặc quá hạn chưa đủ. Số đếm bao gồm toàn bộ trang kết quả.
+
+
+## Phạm vi học phần cập nhật 28/10/2026
+
+Khóa mặc định là Lập trình C, C++ và Java và Cấu trúc dữ liệu và Giải thuật. Nhóm P01–P10 gồm số học, hàm, mảng và chuỗi (66 testcase); nhóm A01–A10 là thuật toán (64 testcase). Không đưa bài socket/client-server vào ngân hàng đang sử dụng. Thư mục và kiểm thử mạng cũ trong repo phục vụ thực nghiệm lịch sử của bài tập lớn, không được tự nạp vào web.
+
+Máy hiện tại dùng `LT-D24-01` thay khóa `LTM-D24-01`; giữ `CTDL-D24-01` và lớp C++ do giảng viên tạo. Khóa mới nhận lại 20 tài khoản cũ, không tạo mật khẩu mới, không chuyển điểm cũ hoặc sinh lịch sử điểm danh/bài nộp giả. Có 6 bài tập, 12 buổi học, 4 thông báo, 4 đề code và 3 học liệu. Khóa mạng bị ẩn bằng soft-delete; bản sao lưu ở `.runtime/backups/before-programming-switch-20261028`. Gói USB xuất trước lần thay đổi này cần dựng lại trước khi mang sang máy khác.

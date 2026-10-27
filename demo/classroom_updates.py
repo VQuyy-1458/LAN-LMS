@@ -6,17 +6,6 @@ from server.app.models import CalendarEvents, Assignments
 
 def submission_text(key, number, name, title):
     header=f"{title}\nMã sinh viên: {number}\nHọ và tên: {name}\n\n"
-    if key=="network":
-        return header+(
-            "1. Định dạng giao thức\nMỗi bản tin gồm độ dài payload viết thập phân, dấu ':' và payload UTF-8. "
-            "Độ dài tính theo byte. Payload request: request_id|ADD|a|b. Response: request_id|OK|sum hoặc request_id|ERROR|code.\n\n"
-            "2. Luồng xử lý\nServer giữ bộ đệm riêng cho mỗi client. Đọc đến dấu ':', kiểm tra độ dài không quá 65536, "
-            "chờ đủ payload rồi phân tích. Phần thừa giữ lại cho bản tin kế tiếp. recv trả 0 nghĩa là client đã đóng kết nối.\n\n"
-            "3. Xử lý lỗi\nTừ chối độ dài âm, ký tự không phải số, số ngoài miền hỗ trợ và thiếu trường. "
-            "Timeout đóng kết nối sau khi gửi lỗi nếu vẫn có thể phản hồi. Request trùng id được trả kết quả cũ.\n\n"
-            "4. Kế hoạch kiểm thử\nMột khung chia thành ba lần gửi; hai khung ghép trong một lần gửi; client đóng giữa payload; "
-            "hai client gửi đồng thời; gửi lại request sau timeout. Ghi log request_id, thời điểm nhận và trạng thái cuối để đối chiếu.\n"
-        )
     return header+(
         "1. Phân tích độ phức tạp\nQuét n phần tử tính tổng cần O(n) thời gian và O(1) bộ nhớ phụ. "
         "Sắp xếp thường dùng O(n log n); tìm một giá trị trên dãy tăng bằng nhị phân cần O(log n). "
@@ -45,13 +34,13 @@ def enrich(db,course,teacher,content,anchor,now,save):
             start=now+days*86400
             db.add(CalendarEvents(course_id=course.id,created_by=teacher.user_id,title=title,description=text,event_type="announcement",starts_at=start,ends_at=start+3600))
     topics=([
-        ("BT04 - UDP và cơ chế gửi lại","Thiết kế request_id, ACK, timeout và giới hạn số lần gửi lại cho client UDP. Nộp source, định dạng bản tin và ít nhất 5 tình huống kiểm tra."),
-        ("BT05 - HTTP API và xử lý đồng thời","Xây dựng API nhận bài, trả mã yêu cầu và truy vấn trạng thái. Giải thích vì sao tác vụ nặng nên tách khỏi request; nộp sơ đồ luồng và source."),
-        ("BT06 - Tích hợp hệ thống Client/Server","Tích hợp hai client với máy chủ trong LAN. Báo cáo giao thức, xử lý lỗi, log trao đổi và hướng dẫn tái lập trên máy khác.")]
-        if content["key"]=="network" else [
-        ("BT04 - Tìm kiếm nhị phân","Giải truy vấn vị trí đầu tiên và cuối cùng trên dãy đã sắp. Phân tích trường hợp không tìm thấy và phần tử trùng; nộp source và bộ test."),
-        ("BT05 - Đồ thị và BFS","Xây dựng danh sách kề và BFS tìm số cạnh ngắn nhất. Kiểm tra đỉnh cô lập, cạnh lặp, s=t và đồ thị không liên thông."),
-        ("BT06 - Thuật toán tham lam","Trình bày chứng minh chọn hoạt động kết thúc sớm. Cài đặt chương trình và tự thiết kế phản ví dụ cho cách chọn theo thời điểm bắt đầu.")])
+        ("BT04 - Hàm và đệ quy","Cài đặt hàm tính giai thừa và gcd; phân tích điều kiện dừng và test biên. Nộp source cùng báo cáo."),
+        ("BT05 - Mảng và tìm kiếm","Tìm cực trị và vị trí phần tử trong mảng; kiểm tra mảng một phần tử, trùng và toàn số âm."),
+        ("BT06 - Chuỗi và file dữ liệu","Đọc một dòng văn bản, đếm từ và thống kê ký tự. Nộp source, file input/output và README.")]
+        if content["key"]=="programming" else [
+        ("BT04 - Tìm kiếm nhị phân","Tìm vị trí đầu và cuối trên dãy đã sắp; phân tích không tìm thấy và phần tử trùng."),
+        ("BT05 - Đồ thị và BFS","Dùng danh sách kề và BFS tìm đường đi ngắn nhất; kiểm tra đỉnh cô lập, cạnh lặp và s=t."),
+        ("BT06 - Thuật toán tham lam","Chứng minh cách chọn hoạt động kết thúc sớm và so sánh với các cách chọn khác.")])
     for index,(title,text) in enumerate(topics):
         if not db.scalar(select(Assignments.id).where(Assignments.course_id==course.id,Assignments.title==title)):
             handout=(title+"\n\n"+text+"\n\nNộp file/ZIP tối đa 20 MiB. Ghi mã sinh viên trong tên file và README.\nThang điểm: đáp ứng yêu cầu 4; giải thích 2; kiểm thử 2; hướng dẫn chạy 2.\n").encode("utf-8")

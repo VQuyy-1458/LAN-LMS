@@ -12,6 +12,34 @@ from server.app.core.security import verify
 from server.app.models import CodingExams, CourseEnrollments, Students, Problems, TestCases as Case, Assignments
 
 
+def test_switch_curriculum_preserves_accounts_and_other_courses(context, tmp_path):
+    from scripts.switch_programming_curriculum import switch
+    from server.app.models import Courses, AttendanceSessions, AssignmentSubmissions
+    app, clients, unrelated_id = context
+    seeded = seed(app.state.sessions, app.state.storage_root, "t", tmp_path / "seed")
+    old_id, algorithms_id = [row["id"] for row in seeded["courses"]]
+    with app.state.sessions.begin() as db:
+        old = db.get(Courses, old_id)
+        old.course_code, old.course_name = "LTM-D24-01", "Lập trình mạng"
+        hashes = dict(db.execute(select(User.id, User.password_hash)).all())
+        roster = set(db.scalars(select(CourseEnrollments.student_id).where(CourseEnrollments.course_id == old_id)))
+    result = switch(app.state.sessions, app.state.storage_root, "t", tmp_path / "switched")
+    new_id = result["courses"][0]["id"]
+    with app.state.sessions() as db:
+        assert dict(db.execute(select(User.id, User.password_hash)).all()) == hashes
+        assert set(db.scalars(select(CourseEnrollments.student_id).where(CourseEnrollments.course_id == new_id))) == roster
+        assert db.get(Courses, algorithms_id).status == "active"
+        assert db.get(Courses, unrelated_id) is not None
+        assert db.scalar(select(Courses).where(Courses.id == old_id).execution_options(include_deleted=True)).status == "deleted"
+        assert not list(db.scalars(select(AttendanceSessions).where(AttendanceSessions.course_id == new_id)))
+        assert not list(db.scalars(select(AssignmentSubmissions).join(Assignments).where(Assignments.course_id == new_id)))
+        exam_ids = select(CodingExams.id).where(CodingExams.course_id == new_id)
+        assert all(p.title.startswith("P") for p in db.scalars(select(Problems).where(Problems.exam_id.in_(exam_ids))))
+    again = switch(app.state.sessions, app.state.storage_root, "t", tmp_path / "switched-again")
+    assert again["courses"][0]["id"] == new_id
+    assert not again["courses"][0]["created"]
+
+
 def test_two_classrooms_are_complete_idempotent_and_preserve_old_users(context,tmp_path):
     app,clients,old_course=context
     with app.state.sessions() as db:
