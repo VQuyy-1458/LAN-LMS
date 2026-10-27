@@ -90,7 +90,7 @@ function Get-Node {
 function Get-WslVersion {
     try {
         $r=Invoke-Native "$env:SystemRoot\System32\wsl.exe" @('--version') 15
-        if ($r.Code -eq 0 -and $r.Text -match '(\d+\.\d+\.\d+)') { return [version]$Matches[1] }
+        if ($r.Code -eq 0 -and $r.Text -match '(?im)WSL[^\r\n\d]*(\d+\.\d+\.\d+)') { return [version]$Matches[1] }
     } catch {}
     return [version]'0.0.0'
 }

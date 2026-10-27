@@ -172,6 +172,10 @@ def test_windows_planning_and_native_arguments():
     $r=Invoke-Native 'PYTHON_PATH' @('-c','import sys,json; print(json.dumps(sys.argv[1:]))','path with space','trailing space\','quote"inside')
     if($r.Code -ne 0) {throw $r.Text}
     Write-Output $r.Text
+    function Invoke-Native { [pscustomobject]@{Code=0;Text='Microsoft Windows version 10.0.19045'} }
+    if ((Get-WslVersion) -ne [version]'0.0.0') {throw 'Windows version mistaken for WSL'}
+    function Invoke-Native { [pscustomobject]@{Code=0;Text="WSL version: 3.0.3.0`nKernel version: 6.18.54"} }
+    if ((Get-WslVersion) -ne [version]'3.0.3') {throw 'WSL version parsing'}
     '''.replace("PYTHON_PATH", sys.executable.replace("'", "''"))
     result = subprocess.run(["powershell.exe", "-NoProfile", "-Command", command], check=True, capture_output=True, text=True, timeout=30)
     assert json.loads(result.stdout) == ["path with space", "trailing space\\", 'quote"inside']
