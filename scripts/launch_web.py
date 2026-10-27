@@ -204,6 +204,15 @@ def make_environment(root, address=None, tls=None):
         if value is not None
     }
     env.update(os.environ)
+    local_node = root / ".runtime" / "bootstrap" / "node"
+    if (local_node / "node.exe").is_file():
+        env["PATH"] = str(local_node) + os.pathsep + env.get("PATH", "")
+    for docker_bin in (
+        Path(os.environ.get("ProgramFiles", "C:/Program Files")) / "Docker/Docker/resources/bin",
+        Path(os.environ.get("LOCALAPPDATA", "")) / "Programs/DockerDesktop/resources/bin",
+    ):
+        if (docker_bin / "docker.exe").is_file():
+            env["PATH"] = str(docker_bin) + os.pathsep + env.get("PATH", "")
     env.setdefault("RAYON_NUM_THREADS", "2")
     env.setdefault("NODE_OPTIONS", "--max-old-space-size=1536")
     env.update(
@@ -378,7 +387,7 @@ def start(address=None, open_browser=True):
             STATE.unlink(missing_ok=True)
     available(address, tls)
     nginx = find_nginx()
-    node = shutil.which("node.exe") or shutil.which("node")
+    node = shutil.which("node.exe", path=make_environment(ROOT).get("PATH")) or shutil.which("node", path=make_environment(ROOT).get("PATH"))
     if not node:
         raise FileNotFoundError("Chưa tìm thấy Node.js trong PATH.")
     env = make_environment(ROOT, address, tls)

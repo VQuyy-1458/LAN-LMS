@@ -15,3 +15,6 @@ Không cần cài Python, Node hay Docker. Kết nối cùng LAN/Wi-Fi với má
 Các lần sau chỉ mở Docker Desktop, chờ Engine chạy, rồi chạy `CHAY_LAN.cmd`. Dừng web bằng `DUNG_WEB.cmd`. Chưa cần cấu hình MySQL: bộ hiện dùng SQLite và private storage đã đóng gói.
 
 Bộ offline là ảnh chụp dữ liệu lúc đóng gói, không tự đồng bộ những thay đổi sau đó. Nếu cần chuyển dữ liệu mới hơn, dừng web/worker và xuất snapshot nhất quán bằng `scripts.backup_database` hoặc xuất khóa học ZIP theo hướng dẫn README, rồi đóng gói lại.
+
+
+Cập nhật cài tự động: mở `CAI_VA_CHAY_LMS.cmd` để kiểm tra/cài môi trường, nạp dữ liệu và chạy web; xem [ONE_FILE_SETUP.md](ONE_FILE_SETUP.md). Bước cài tay phía trên vẫn dùng được khi môi trường đã có.

@@ -86,6 +86,7 @@ def build(output, reuse_dependencies=None):
         shutil.copytree(nginx, dependencies / "nginx", ignore=shutil.ignore_patterns("logs", "*_temp"))
         print("Saving Docker compiler image...", flush=True)
         subprocess.run([docker, "save", "--output", str(dependencies / "judge-image.tar"), image], check=True, timeout=300)
+    shutil.copy2(ROOT / "CAI_VA_CHAY_LMS.cmd", output / "CAI_VA_CHAY_LMS.cmd")
     manifest = {"format": "lan-lms-offline", "version": 1, "platform": sys.platform,
                 "machine": platform.machine(), "python": "3.12", "node": version,
                 "judge_image": image, "judge_image_id": image_id, "files": {}}
@@ -94,12 +95,12 @@ def build(output, reuse_dependencies=None):
     (output / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     (output / "START_HERE.txt").write_text(
         "Copy this entire folder to a short local path, e.g. D:\\LAN-LMS-USB.\n"
-        "Requires Windows x64, Python 3.12, Node.js major " + version.split('.')[0].lstrip('v') +
-        ", Docker Desktop with WSL2/Linux Engine running.\n"
-        "Run LAN-LMS\\CAI_OFFLINE.cmd once; no Internet is used by that setup.\n"
-        "Then run LAN-LMS\\CHAY_LAN.cmd. Students only use a browser.\n"
-        "Sign in with the teacher created during setup and import the course ZIP.\n"
-        "Course ZIP/data and software installers are separate from this source/dependency kit.\n", encoding="utf-8")
+        "Run CAI_VA_CHAY_LMS.cmd. It checks/install missing Python 3.12, Node.js 24 and Docker/WSL2, then prepares data and opens the web.\n"
+        "Internet is required to download missing system software; existing libraries and judge image are bundled.\n"
+        "Allow UAC if prompted. Read/accept Docker terms yourself in Docker Desktop. WSL setup may require a reboot; one-shot continuation resumes after sign-in.\n"
+        "Needs compatible Windows x64, 8GB+ RAM and BIOS virtualization enabled. ARM/Windows Server are unsupported by this kit.\n"
+        "Existing data is preserved. Bundled classroom snapshot, if present, is restored only on a new installation.\n"
+        "Students only use a browser. Details: LAN-LMS\\docs\\ONE_FILE_SETUP.md.\n", encoding="utf-8")
     print("Offline kit ready: " + str(output), flush=True)
 
 

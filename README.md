@@ -383,3 +383,6 @@ Bộ lọc khóa học gồm Tất cả trạng thái, Đang học và Đã họ
 ### Dung lượng thư mục và dữ liệu trên máy
 
 Nginx đặt tại `tools/nginx`; tài khoản riêng tư tại `.runtime/accounts`; dữ liệu đang chạy tại `.runtime/web`. Chỉ giữ một bộ USB ở `.runtime/offline-kit`, đã cập nhật source và snapshot dữ liệu. Các bản USB cũ, source thử nghiệm, cache và bản sao ổ Docker dùng khi sửa lỗi đã được dọn. Xem [cấu trúc lưu trữ và cách dọn an toàn](docs/WORKSPACE_STORAGE.md).
+
+
+Cập nhật cài tự động: mở `CAI_VA_CHAY_LMS.cmd` để kiểm tra/cài môi trường, nạp dữ liệu và chạy web; xem [ONE_FILE_SETUP.md](docs/ONE_FILE_SETUP.md). Bước cài tay phía trên vẫn dùng được khi môi trường đã có.

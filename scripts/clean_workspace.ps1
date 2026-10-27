@@ -7,7 +7,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $workspace 'client/package.json')) -
 }
 
 # Keep live data, TLS identity, private account records, one offline kit and audit evidence.
-$keepRuntime = @('web', 'launcher', 'tls', 'accounts', 'offline-kit', 'backups', 'audit', 'maintenance')
+$keepRuntime = @('web', 'launcher', 'tls', 'accounts', 'offline-kit', 'backups', 'audit', 'maintenance', 'bootstrap', 'releases')
 $candidates = @('.pytest_cache', 'client/.next/cache', 'output', 'tmp')
 Get-ChildItem -LiteralPath (Join-Path $workspace '.runtime') -Force | ForEach-Object {
     $generated = $_.Name -match '^(USB_LAN_LMS_|usb-kit-|offline-check-|docker-repair-backup-20261026-2311$|classroom-2026102[78]$|programming-(20261028|fresh-build-20261028)$|course-transfer-check-20261027$|full-audit-regression$|practical-ui-qa$)' -or

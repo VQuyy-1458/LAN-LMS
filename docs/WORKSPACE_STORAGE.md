@@ -14,6 +14,8 @@ Mã nguồn, kiểm thử, tài liệu, báo cáo và số liệu thực nghiệ
 | `.runtime/tls` | CA và chứng chỉ LAN; giữ nguyên để điện thoại đã cài CA tiếp tục tin cậy |
 | `.runtime/launcher` | Trạng thái tiến trình và log vận hành |
 | `.runtime/accounts` | `LOGIN.txt`, `students.csv` riêng tư; không đưa lên Git |
+| `.runtime/bootstrap` | Môi trường riêng do bộ cài một file tạo và trạng thái cài tiếp; không xóa Python/Node tại đây khi đang dùng |
+| `.runtime/releases` | File ZIP bàn giao một-file hiện hành |
 | `.runtime/offline-kit` | Một bộ source/thư viện/image để chuyển máy offline; không cần cho web hiện tại, giữ để phục vụ bàn giao USB |
 | `.runtime/backups` | Bản sao lưu dữ liệu hiện tại và bản trước khi bỏ khóa mạng |
 | `.runtime/audit`, `.runtime/maintenance` | Minh chứng giao diện và nhật ký bảo trì |
@@ -27,3 +29,6 @@ Các sơ đồ đã giao được giữ ở `docs/diagrams`. `docs/CODE_OWNERSHI
 Xem trước bằng PowerShell: `./scripts/clean_workspace.ps1`. Bản áp dụng dùng `-Apply`; phải dừng web, kiểm tra bản backup hiện tại và bộ offline trước. Script kiểm tra đường dẫn nằm trong project, từ chối filesystem link và từ chối dọn khi dịch vụ dự án còn chạy. Không chạy apply khi có file mới tự đặt trong `.runtime` mà chưa đọc danh sách xem trước. Khi ngày backup thay đổi, cập nhật tên bản giữ lại trong script trước.
 
 Đừng copy cả các môi trường cài sẵn khi chỉ muốn chia sẻ source: clone Git hoặc đóng gói bằng `scripts.prepare_usb` theo hướng dẫn offline. Khi cần chuyển đúng dữ liệu hiện tại, dùng snapshot DB/storage trong `classroom-data/server-snapshot` của bộ offline; lệnh nạp từ chối ghi đè database đã tồn tại.
+
+
+Cập nhật cài tự động: mở `CAI_VA_CHAY_LMS.cmd` để kiểm tra/cài môi trường, nạp dữ liệu và chạy web; xem [ONE_FILE_SETUP.md](ONE_FILE_SETUP.md). Bước cài tay phía trên vẫn dùng được khi môi trường đã có.
