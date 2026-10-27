@@ -109,6 +109,10 @@ def main(no_open=False, prepare_only=False):
         subprocess.run(command, cwd=ROOT, env=env, check=True)
 
     if not ready:
+        if (ROOT / ".runtime/launcher/state.json").is_file() and venv.is_file():
+            # Never replace node_modules while the existing server is using it.
+            # The launcher stops only processes whose saved ownership still matches.
+            run([str(venv), "scripts/launch_web.py", "--stop"])
         if kit:
             from scripts.setup_offline import install
             install(ROOT, create_teacher=False, resume=True)
