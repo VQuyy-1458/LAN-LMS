@@ -89,6 +89,7 @@ class AttendanceSessions(Base):
 class Assignments(Base):
     __tablename__ = "assignments"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    deleted: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0", nullable=False)
     course_id: Mapped[int] = mapped_column(ForeignKey("courses.id", ondelete="RESTRICT"), nullable=False, index=True)
     created_by: Mapped[int] = mapped_column(ForeignKey("teachers.id", ondelete="RESTRICT"), nullable=False, index=True)
     title: Mapped[str] = mapped_column(Text, nullable=False)
@@ -100,8 +101,9 @@ class Assignments(Base):
 
 class CodingExams(Base):
     __tablename__ = "coding_exams"
-    __table_args__ = (Index("uq_one_final_per_course", "course_id", unique=True, sqlite_where=text("grade_component = 'final'")),)
+    __table_args__ = (Index("uq_one_final_per_course", "course_id", unique=True, sqlite_where=text("grade_component = 'final' AND deleted = 0")),)
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    deleted: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0", nullable=False)
     course_id: Mapped[int] = mapped_column(ForeignKey("courses.id", ondelete="RESTRICT"), nullable=False, index=True)
     created_by: Mapped[int] = mapped_column(ForeignKey("teachers.id", ondelete="RESTRICT"), nullable=False, index=True)
     title: Mapped[str] = mapped_column(Text, nullable=False)
@@ -295,6 +297,14 @@ class Grades(Base):
     reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     graded_by: Mapped[int | None] = mapped_column(ForeignKey("teachers.id", ondelete="RESTRICT"), nullable=True, index=True)
 
+class AssignmentAttachments(Base):
+    __tablename__ = "assignment_attachments"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    assignment_id: Mapped[int] = mapped_column(ForeignKey("assignments.id"), nullable=False)
+    original_filename: Mapped[str] = mapped_column(Text, nullable=False)
+    storage_path: Mapped[str] = mapped_column(Text, nullable=False)
+    size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+
 class AssignmentGrades(Base):
     __tablename__ = "assignment_grades"
     __table_args__ = (UniqueConstraint("assignment_id", "student_id", name="uq_assignment_grade"),)
@@ -304,7 +314,7 @@ class AssignmentGrades(Base):
     score: Mapped[float] = mapped_column(Float, nullable=False)
     graded_by: Mapped[int] = mapped_column(ForeignKey("teachers.id"), nullable=False)
 
-__all__ = ['Base', 'User', 'AuthSession', 'LoginAttempt', 'Classes', 'Courses', 'CourseClasses', 'Teachers', 'CsvImportPreviews', 'CourseMaterials', 'CalendarEvents', 'AttendanceSessions', 'Assignments', 'CodingExams', 'Problems', 'TestCases', 'IdempotencyKeys', 'GradeComponents', 'AuditLogs', 'Students', 'CourseTeachers', 'CourseEnrollments', 'AttendanceRecords', 'AssignmentSubmissions', 'AssignmentGrades', 'ExamRegistrations', 'ExamSessions', 'CodeSubmissions', 'JudgeJobs', 'JudgeResults', 'Grades']
+__all__ = ['Base', 'User', 'AuthSession', 'LoginAttempt', 'Classes', 'Courses', 'CourseClasses', 'Teachers', 'CsvImportPreviews', 'CourseMaterials', 'CalendarEvents', 'AttendanceSessions', 'Assignments', 'CodingExams', 'Problems', 'TestCases', 'IdempotencyKeys', 'GradeComponents', 'AuditLogs', 'Students', 'CourseTeachers', 'CourseEnrollments', 'AttendanceRecords', 'AssignmentSubmissions', 'AssignmentGrades', 'AssignmentAttachments', 'ExamRegistrations', 'ExamSessions', 'CodeSubmissions', 'JudgeJobs', 'JudgeResults', 'Grades']
 
 
 class RealtimeEvents(Base):
@@ -329,3 +339,19 @@ class ExamSessionEvents(Base):
     created_at: Mapped[float] = mapped_column(Float, nullable=False)
 
 __all__.append("ExamSessionEvents")
+
+# Deleted courses/exams/assignments are hidden consistently in every ORM read.
+# Transfer/backup utilities explicitly opt in to preserving historical relations.
+from sqlalchemy import event as _event
+from sqlalchemy.orm import Session as _Session, with_loader_criteria as _criteria
+@_event.listens_for(_Session, "do_orm_execute")
+def _visible_records(state):
+    if state.is_select and not state.execution_options.get("include_deleted"):
+        state.statement = state.statement.options(
+            _criteria(Courses, lambda c: c.status != "deleted", include_aliases=True),
+            _criteria(CodingExams, lambda c: c.deleted == False, include_aliases=True),
+            _criteria(Assignments, lambda c: c.deleted == False, include_aliases=True))
+
+@_event.listens_for(_Session,"after_transaction_end")
+def _clear_mutation_lock(session, transaction):
+    if transaction.parent is None: session.info.pop("mutation_lock",None)

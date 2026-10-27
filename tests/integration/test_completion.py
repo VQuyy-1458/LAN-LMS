@@ -115,7 +115,7 @@ def test_calendar_rights_and_attendance_atomic(context):
             },
         )
         .status_code
-        == 200
+        == 409
     )
 
 
@@ -311,11 +311,11 @@ def test_accepted_count_ladder_and_grades_publish(context):
             }
         ]
     }
-    assert c["t"].patch(f"/api/courses/{cid}/grades", json=edit).status_code == 200
-    assert c["s"].get(f"/api/courses/{cid}/gradebook").json()["items"][0]["total_score"] == 8
+    assert c["t"].patch(f"/api/courses/{cid}/grades", json=edit).status_code == 423
+    assert c["s"].get(f"/api/courses/{cid}/gradebook").json()["items"][0]["total_score"] == 10
     assert (
         c["t"].get(f"/api/courses/{cid}/gradebook").json()["items"][0]["total_score"]
-        == 8
+        == 10
     )
 
 

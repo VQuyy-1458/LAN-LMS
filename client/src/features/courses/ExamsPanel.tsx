@@ -1,8 +1,11 @@
 "use client";
+import {useCourseReadonly} from "@/components/CourseAccess";
 import { useCallback, useEffect, useState } from "react";
 import { apiRequest } from "@/lib/api";
 import { allPages, date, request, statusLabel, type Exam } from "@/lib/lms";
 import { useAction } from "@/lib/useAction";
+import PaginatedList from "@/components/Pagination";
+import ConfirmAction from "@/components/ConfirmAction";
 import Feedback from "@/components/Feedback";
 import ExamEditor, { ExamForm } from "./ExamEditor";
 import ExamPlayer from "./ExamPlayer";
@@ -19,6 +22,7 @@ export default function ExamsPanel({
 }) {
   const [rows, setRows] = useState<Exam[]>([]),
     [selected, setSelected] = useState(0);
+  const readonly=useCourseReadonly();
   const action = useAction();
   const [loaded, setLoaded] = useState(false);
   const [judge, setJudge] = useState<{
@@ -59,7 +63,7 @@ export default function ExamsPanel({
           </button>
         )}
       </section>
-      {teacher && loaded && !chosen && availableComponents.length > 0 && (
+      {teacher && !readonly && loaded && !chosen && availableComponents.length > 0 && (
         <section className="panel">
           <details>
             <summary>Tạo bài thi lập trình</summary>
@@ -93,7 +97,7 @@ export default function ExamsPanel({
       )}
       {!loaded && <p role="status">Đang tải danh sách kỳ thi…</p>}
       {!chosen && (
-        <div className="grid-2">
+        <PaginatedList className="grid-2">
           {rows.map((e) => (
             <button
               key={e.id}
@@ -104,6 +108,7 @@ export default function ExamsPanel({
                 borderColor:
                   e.id === selected ? "var(--primary)" : "var(--border)",
               }}
+              disabled={!teacher&&e.can_open===false}
               onClick={() => setSelected(e.id)}
             >
               <div className="panel-title">
@@ -116,11 +121,11 @@ export default function ExamsPanel({
               </div>
               <h2>{e.title}</h2>
               <p className="section-note">
-                {date(e.starts_at)} · {e.problem_count} bài
+                {date(e.starts_at)} · {e.problem_count} bài {!teacher&&e.can_open===false&&"· Đã nộp / hết giờ — không mở lại"}
               </p>
             </button>
           ))}
-        </div>
+        </PaginatedList>
       )}
       {loaded && !rows.length && (
         <div className="empty">
@@ -129,6 +134,7 @@ export default function ExamsPanel({
             : "Chưa có kỳ thi được công bố trong khóa học."}
         </div>
       )}
+      {chosen && teacher && !readonly && <ConfirmAction label="Xóa kỳ thi" message={`Bạn có chắc chắn muốn xóa kỳ thi “${chosen.title}”? Đề sẽ không còn truy cập được và không tính vào điểm khóa học.`} run={async()=>{await request(`/api/coding-exams/${chosen.id}`,"DELETE");setSelected(0);await load()}}/>}
       {chosen &&
         (teacher ? (
           <ExamEditor key={chosen.id} exam={chosen} onChange={load} />

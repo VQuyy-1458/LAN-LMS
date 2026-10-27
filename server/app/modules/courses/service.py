@@ -19,4 +19,5 @@ def serialize(db, row):
         teacher_id=teacher_id,
         semester=row.semester,
         academic_year=row.academic_year,
+        status=row.status,
     )

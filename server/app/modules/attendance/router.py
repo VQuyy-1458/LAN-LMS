@@ -45,7 +45,7 @@ def listing(
                     AttendanceRecords.student_id == s.id,
                 )
             )
-            item["my_status"] = r.status if r else None
+            item["my_status"] = r.status if r else ("absent" if row.status=="closed" or row.expires_at<=time.time() else None)
         items.append(item)
     return p.response(items, db.scalar(select(func.count()).select_from(q.subquery())))
 
@@ -70,6 +70,8 @@ def create(
     now = time.time()
     row = db.scalar(select(AttendanceSessions).where(AttendanceSessions.event_id == body.event_id)) if body.event_id else None
     if row:
+        if row.status=="closed" or row.expires_at<=now:
+            fail(409,"ATTENDANCE_FINALIZED","Buổi học đã chốt điểm danh; không tạo lại hoặc chỉnh sửa")
         # Reissue QR for the same lesson, preserving the roster and grade denominator.
         row.token_hash = digest(token)
         row.expires_at = now + body.duration_seconds
@@ -198,7 +200,7 @@ def roster(
                 id=entry.id if entry else None,
                 student_id=student.student_code,
                 full_name=student.full_name,
-                status=entry.status if entry else "unmarked",
+                status=entry.status if entry else ("absent" if row.status=="closed" or row.expires_at<=time.time() else "unmarked"),
                 checked_in_at=iso(entry.checked_in_at) if entry else None,
             )
         )
@@ -211,6 +213,8 @@ def correct(
 ):
     idempotency.write_lock(db)
     row = session(db, user, sid, True)
+    if row.status=="closed" or row.expires_at<=time.time():
+        fail(409,"ATTENDANCE_FINALIZED","Phiên điểm danh đã chốt; lịch sử chỉ được xem")
     from ...models import CourseEnrollments, Courses
 
     s = db.scalar(

@@ -39,7 +39,7 @@ def submit(
     paths = []
 
     def authorize():
-        p, e = exams.problem(db, user, pid)
+        p, e = exams.problem(db, user, pid, allow_closed=True)
         s = access.student(db, user)
         row, reg, exam, owner = exams.session(db, user, body.exam_session_id)
         if reg.exam_id != p.exam_id or owner.id != s.id:

@@ -1,8 +1,10 @@
 "use client";
+import {useCourseReadonly} from "@/components/CourseAccess";
 import { useCallback, useEffect, useState } from "react";
 import { apiRequest } from "@/lib/api";
 import { date, type Page } from "@/lib/lms";
 import { useAction } from "@/lib/useAction";
+import {useListPage} from "@/components/Pagination";
 import Feedback from "@/components/Feedback";
 type Student = {
   student_id: string;
@@ -33,10 +35,12 @@ export default function StudentsPanel({ courseId }: { courseId: number }) {
     [total, setTotal] = useState(0),
     [preview, setPreview] = useState<Preview | null>(null),
     [result, setResult] = useState<ImportResult | null>(null);
+  const previewPage=useListPage(preview?.errors.length||0);
+  const readonly=useCourseReadonly();
   const action = useAction();
   const load = useCallback(async () => {
     const r = await apiRequest<Page<Student>>(
-      `/api/courses/${courseId}/students?page=${page}&page_size=50`,
+      `/api/courses/${courseId}/students?page=${page}&page_size=10`,
     );
     setStudents(r.items);
     setTotal(r.total);
@@ -69,7 +73,7 @@ export default function StudentsPanel({ courseId }: { courseId: number }) {
   return (
     <div className="stack">
       <Feedback error={action.error} message={action.message} />
-      <section className="panel">
+      {!readonly&&<section className="panel">
         <h2>Import sinh viên từ CSV</h2>
         <p className="section-note">
           UTF-8 · tối đa 2 MiB / 2.000 dòng. Cột: student_id, full_name,
@@ -137,7 +141,7 @@ export default function StudentsPanel({ courseId }: { courseId: number }) {
                       </tr>
                     </thead>
                     <tbody>
-                      {preview.errors.slice(0, 100).map((r, i) => (
+                      {preview.errors.slice(previewPage.start,previewPage.end).map((r, i) => (
                         <tr key={i}>
                           <td>{r.row}</td>
                           <td>{r.field}</td>
@@ -147,6 +151,7 @@ export default function StudentsPanel({ courseId }: { courseId: number }) {
                     </tbody>
                   </table>
                 </div>
+                {previewPage.controls}
                 <button className="secondary" onClick={errorsCSV}>
                   Tải báo cáo lỗi
                 </button>
@@ -189,7 +194,7 @@ export default function StudentsPanel({ courseId }: { courseId: number }) {
             {result.existing_enrollments} đăng ký đã có.
           </div>
         )}
-      </section>
+      </section>}
       <section className="panel">
         <div className="panel-title">
           <h2>Sinh viên trong khóa</h2>
@@ -240,7 +245,7 @@ export default function StudentsPanel({ courseId }: { courseId: number }) {
           <span>Trang {page}</span>
           <button
             className="secondary"
-            disabled={page * 50 >= total}
+            disabled={page * 10 >= total}
             onClick={() => setPage((p) => p + 1)}
           >
             Sau

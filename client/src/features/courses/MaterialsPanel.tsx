@@ -1,4 +1,5 @@
 "use client";
+import {useCourseReadonly} from "@/components/CourseAccess";
 import { useCallback, useEffect, useState } from "react";
 import { apiRequest } from "@/lib/api";
 import { date, type Page } from "@/lib/lms";
@@ -21,10 +22,11 @@ export default function MaterialsPanel({
   const [rows, setRows] = useState<Material[]>([]),
     [page, setPage] = useState(1),
     [total, setTotal] = useState(0);
+  const readonly=useCourseReadonly();
   const action = useAction();
   const load = useCallback(async () => {
     const r = await apiRequest<Page<Material>>(
-      `/api/courses/${courseId}/materials?page=${page}&page_size=30`,
+      `/api/courses/${courseId}/materials?page=${page}&page_size=10`,
     );
     setRows(r.items);
     setTotal(r.total);
@@ -35,7 +37,7 @@ export default function MaterialsPanel({
   return (
     <div className="stack">
       <Feedback error={action.error} message={action.message} />
-      {teacher && (
+      {teacher && !readonly && (
         <section className="panel">
           <h2>Đăng tài liệu</h2>
           <form
@@ -110,7 +112,7 @@ export default function MaterialsPanel({
           <span>Trang {page}</span>
           <button
             className="secondary"
-            disabled={page * 30 >= total}
+            disabled={page * 10 >= total}
             onClick={() => setPage((x) => x + 1)}
           >
             Sau

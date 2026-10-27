@@ -9,10 +9,13 @@ from ..core.security import fail
 
 
 def write_lock(db):
+    if db.in_transaction() and db.info.get("mutation_lock"):
+        return
     if db.in_transaction():
         raise RuntimeError("Start atomic mutation before any DB reads")
     if db.bind.dialect.name == "sqlite":
         db.execute(text("BEGIN IMMEDIATE"))
+    db.info["mutation_lock"] = True
 
 
 def request_hash(metadata, content=b""):

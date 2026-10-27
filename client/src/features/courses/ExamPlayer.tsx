@@ -15,6 +15,7 @@ import {
 } from "@/lib/lms";
 import { useAction } from "@/lib/useAction";
 import ExamFocus from "@/components/ExamFocus";
+import {useListPage} from "@/components/Pagination";
 import Modal from "@/components/Modal";
 import Feedback from "@/components/Feedback";
 import { useRouter } from "next/navigation";
@@ -87,7 +88,7 @@ function Solver({
   }, [source, language, storageKey, loaded]);
   const load = useCallback(async () => {
     const r = await apiRequest<Page<Submission>>(
-      `/api/problems/${p.id}/submissions?page=${page}&page_size=20`,
+      `/api/problems/${p.id}/submissions?page=${page}&page_size=10`,
     );
     setRows(r.items);
     setTotal(r.total);
@@ -329,7 +330,7 @@ function Solver({
           <span>Trang {page}</span>
           <button
             className="secondary"
-            disabled={page * 20 >= total}
+            disabled={page * 10 >= total}
             onClick={() => setPage((x) => x + 1)}
           >
             Sau
@@ -384,6 +385,7 @@ export default function ExamPlayer({ exam, dedicated=false }: { exam: Exam; dedi
     [pid, setPid] = useState(0),
     [now, setNow] = useState(() => Date.now()),
     [offset, setOffset] = useState(0);
+  const problemPage=useListPage(problems.length);
   const action = useAction(),
     { revision } = useRealtime();
   const refresh = useCallback(async () => {
@@ -392,6 +394,8 @@ export default function ExamPlayer({ exam, dedicated=false }: { exam: Exam; dedi
     );
     setSession(s);
     if (s) setOffset(new Date(s.server_time).getTime() - Date.now());
+    if (s && s.status!=="active") { setProblems([]); return; }
+    if (exam.can_open===false) {setProblems([]);return;}
     if (exam.status !== "upcoming") {
       const p = await allPages<Problem>(
         `/api/coding-exams/${exam.id}/problems`,
@@ -399,7 +403,7 @@ export default function ExamPlayer({ exam, dedicated=false }: { exam: Exam; dedi
       setProblems(p);
       setPid((v) => v || p[0]?.id || 0);
     }
-  }, [exam.id, exam.status]);
+  }, [exam.id, exam.status,exam.can_open]);
   useEffect(() => {
     refresh().catch(action.setError);
   }, [refresh, revision, action.setError]);
@@ -436,6 +440,10 @@ export default function ExamPlayer({ exam, dedicated=false }: { exam: Exam; dedi
     if (session?.status === "active" && !dedicated)
       router.replace(`/student/exam?exam=${exam.id}`);
   },[session?.status,dedicated,exam.id,router]);
+  useEffect(()=>{
+    if(dedicated&&((session&&session.status!=="active")||exam.can_open===false))router.replace(`/student/courses?course=${exam.course_id}&tab=exams`);
+  },[dedicated,session,exam.can_open,exam.course_id,router]);
+  if(exam.can_open===false||(session&&session.status!=="active"))return <section className="panel"><h2>Bài thi đã kết thúc</h2><p>Bạn không thể mở lại đề thi. Điểm tự cập nhật tại Bảng điểm sau khi chấm xong.</p></section>;
   return (
     <div className="stack">
       <Feedback error={action.error} message={action.message} />
@@ -537,16 +545,17 @@ export default function ExamPlayer({ exam, dedicated=false }: { exam: Exam; dedi
       {session && (
         <>
           <nav className="tabs" aria-label="Danh sách bài thi">
-            {problems.map((p, i) => (
+            {problems.slice(problemPage.start,problemPage.end).map((p, i) => (
               <button
                 key={p.id}
                 className={p.id === pid ? "active" : ""}
                 onClick={() => setPid(p.id)}
               >
-                Bài {i + 1} · {p.title}
+                Bài {problemPage.start+i+1} · {p.title}
               </button>
             ))}
           </nav>
+          {problemPage.controls}
           {problems.find((p) => p.id === pid) && (
             <Solver
               key={`${session.id}-${pid}`}

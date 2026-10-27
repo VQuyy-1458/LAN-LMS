@@ -1,8 +1,9 @@
 from datetime import datetime, timezone
-from ...models import Students
+from ...models import Students,AssignmentAttachments
+from sqlalchemy import select
 
 
-def assignment_view(r):
+def assignment_view(r,db=None):
     return dict(
         id=r.id,
         course_id=r.course_id,
@@ -11,6 +12,7 @@ def assignment_view(r):
         due_at=datetime.fromtimestamp(r.due_at, timezone.utc).isoformat(),
         allow_resubmit=r.allow_resubmit,
         attachment_filename=r.attachment_filename,
+        attachments=[{"id":f.id,"filename":f.original_filename,"size_bytes":f.size_bytes} for f in db.scalars(select(AssignmentAttachments).where(AssignmentAttachments.assignment_id==r.id).order_by(AssignmentAttachments.id))] if db else [],
     )
 
 

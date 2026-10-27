@@ -1,8 +1,11 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { apiRequest } from "@/lib/api";
-import { request, type Course, type Page, type Event } from "@/lib/lms";
+import { request, allPages, type Course, type Event } from "@/lib/lms";
 import { useAction } from "@/lib/useAction";
+import CourseAccess from "@/components/CourseAccess";
+import PaginatedList from "@/components/Pagination";
+import ConfirmAction from "@/components/ConfirmAction";
 import Feedback from "@/components/Feedback";
 import CourseOverview from "./CourseOverview";
 import CourseTransfer from "./CourseTransfer";
@@ -23,16 +26,6 @@ type Tab =
   | "assignments"
   | "exams"
   | "grades";
-const tabs: [Tab, string][] = [
-  ["overview", "Tổng quan"],
-  ["students", "Sinh viên"],
-  ["materials", "Tài liệu"],
-  ["calendar", "Lịch & Thông báo"],
-  ["attendance", "Điểm danh"],
-  ["assignments", "Bài tập"],
-  ["exams", "Thi lập trình"],
-  ["grades", "Bảng điểm"],
-];
 function CourseForm({
   course,
   save,
@@ -42,6 +35,7 @@ function CourseForm({
   save: (body: unknown, form: HTMLFormElement) => void;
   busy: boolean;
 }) {
+  const [startYear,setStartYear]=useState(Number(course?.academic_year.slice(0,4)||new Date().getFullYear()));
   return (
     <form
       onSubmit={(e) => {
@@ -52,7 +46,7 @@ function CourseForm({
             course_code: f.get("course_code"),
             name: f.get("name"),
             semester: f.get("semester"),
-            academic_year: f.get("academic_year"),
+            academic_year: `${f.get("year_start")}-${f.get("year_end")}`,
             description: f.get("description"),
             start_date: f.get("start_date") || null,
             end_date: f.get("end_date") || null,
@@ -82,20 +76,10 @@ function CourseForm({
         </label>
         <label>
           Học kỳ
-          <input
-            name="semester"
-            required
-            defaultValue={course?.semester || "1"}
-          />
+          <select name="semester" defaultValue={course?.semester||"1"}><option value="1">Kỳ 1</option><option value="2">Kỳ 2</option><option value="summer">Kỳ hè</option></select>
         </label>
-        <label>
-          Năm học
-          <input
-            name="academic_year"
-            required
-            defaultValue={course?.academic_year || "2026-2027"}
-          />
-        </label>
+        <label>Năm bắt đầu<select name="year_start" value={startYear} onChange={e=>setStartYear(Number(e.target.value))}>{Array.from({length:16},(_,i)=>2020+i).map(y=><option key={y} value={y}>{y}</option>)}</select></label>
+        <label>Năm kết thúc<select name="year_end" value={startYear+1} onChange={()=>{}}><option value={startYear+1}>{startYear+1}</option></select><small>Năm học gồm hai năm liên tiếp.</small></label>
         <label>
           Bắt đầu
           <input
@@ -143,11 +127,11 @@ export default function Workspace({
     [attendance, setAttendance] = useState(0),
     [token, setToken] = useState(""),
     [loaded, setLoaded] = useState(false);
+  const [semesterFilter,setSemesterFilter]=useState(""),[yearFilter,setYearFilter]=useState("");
   const action = useAction();
   const [attendanceLesson, setAttendanceLesson] = useState<Event | undefined>();
   const load = useCallback(async () => {
-    const r = await apiRequest<Page<Course>>("/api/courses?page_size=100");
-    setCourses(r.items);
+    setCourses(await allPages<Course>("/api/courses"));
     setLoaded(true);
   }, []);
   useEffect(() => {
@@ -176,6 +160,7 @@ export default function Workspace({
     };
     syncLocation();
     window.addEventListener("popstate", syncLocation);
+    window.addEventListener("course-finalized",load);
     return () => window.removeEventListener("popstate", syncLocation);
   }, [load, action.setError, teacher, initialTab]);
   useEffect(() => {
@@ -195,7 +180,7 @@ export default function Workspace({
   }, [selected, loaded, courses, action.setError]);
   const course = courses.find((c) => c.id === selected),
     filtered = courses.filter((c) =>
-      `${c.course_code} ${c.name}`.toLowerCase().includes(search.toLowerCase()),
+      `${c.course_code} ${c.name}`.toLowerCase().includes(search.toLowerCase()) && (!semesterFilter||c.semester===semesterFilter) && (!yearFilter||c.academic_year===yearFilter),
     );
   const choose = (id: number) => {
     setSelected(id);
@@ -204,10 +189,12 @@ export default function Workspace({
     setAttendanceLesson(undefined);
     setTab("overview");
     window.history.pushState(null, "", courseHref(teacher, id));
+    window.dispatchEvent(new Event("course-navigation"));
   };
   const selectTab = (value: Tab) => {
     setTab(value);
     window.history.pushState(null, "", courseHref(teacher, selected, value));
+    window.dispatchEvent(new Event("course-navigation"));
   };
   return (
     <div className="stack">
@@ -219,7 +206,7 @@ export default function Workspace({
           <h1>{course ? course.name : "Khóa học"}</h1>
           <p>
             {course
-              ? `${course.course_code} · Học kỳ ${course.semester} · ${course.academic_year}`
+              ? `${course.course_code} · ${course.semester==="summer"?"Kỳ hè":"Học kỳ "+course.semester} · ${course.academic_year}`
               : teacher
                 ? "Chọn khóa học để quản lý sinh viên, lịch học, điểm danh và kỳ thi."
                 : "Chọn khóa học để xem tài liệu, quét QR điểm danh và làm bài thi."}
@@ -272,12 +259,14 @@ export default function Workspace({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-            <span className="muted">{courses.length} khóa học</span>
+            <select aria-label="Lọc học kỳ" value={semesterFilter} onChange={e=>setSemesterFilter(e.target.value)}><option value="">Tất cả học kỳ</option><option value="1">Kỳ 1</option><option value="2">Kỳ 2</option><option value="summer">Kỳ hè</option></select>
+            <select aria-label="Lọc năm học" value={yearFilter} onChange={e=>setYearFilter(e.target.value)}><option value="">Tất cả năm học</option>{Array.from(new Set(courses.map(c=>c.academic_year))).sort().map(y=><option key={y}>{y}</option>)}</select>
+            <span className="muted">{filtered.length} khóa học</span>
           </div>
           {!loaded ? (
             <div className="loading">Đang tải khóa học…</div>
           ) : filtered.length ? (
-            <div className="grid-3">
+            <PaginatedList className="grid-3" key={`${search}-${semesterFilter}-${yearFilter}`}>
               {filtered.map((c) => (
                 <button
                   className="panel course-card"
@@ -291,7 +280,7 @@ export default function Workspace({
                   </div>
                   <div className="course-body">
                     <p>
-                      Học kỳ {c.semester} · {c.academic_year}
+                      {c.semester==="summer"?"Kỳ hè":"Học kỳ "+c.semester} · {c.academic_year}
                     </p>
                     <div className="course-footer">
                       <span>Mở khóa học</span>
@@ -300,7 +289,7 @@ export default function Workspace({
                   </div>
                 </button>
               ))}
-            </div>
+            </PaginatedList>
           ) : (
             <div className="empty">
               {search
@@ -311,23 +300,11 @@ export default function Workspace({
         </>
       )}
       {course && (
-        <>
+        <CourseAccess readonly={course.status==="finalized"}>
+          {course.status==="finalized"&&<p className="alert">Khóa học đã tổng kết. Bạn chỉ có thể xem và xuất dữ liệu.</p>}
           {teacher && tab === "overview" && (
             <CourseTransfer courseId={course.id} />
           )}
-          <nav className="tabs" aria-label="Nội dung khóa học">
-            {tabs
-              .filter(([k]) => teacher || k !== "students")
-              .map(([k, n]) => (
-                <button
-                  key={k}
-                  className={tab === k ? "active" : ""}
-                  onClick={() => selectTab(k)}
-                >
-                  {n}
-                </button>
-              ))}
-          </nav>
           <div key={course.id}>
             {tab === "overview" && (
               <>
@@ -343,7 +320,7 @@ export default function Workspace({
                     Thời gian: {course.start_date || "Chưa đặt"} →{" "}
                     {course.end_date || "Chưa đặt"}
                   </p>
-                  {teacher && (
+                  {teacher && course.status!=="finalized" && (
                     <details style={{ marginTop: 24 }}>
                       <summary>Sửa thông tin khóa học</summary>
                       <CourseForm
@@ -363,8 +340,9 @@ export default function Workspace({
                       />
                     </details>
                   )}
+                  {teacher&&course.status!=="finalized"&&<div className="actions"><ConfirmAction label="Xóa khóa học" message="Bạn có chắc chắn muốn xóa khóa học này? Khóa học sẽ bị ẩn khỏi giảng viên và sinh viên." run={async()=>{await request(`/api/courses/${course.id}`,"DELETE");choose(0);await load()}}/></div>}
                   <p className="section-note" style={{ marginTop: 24 }}>
-                    Chọn mục trên thanh chức năng của khóa học để tiếp tục.
+                    Chọn chức năng trong nhánh Khóa học ở thanh điều hướng bên trái.
                   </p>
                 </section>
                 <CourseOverview
@@ -428,7 +406,7 @@ export default function Workspace({
               <GradebookPanel courseId={course.id} teacher={teacher} />
             )}
           </div>
-        </>
+        </CourseAccess>
       )}
       {selected > 0 && !course && !action.error && (
         <p role="status">Đang tải khóa học…</p>

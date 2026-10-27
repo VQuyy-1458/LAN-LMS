@@ -18,6 +18,8 @@ from .schemas import AssignmentInput, AssignmentPatch, GradeInput
 router = APIRouter(prefix="/api", tags=["assignments"])
 from .progress import router as progress_router
 router.include_router(progress_router)
+from .handouts import router as handout_router
+router.include_router(handout_router)
 
 
 @router.get("/courses/{course_id}/assignments")
@@ -46,7 +48,7 @@ def listing(course_id: int, status: Literal["all", "not_submitted", "submitted",
     elif status!="all":query=query.where(state==status)
     items=[]
     for row,n,label in db.execute(query.order_by(Assignments.due_at,Assignments.id).offset(p.offset).limit(p.page_size)):
-        items.append({**assignment_view(row),"submission_status":label,"submitted_count":n,"total_students":total_students})
+        items.append({**assignment_view(row,db),"submission_status":label,"submitted_count":n,"total_students":total_students})
     return {**p.response(items,counts[status]).model_dump(),"counts":counts}
 
 
@@ -70,7 +72,7 @@ def create(
     db.add(r)
     access.course(db, user, course_id, True).grades_published = False
     db.commit()
-    return assignment_view(r)
+    return assignment_view(r,db)
 
 
 @router.get("/assignments/{assignment_id}")
@@ -79,7 +81,7 @@ def detail(assignment_id: int, db=Depends(get_db), user=Depends(learning_user)):
     if not r:
         fail(404, "NOT_FOUND", "Không tìm thấy bài tập")
     access.course(db, user, r.course_id)
-    return assignment_view(r)
+    return assignment_view(r,db)
 
 
 @router.patch("/assignments/{assignment_id}")
@@ -97,7 +99,7 @@ def patch(
 
     try:
         merged = AssignmentInput.model_validate(
-            {**assignment_view(r), **body.model_dump(exclude_unset=True)}
+            {**assignment_view(r,db), **body.model_dump(exclude_unset=True)}
         )
     except ValidationError:
         fail(422, "VALIDATION_ERROR", "Thông tin bài tập không hợp lệ")
@@ -107,7 +109,7 @@ def patch(
     r.allow_resubmit = merged.allow_resubmit
     access.course(db, user, r.course_id, True).grades_published = False
     db.commit()
-    return assignment_view(r)
+    return assignment_view(r,db)
 
 
 @router.post("/assignments/{assignment_id}/submissions")
@@ -307,7 +309,7 @@ async def upload_attachment(aid: int, request: Request, file: UploadFile = File(
     if old_path:
         try: resolve(request.app.state.storage_root, old_path).unlink(missing_ok=True)
         except OSError: pass
-    return assignment_view(assignment)
+    return assignment_view(assignment,db)
 
 
 @router.get("/assignments/{aid}/attachment")
@@ -334,3 +336,17 @@ def view_attachment(aid: int, request: Request, db=Depends(get_db), user=Depends
     access.course(db,user,assignment.course_id)
     if Path(assignment.attachment_filename).suffix.lower()!=".pdf": fail(422,"PREVIEW_UNSUPPORTED","Chỉ đọc PDF tại đường dẫn này")
     return FileResponse(resolve(request.app.state.storage_root,assignment.attachment_path),media_type="application/pdf",headers={"Content-Disposition":"inline","X-Content-Type-Options":"nosniff"})
+
+
+@router.delete("/assignments/{aid}",status_code=204)
+def delete_assignment(aid: int,db=Depends(get_db),user=Depends(learning_user)):
+    from fastapi import Response
+    from ...services.activity import audit
+    row=db.get(Assignments,aid)
+    if not row or row.deleted:fail(404,"NOT_FOUND","Không tìm thấy bài tập")
+    access.course(db,user,row.course_id,True)
+    row.deleted=True
+    audit(db,user.user_id,"delete","assignment",aid)
+    emit(db,"grade.updated",row.course_id,{"assignment_id":aid,"deleted":True})
+    db.commit()
+    return Response(status_code=204)

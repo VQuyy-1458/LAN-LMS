@@ -80,7 +80,7 @@ def listing(
         q = q.where(CodingExams.status != "draft")
     return p.response(
         [
-            svc.exam_payload(r)
+            {**svc.exam_payload(r),"can_open":not svc.attempt_closed(db,user,r)}
             for r in db.scalars(
                 q.order_by(CodingExams.id).offset(p.offset).limit(p.page_size)
             )
@@ -132,7 +132,7 @@ def detail(eid: int, db=Depends(get_db), user=Depends(learning_user)):
     row = svc.exam(db, user, eid)
     if row.status == "draft" and user.role != "teacher":
         fail(403, "EXAM_NOT_OPEN", "Đề đang soạn")
-    return svc.exam_payload(row)
+    return {**svc.exam_payload(row),"can_open":not svc.attempt_closed(db,user,row)}
 
 
 @router.patch("/coding-exams/{eid}")
@@ -191,6 +191,7 @@ def problems(
     eid: int, db=Depends(get_db), user=Depends(learning_user), p=Depends(Pagination)
 ):
     row = svc.exam(db, user, eid)
+    if user.role=="student":svc.ensure_attempt_open(db,user,row)
     if user.role != "teacher" and (
         row.status == "draft" or time.time() < row.starts_at
     ):
@@ -371,6 +372,7 @@ def start(eid: int, request: Request, db=Depends(get_db), user=Depends(learning_
         else None
     )
     if old:
+        if old.status!="active" or old.ends_at<=time.time() or e.status=="closed": fail(409,"ATTEMPT_CLOSED","Bạn đã kết thúc bài thi; không thể mở lại")
         return svc.session_payload(db, old, reg, e, s, request.app.state.hub)
     if active_exam(db,user):
         fail(409,"ACTIVE_EXAM","Bạn cần kết thúc phiên thi hiện tại trước khi vào đề khác")
@@ -535,3 +537,15 @@ def list_events(sid: int, db=Depends(get_db), user=Depends(learning_user), p=Dep
     return p.response([{"id": x.id, "event_type": x.event_type, "ip_address": x.ip_address,
         "created_at": iso(x.created_at)} for x in db.scalars(query.order_by(ExamSessionEvents.id.desc()).offset(p.offset).limit(p.page_size))],
         db.scalar(select(func.count()).select_from(query.subquery())))
+
+
+@router.delete("/coding-exams/{eid}",status_code=204)
+def delete_exam(eid: int,db=Depends(get_db),user=Depends(learning_user)):
+    row=svc.exam(db,user,eid,True)
+    row.deleted=True
+    for session in db.scalars(select(ExamSessions).join(ExamRegistrations).where(ExamRegistrations.exam_id==eid,ExamSessions.status=="active")):
+        session.status="finished";session.submitted_at=time.time()
+    audit(db,user.user_id,"delete","exam",eid)
+    emit(db,"exam.updated",row.course_id,{"exam_id":eid,"deleted":True})
+    db.commit()
+    return Response(status_code=204)

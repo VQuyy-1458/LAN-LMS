@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { apiRequest } from "@/lib/api";
-import type { Course, Page } from "@/lib/lms";
+import {allPages} from "@/lib/lms";
+import type { Course } from "@/lib/lms";
 export default function CoursePicker({
   value,
   onChange,
@@ -13,9 +13,9 @@ export default function CoursePicker({
     [error, setError] = useState("");
   useEffect(() => {
     let live = true;
-    apiRequest<Page<Course>>("/api/courses?page_size=100")
+    allPages<Course>("/api/courses")
       .then((r) => {
-        if (live) setCourses(r.items);
+        if (live) setCourses(r);
       })
       .catch((e) => setError(e.message));
     return () => {

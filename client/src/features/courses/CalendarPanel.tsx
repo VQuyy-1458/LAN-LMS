@@ -10,7 +10,10 @@ import {
 } from "@/lib/lms";
 import { useAction } from "@/lib/useAction";
 import WeeklySchedule from "@/components/WeeklySchedule";
+import PaginatedList from "@/components/Pagination";
+import {useCourseReadonly} from "@/components/CourseAccess";
 import Feedback from "@/components/Feedback";
+import {useRealtime} from "@/components/Realtime";
 function EventForm({
   event,
   save,
@@ -60,8 +63,6 @@ function EventForm({
             defaultValue={event?.event_type || "lesson"}
           >
             <option value="lesson">Lịch học</option>
-            <option value="exam">Lịch thi</option>
-            <option value="deadline">Hạn nộp</option>
             <option value="announcement">Thông báo</option>
           </select>
         </label>
@@ -110,17 +111,22 @@ export default function CalendarPanel({
   onAttendance?: (event: Event) => void;
 }) {
   const [rows, setRows] = useState<Event[]>([]);
+  const readonly=useCourseReadonly();
+  const {revision}=useRealtime();
+  const [filter,setFilter]=useState("all");
   const action = useAction();
   const load = useCallback(async () => {
     setRows(await allPages<Event>(`/api/courses/${courseId}/events`));
   }, [courseId]);
   useEffect(() => {
     load().catch(action.setError);
-  }, [load, action.setError]);
+    const timer=setInterval(()=>void load().catch(()=>{}),15000);
+    return()=>clearInterval(timer);
+  }, [load, action.setError,revision]);
   return (
     <div className="stack">
       <Feedback error={action.error} message={action.message} />
-      {teacher && (
+      {teacher && !readonly && (
         <section className="panel">
           <details>
             <summary>Thêm lịch hoặc thông báo</summary>
@@ -155,7 +161,9 @@ export default function CalendarPanel({
           href: `/${teacher ? "teacher" : "student"}/courses?course=${courseId}&tab=calendar`,
         }))}
       />
-      {rows.map((e) => (
+      <nav className="tabs" aria-label="Lọc lịch">{[["all","Tổng số"],["lesson","Lịch học"],["exam","Lịch thi"],["deadline","Hạn bài tập"]].map(([value,label])=><button key={value} className={filter===value?"active":""} onClick={()=>setFilter(value)}>{label} ({rows.filter(e=>value==="all"||e.event_type===value).length})</button>)}</nav>
+      <PaginatedList key={filter}>
+      {rows.filter(e=>filter==="all"||e.event_type===filter).map((e) => (
         <section className="panel" key={e.id}>
           <span className="badge">
             {
@@ -174,14 +182,14 @@ export default function CalendarPanel({
           <p className="statement" style={{ marginTop: 14 }}>
             {e.description}
           </p>
-          {teacher && e.event_type === "lesson" && onAttendance && (
+          {teacher && !readonly && e.event_type === "lesson" && e.attendance_state!=="closed" && onAttendance && (
             <div className="actions">
               <button onClick={() => onAttendance(e)}>
                 Tạo QR điểm danh buổi học này
               </button>
             </div>
           )}
-          {teacher && (
+          {teacher && !readonly && e.editable!==false && !e.attendance_state && (
             <details style={{ marginTop: 18 }}>
               <summary>Chỉnh sửa / Xóa</summary>
               <EventForm
@@ -213,6 +221,7 @@ export default function CalendarPanel({
           )}
         </section>
       ))}
+      </PaginatedList>
       {!rows.length && (
         <div className="empty">Chưa có lịch hoặc thông báo.</div>
       )}

@@ -21,7 +21,7 @@ export default function HomePage() {
   }, []);
   useEffect(() => {
     let live = true;
-    apiRequest<Page<Course>>(`/api/public/courses?page=${page}&page_size=12`)
+    apiRequest<Page<Course>>(`/api/public/courses?page=${page}&page_size=10`)
       .then((r) => {
         if (live) {
           setCourses(r.items);
@@ -152,7 +152,7 @@ export default function HomePage() {
             <span>Trang {page}</span>
             <button
               className="secondary"
-              disabled={page * 12 >= total}
+              disabled={page * 10 >= total}
               onClick={() => {
                 setLoading(true);
                 setPage((p) => p + 1);

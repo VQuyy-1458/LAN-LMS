@@ -95,6 +95,8 @@ def courses(db=Depends(get_db), user=Depends(learning_user), p=Depends(Paginatio
 @router.post("/courses", status_code=201)
 def create(body: CourseInput, db=Depends(get_db), user=Depends(learning_user)):
     t = access.teacher(db, user)
+    if db.scalar(select(Courses.id).where(Courses.course_code==body.course_code,Courses.semester==body.semester,Courses.academic_year==body.academic_year).execution_options(include_deleted=True)):
+        fail(409,"COURSE_EXISTS","Mã khóa học đã tồn tại trong học kỳ và năm học này; chọn mã khác")
     r = Courses(
         course_code=body.course_code,
         course_name=body.name,
@@ -127,6 +129,7 @@ def patch(
     current = serialize(db, r)
     current.pop("id")
     current.pop("teacher_id")
+    current.pop("status")
     from pydantic import ValidationError
 
     try:
@@ -135,6 +138,8 @@ def patch(
         )
     except ValidationError:
         fail(422, "VALIDATION_ERROR", "Thông tin hoặc ngày khóa học không hợp lệ")
+    if db.scalar(select(Courses.id).where(Courses.id!=r.id,Courses.course_code==merged.course_code,Courses.semester==merged.semester,Courses.academic_year==merged.academic_year).execution_options(include_deleted=True)):
+        fail(409,"COURSE_EXISTS","Mã khóa học đã tồn tại trong học kỳ và năm học này")
     r.course_code = merged.course_code
     r.course_name = merged.name
     r.description = merged.description
@@ -144,6 +149,17 @@ def patch(
     r.academic_year = merged.academic_year
     db.commit()
     return serialize(db, r)
+
+
+@router.delete("/courses/{course_id}", status_code=204)
+def delete_course(course_id: int, db=Depends(get_db), user=Depends(learning_user)):
+    from ...services.activity import audit
+    from fastapi import Response
+    row=access.course(db,user,course_id,True)
+    row.status="deleted"
+    audit(db,user.user_id,"delete","course",course_id)
+    db.commit()
+    return Response(status_code=204)
 
 
 @router.get("/courses/{course_id}/students")

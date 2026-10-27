@@ -152,11 +152,17 @@ def publish(cid: int, body: Publish, db=Depends(get_db), user=Depends(learning_u
         ):
             fail(409, "INCOMPLETE_GRADES", "Còn bài tập chưa đến hạn")
         items = svc.rows(db, cid)
+        from ...models import CodingExams
+        exams=list(db.scalars(select(CodingExams).where(CodingExams.course_id==cid)))
+        students=list(db.scalars(select(Students).join(CourseEnrollments).where(CourseEnrollments.course_id==cid,CourseEnrollments.status=="active")))
+        if any(ws.get(e.grade_component,0)>0 and svc.single_exam_score(db,e,s.id) is None for e in exams for s in students):
+            fail(409,"INCOMPLETE_GRADES","Còn đề thi chưa kết thúc hoặc bài chờ chấm; chưa thể chốt tổng kết")
         if not items or any(r["total_score"] is None for r in items):
             fail(
                 409, "INCOMPLETE_GRADES", "Còn thiếu điểm thành phần hoặc bài chờ chấm"
             )
     course.grades_published = body.published
+    if body.published: course.status = "finalized"
     audit(db, user.user_id, "publish", "gradebook", cid, {"published": body.published})
     db.commit()
     return {"published": body.published}

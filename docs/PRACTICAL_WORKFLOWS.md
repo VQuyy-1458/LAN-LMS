@@ -31,3 +31,7 @@ Xem bài trực tiếp trong cửa sổ: PDF; TXT/mã nguồn; nội dung văn b
 ## Kiểm tra và chuyển máy
 
 Migration `0008_assignment_grades` lưu điểm từng bài độc lập cả khi sinh viên chưa nộp file. Gói chuyển khóa bao gồm bảng này; gói phiên bản 1 cũ thiếu bảng được hiểu là chưa có điểm điều chỉnh. Sao lưu DB/storage trước nâng cấp. Kiểm thử API tại `tests/integration/test_practical_workflows.py`; kiểm thử ảnh QR và nộp sớm được thực hiện trên bản sao DB, không sửa phiên thi chính.
+
+## Cập nhật vòng đời và dữ liệu 28/10/2026
+
+Quy tắc mới thay thế phần hướng dẫn cũ về mở lại đề, chỉnh điểm danh lịch sử và hủy tổng kết. Khóa đã chốt chỉ được xem/xuất; phiên điểm danh đã chốt không sửa hay tạo lại; danh sách phân trang 10 mục. Xem [hướng dẫn hiện hành và tài khoản bộ dữ liệu mới](LIFECYCLE_AND_DATA.md).

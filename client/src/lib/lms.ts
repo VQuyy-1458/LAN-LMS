@@ -6,6 +6,7 @@ export type Page<T> = {
   page_size: number;
 };
 export type Course = {
+  status: "active" | "finalized" | "deleted";
   id: number;
   course_code: string;
   name: string;
@@ -16,6 +17,9 @@ export type Course = {
   end_date: string | null;
 };
 export type Event = {
+  editable?: boolean;
+  attendance_state?: string|null;
+  source_id?: number;
   id: number;
   course_id: number;
   title: string;
@@ -25,6 +29,7 @@ export type Event = {
   ends_at: string;
 };
 export type Exam = {
+  can_open?: boolean;
   id: number;
   course_id: number;
   title: string;

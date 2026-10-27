@@ -23,7 +23,7 @@ UNPACKED_LIMIT = 500 * 1024 * 1024
 # Parents precede children. Teachers are deliberately mapped to the importing owner.
 MODELS = [m.Classes, m.User, m.Students, m.Courses, m.CourseClasses,
           m.CourseEnrollments, m.CourseMaterials, m.CalendarEvents, m.AttendanceSessions,
-          m.AttendanceRecords, m.Assignments, m.AssignmentSubmissions, m.AssignmentGrades, m.CodingExams,
+          m.AttendanceRecords, m.Assignments, m.AssignmentAttachments, m.AssignmentSubmissions, m.AssignmentGrades, m.CodingExams,
           m.Problems, m.TestCases, m.ExamRegistrations, m.ExamSessions,
           m.CodeSubmissions, m.JudgeJobs, m.JudgeResults, m.GradeComponents, m.Grades,
           m.ExamSessionEvents]
@@ -36,7 +36,7 @@ def export_package(db, user, cid, root):
     selected = {"courses": {cid}}
     # Resolve the scope downwards, then collect profiles belonging to this course.
     scope = [m.CourseClasses, m.CourseEnrollments, m.CourseMaterials, m.CalendarEvents,
-             m.AttendanceSessions, m.AttendanceRecords, m.Assignments,
+             m.AttendanceSessions, m.AttendanceRecords, m.Assignments, m.AssignmentAttachments,
              m.AssignmentSubmissions, m.AssignmentGrades, m.CodingExams, m.Problems, m.TestCases,
              m.ExamRegistrations, m.ExamSessions, m.CodeSubmissions, m.JudgeJobs,
              m.JudgeResults, m.GradeComponents, m.Grades, m.ExamSessionEvents]
@@ -47,7 +47,7 @@ def export_package(db, user, cid, root):
         if parent is None:
             raise RuntimeError("Missing course scope")
         parent_table = next(iter(parent.foreign_keys)).column.table.name
-        rows = list(db.scalars(select(model).where(parent.in_(selected[parent_table]))))
+        rows = list(db.scalars(select(model).where(parent.in_(selected[parent_table])).execution_options(include_deleted=True)))
         tables[table.name] = [{c.name: getattr(row, c.name) for c in table.columns} for row in rows]
         selected[table.name] = {row.id for row in rows}
     student_ids = {r["student_id"] for r in tables["course_enrollments"]}
@@ -104,6 +104,7 @@ def read_package(data):
                 raise ValueError("Unsupported format")
             tables = manifest["tables"]
             tables.setdefault("assignment_grades", [])
+            tables.setdefault("assignment_attachments", [])
             if set(tables) != {model.__tablename__ for model in MODELS}:
                 raise ValueError("Unknown/missing tables")
             if len(tables["courses"]) != 1 or sum(map(len, tables.values())) > 50000:
@@ -112,6 +113,7 @@ def read_package(data):
                 rows = tables[model.__tablename__]
                 ids = set()
                 for row in rows:
+                    if model in (m.Assignments,m.CodingExams): row.setdefault("deleted", False)
                     if model == m.AttendanceSessions:
                         row.setdefault("event_id", None)
                     if model == m.Assignments:

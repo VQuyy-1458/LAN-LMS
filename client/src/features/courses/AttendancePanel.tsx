@@ -1,9 +1,11 @@
 "use client";
+import {useCourseReadonly} from "@/components/CourseAccess";
 import { useCallback, useEffect, useRef, useState } from "react";
+import {useListPage} from "@/components/Pagination";
 import Image from "next/image";
 import Modal from "@/components/Modal";
 import { apiRequest } from "@/lib/api";
-import { allPages, date, request, type Page, type Event } from "@/lib/lms";
+import { allPages, date, request, type Event } from "@/lib/lms";
 import AttendanceScanner from "@/components/AttendanceScanner";
 import { parseAttendanceQr } from "@/lib/attendanceQr";
 import { courseHref } from "@/lib/courseNavigation";
@@ -11,6 +13,7 @@ import { useRealtime } from "@/components/Realtime";
 import { useAction } from "@/lib/useAction";
 import Feedback from "@/components/Feedback";
 type Attendance = {
+  event_id?:number|null;
   id: number;
   title: string;
   status: string;
@@ -39,12 +42,14 @@ export default function AttendancePanel({
   initialToken?: string;
   lesson?: Event;
 }) {
+  const readonly=useCourseReadonly();
   const [rows, setRows] = useState<Attendance[]>([]),
     [created, setCreated] = useState<Created | null>(null),
     [selected, setSelected] = useState<number>(initialSession || 0),
     [records, setRecords] = useState<Record[]>([]),
     [recordPage, setRecordPage] = useState(1),
     [recordTotal, setRecordTotal] = useState(0);
+  const historyPage=useListPage(rows.length);
   const [lessons, setLessons] = useState<Event[]>([]);
   const [lessonId, setLessonId] = useState(lesson?.id || 0);
   const chosenLesson = lesson || lessons.find((event) => event.id === lessonId);
@@ -52,22 +57,16 @@ export default function AttendancePanel({
   const autoCheck = useRef("");
   const { revision } = useRealtime();
   const load = useCallback(async () => {
-    setRows(
-      (
-        await apiRequest<Page<Attendance>>(
-          `/api/courses/${courseId}/attendance-sessions?page_size=100`,
-        )
-      ).items,
-    );
+    setRows(await allPages<Attendance>(`/api/courses/${courseId}/attendance-sessions`));
   }, [courseId]);
   useEffect(() => {
     if (teacher)
       allPages<Event>(`/api/courses/${courseId}/events`)
         .then((events) =>
-          setLessons(events.filter((event) => event.event_type === "lesson")),
+          setLessons(events.filter((event) => event.event_type === "lesson" && event.attendance_state!=="closed")),
         )
         .catch(action.setError);
-  }, [teacher, courseId, action.setError]);
+  }, [teacher, courseId, action.setError,revision,rows]);
   const loadRecords = useCallback(async () => {
     if (teacher && selected) {
       const records = await allPages<Record>(`/api/attendance-sessions/${selected}/roster`);
@@ -118,7 +117,7 @@ export default function AttendancePanel({
   return (
     <div className="stack">
       <Feedback error={action.error} message={action.message} />
-      {teacher ? (
+      {teacher && !readonly ? (
         <section className="panel" id="attendance-create">
           <h2>
             Tạo QR điểm danh{chosenLesson ? ` · ${chosenLesson.title}` : ""}
@@ -181,14 +180,14 @@ export default function AttendancePanel({
               </label>
             </div>
             <div className="actions">
-              <button disabled={action.busy || !chosenLesson}>
+              <button disabled={action.busy || !chosenLesson || rows.some(r=>r.event_id===chosenLesson.id&&r.status==="closed")}>
                 Tạo mã QR điểm danh
               </button>
             </div>
           </form>
 
         </section>
-      ) : (
+      ) : !teacher ? (
         <section className="panel">
           <h2>Điểm danh buổi học</h2>
           <AttendanceScanner
@@ -224,7 +223,7 @@ export default function AttendancePanel({
             nhận có mặt.
           </p>
         </section>
-      )}
+      ) : null}
       <section className="panel">
         <h2>Lịch sử điểm danh</h2>
         <div className="table-wrap" style={{ marginTop: 15 }}>
@@ -238,7 +237,7 @@ export default function AttendancePanel({
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => (
+              {rows.slice(historyPage.start,historyPage.end).map((r) => (
                 <tr key={r.id}>
                   <td>
                     #{r.id} · {r.title}
@@ -300,6 +299,7 @@ export default function AttendancePanel({
             </tbody>
           </table>
         </div>
+        {historyPage.controls}
         {!rows.length && <div className="empty">Chưa có phiên điểm danh.</div>}
       </section>
       {teacher && selected > 0 && (
@@ -328,7 +328,7 @@ export default function AttendancePanel({
               </p>
             </div>
           )}
-        <p className="section-note">Đã có mặt: {records.filter(r=>["present","late"].includes(r.status)).length}/{recordTotal}. Danh sách dưới đây chỉ còn sinh viên chưa có mặt.</p>
+        <p className="section-note">Đã có mặt: {records.filter(r=>["present","late"].includes(r.status)).length}/{recordTotal}. {rows.find(s=>s.id===selected)?.status==="open"?"Danh sách chỉ còn sinh viên chưa có mặt.":"Đã chốt. Danh sách chỉ được xem."}</p>
         <section>
           <div className="panel-title">
             <h2>Điểm danh phiên #{selected}</h2>
@@ -350,7 +350,7 @@ export default function AttendancePanel({
                 </tr>
               </thead>
               <tbody>
-                {records.filter(r=>!["present","late"].includes(r.status)).slice((recordPage-1)*50,recordPage*50).map((r) => (
+                {records.filter(r=>rows.find(s=>s.id===selected)?.status!=="open" || !["present","late"].includes(r.status)).slice((recordPage-1)*10,recordPage*10).map((r) => (
                   <tr key={r.student_id}>
                     <td>{r.student_id}</td>
                     <td>{r.full_name}</td>
@@ -364,7 +364,7 @@ export default function AttendancePanel({
                               ? "Vắng"
                               : "Chưa điểm danh"}
                       </p>
-                      <div
+                      {!readonly && rows.find(s=>s.id===selected)?.status==="open" && <div
                         className="actions"
                         role="group"
                         aria-label={`Điểm danh ${r.student_id}`}
@@ -401,7 +401,7 @@ export default function AttendancePanel({
                             {label}
                           </button>
                         ))}
-                      </div>
+                      </div>}
                     </td>
                     <td>{date(r.checked_in_at)}</td>
                   </tr>
@@ -420,13 +420,13 @@ export default function AttendancePanel({
             <span>Trang {recordPage}</span>
             <button
               className="secondary"
-              disabled={recordPage * 50 >= records.filter(r=>!["present","late"].includes(r.status)).length}
+              disabled={recordPage * 10 >= records.filter(r=>rows.find(s=>s.id===selected)?.status!=="open" || !["present","late"].includes(r.status)).length}
               onClick={() => setRecordPage((x) => x + 1)}
             >
               Sau
             </button>
           </div>
-          <details style={{ marginTop: 20 }}>
+          {!readonly && rows.find(s=>s.id===selected)?.status==="open" && <details style={{ marginTop: 20 }}>
             <summary>Điều chỉnh có lý do</summary>
             <form
               onSubmit={(e) => {
@@ -473,8 +473,8 @@ export default function AttendancePanel({
                 <button disabled={action.busy}>Lưu điều chỉnh</button>
               </div>
             </form>
-          </details>
-          {rows.find(r=>r.id===selected)?.status==="open" && <button className="danger" disabled={action.busy} onClick={()=>void action.run(async()=>{
+          </details>}
+          {!readonly && rows.find(r=>r.id===selected)?.status==="open" && <button className="danger" disabled={action.busy} onClick={()=>void action.run(async()=>{
             await request(`/api/attendance-sessions/${selected}`,"PATCH",{status:"closed"});
             await load(); await loadRecords();setCreated(null);
           },"Đã đóng phiên. Sinh viên chưa điểm danh được tính vắng.")}>Kết thúc phiên điểm danh</button>}

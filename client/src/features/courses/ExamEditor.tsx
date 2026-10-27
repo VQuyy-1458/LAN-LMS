@@ -1,4 +1,5 @@
 "use client";
+import {useCourseReadonly} from "@/components/CourseAccess";
 import { useCallback, useEffect, useState } from "react";
 import { apiRequest } from "@/lib/api";
 import {
@@ -10,12 +11,12 @@ import {
   request,
   statusLabel,
   type Exam,
-  type Page,
   type Problem,
   type ExamSession,
   type Submission,
 } from "@/lib/lms";
 import { useAction } from "@/lib/useAction";
+import PaginatedList,{useListPage} from "@/components/Pagination";
 import Feedback from "@/components/Feedback";
 import { examComponentLabel, type ExamComponent } from "@/lib/examCreation";
 export function ExamForm({
@@ -266,25 +267,18 @@ function ProblemForm({
 type Test = { id: number; points: number; is_hidden: boolean; ordinal: number };
 function TestEditor({
   problemId,
-  editable,
+  editable: requestedEditable,
 }: {
   problemId: number;
   editable: boolean;
 }) {
+  const readonly=useCourseReadonly();
+  const editable=requestedEditable&&!readonly;
   const [rows, setRows] = useState<Test[]>([]);
   const [zipKey, setZipKey] = useState(key);
   const action = useAction();
-  const load = useCallback(
-    async () =>
-      setRows(
-        (
-          await apiRequest<Page<Test>>(
-            `/api/problems/${problemId}/test-cases?page_size=100`,
-          )
-        ).items,
-      ),
-    [problemId],
-  );
+  const testsPage=useListPage(rows.length);
+  const load=useCallback(async()=>setRows(await allPages<Test>(`/api/problems/${problemId}/test-cases`)),[problemId]);
   useEffect(() => {
     load().catch(action.setError);
   }, [load, action.setError]);
@@ -300,7 +294,7 @@ function TestEditor({
         body.set("expected_output_file",new File([String(values.get("output")??"")],"output.out",{type:"text/plain"}));
         body.set("points",String(values.get("points")));body.set("ordinal",String(rows.length+1));body.set("is_hidden",values.has("hidden")?"true":"false");
         void action.run(async()=>{await apiRequest(`/api/problems/${problemId}/test-cases`,{method:"POST",body});form.reset();await load()},"Đã thêm testcase.");
-      }}><h4>Thêm testcase bằng nội dung</h4><div className="form-grid"><label>Input<textarea name="input" rows={4}/></label><label>Output mong đợi<textarea name="output" rows={4}/></label><label>Trọng số test<input name="points" type="number" min={0} max={10000} step="0.01" defaultValue={100} required/></label><label className="check-label"><input name="hidden" type="checkbox" defaultChecked/>Test ẩn</label></div><button disabled={action.busy}>Lưu testcase</button><p className="section-note">Có thể để input/output rỗng nếu đề yêu cầu. Tổng trọng số tất cả test phải bằng điểm tối đa câu hỏi trước khi mở thi.</p></form>}
+      }}><h4>Thêm testcase bằng nội dung</h4><div className="form-grid"><label>Input<textarea name="input" rows={4}/></label><label>Output mong đợi<textarea name="output" rows={4}/></label><label>Trọng số test<input name="points" type="number" min={0} max={10000} step="0.01" defaultValue={100} required/></label><label className="check-label"><input name="hidden" type="checkbox" defaultChecked/>Test ẩn</label></div><button disabled={action.busy||readonly}>Lưu testcase</button><p className="section-note">Có thể để input/output rỗng nếu đề yêu cầu. Tổng trọng số tất cả test phải bằng điểm tối đa câu hỏi trước khi mở thi.</p></form>}
       <div className="table-wrap">
         <table>
           <thead>
@@ -312,7 +306,7 @@ function TestEditor({
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => (
+            {rows.slice(testsPage.start,testsPage.end).map((r) => (
               <tr key={r.id}>
                 <td>{r.ordinal}</td>
                 <td>{r.points}</td>
@@ -326,7 +320,7 @@ function TestEditor({
                   {editable && (
                     <button
                       className="danger"
-                      disabled={action.busy}
+                      disabled={action.busy||readonly}
                       onClick={() => {
                         if (confirm("Xóa test case này?"))
                           void action.run(async () => {
@@ -344,6 +338,7 @@ function TestEditor({
           </tbody>
         </table>
       </div>
+      {testsPage.controls}
       {editable && (
         <form
           onSubmit={(event) => {
@@ -458,7 +453,7 @@ function TestEditor({
             bài trước khi mở thi. Nội dung test không trả về sinh viên.
           </p>
           <div className="actions">
-            <button disabled={action.busy}>Thêm test case</button>
+            <button disabled={action.busy||readonly}>Thêm test case</button>
           </div>
         </form>
       )}
@@ -483,29 +478,20 @@ export default function ExamEditor({
     return () => clearInterval(t);
   }, []);
   const action = useAction();
-  const editable =
+  const readonly=useCourseReadonly();
+  const editable = !readonly &&
     ["draft", "upcoming"].includes(exam.status) &&
     new Date(exam.starts_at).getTime() > now;
   const load = useCallback(async () => {
     const [p, s] = await Promise.all([
       allPages<Problem>(`/api/coding-exams/${exam.id}/problems`),
-      apiRequest<Page<ExamSession>>(
-        `/api/coding-exams/${exam.id}/sessions?page_size=100`,
-      ),
+      allPages<ExamSession>(`/api/coding-exams/${exam.id}/sessions`),
     ]);
     setProblems(p);
-    setSessions(s.items);
+    setSessions(s);
   }, [exam.id]);
-  const loadSubs = useCallback(async () => {
-    if (selectedProblem)
-      setSubmissions(
-        (
-          await apiRequest<Page<Submission>>(
-            `/api/problems/${selectedProblem}/submissions?page_size=100`,
-          )
-        ).items,
-      );
-  }, [selectedProblem]);
+  const sessionsPage=useListPage(sessions.length),submissionsPage=useListPage(submissions.length);
+  const loadSubs=useCallback(async()=>{if(selectedProblem)setSubmissions(await allPages<Submission>(`/api/problems/${selectedProblem}/submissions`))},[selectedProblem]);
   useEffect(() => {
     load().catch(action.setError);
     const t = setInterval(() => load().catch(() => {}), 5000);
@@ -539,7 +525,7 @@ export default function ExamEditor({
         <div className="actions">
           {editable && (
             <button
-              disabled={action.busy}
+              disabled={action.busy||readonly}
               onClick={() =>
                 void action.run(async () => {
                   await request(`/api/coding-exams/${exam.id}`, "PATCH", {
@@ -555,7 +541,7 @@ export default function ExamEditor({
           {["upcoming", "open"].includes(exam.status) && (
             <button
               className="danger"
-              disabled={action.busy}
+              disabled={action.busy||readonly}
               onClick={() => {
                 if (
                   confirm(
@@ -580,7 +566,7 @@ export default function ExamEditor({
             <select
               aria-label="Loại bài thi"
               value={exam.grade_component}
-              disabled={action.busy}
+              disabled={action.busy||readonly}
               onChange={(event) => {
                 const grade_component = event.target.value;
                 void action.run(async () => {
@@ -637,7 +623,7 @@ export default function ExamEditor({
           </details>
         </section>
       )}
-      {problems.map((p, i) => (
+      <PaginatedList>{problems.map((p, i) => (
         <section className="panel" key={p.id}>
           <h2>
             Bài {i + 1}. {p.title}
@@ -646,7 +632,7 @@ export default function ExamEditor({
             <div className="actions">
               <button
                 className="danger"
-                disabled={action.busy}
+                disabled={action.busy||readonly}
                 onClick={() => {
                   if (confirm("Xóa bài này và các test trước khi thi?"))
                     void action.run(async () => {
@@ -689,7 +675,7 @@ export default function ExamEditor({
             <TestEditor problemId={p.id} editable={editable} />
           </details>
         </section>
-      ))}
+      ))}</PaginatedList>
       <section className="panel">
         <div className="panel-title">
           <h2>Theo dõi phiên thi</h2>
@@ -712,7 +698,7 @@ export default function ExamEditor({
               </tr>
             </thead>
             <tbody>
-              {sessions.map((s) => (
+              {sessions.slice(sessionsPage.start,sessionsPage.end).map((s) => (
                 <tr key={s.id}>
                   <td>
                     {s.student_id}
@@ -744,6 +730,7 @@ export default function ExamEditor({
         {!sessions.length && (
           <div className="empty">Chưa có sinh viên bắt đầu phiên thi.</div>
         )}
+        {sessionsPage.controls}
       </section>
       <section className="panel">
         <h2>Lịch sử chấm của lớp</h2>
@@ -773,7 +760,7 @@ export default function ExamEditor({
               </tr>
             </thead>
             <tbody>
-              {submissions.map((s) => (
+              {submissions.slice(submissionsPage.start,submissionsPage.end).map((s) => (
                 <tr key={s.id}>
                   <td>#{s.id}</td>
                   <td>{s.student_id}</td>
@@ -823,6 +810,7 @@ export default function ExamEditor({
             )}
           </div>
         )}
+        {submissionsPage.controls}
       </section>
     </div>
   );
@@ -838,28 +826,17 @@ function SessionEvents({ session }: { session: ExamSession }) {
       onToggle={(event) => {
         if (event.currentTarget.open)
           void action.run(async () => {
-            setEvents(
-              (
-                await apiRequest<
-                  Page<{
-                    id: number;
-                    event_type: string;
-                    ip_address: string;
-                    created_at: string;
-                  }>
-                >(`/api/exam-sessions/${session.id}/events?page_size=100`)
-              ).items,
-            );
+            setEvents(await allPages<{id:number;event_type:string;ip_address:string;created_at:string}>(`/api/exam-sessions/${session.id}/events`));
           });
       }}
     >
       <summary>{session.focus_event_count} sự kiện rời màn hình</summary>
       <Feedback error={action.error} message="" />
       <p className="section-note">
-        100 sự kiện gần nhất; nhật ký trình duyệt chỉ hỗ trợ giám sát, không
+        Nhật ký phân trang 10 mục; nhật ký trình duyệt chỉ hỗ trợ giám sát, không
         khẳng định gian lận.
       </p>
-      {events.map((event) => (
+      <PaginatedList>{events.map((event) => (
         <p key={event.id}>
           {date(event.created_at)} ·{" "}
           {
@@ -873,7 +850,7 @@ function SessionEvents({ session }: { session: ExamSession }) {
           }{" "}
           · {event.ip_address}
         </p>
-      ))}
+      ))}</PaginatedList>
     </details>
   );
 }

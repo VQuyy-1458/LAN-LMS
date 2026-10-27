@@ -29,9 +29,9 @@ class Page(BaseModel, Generic[T]):
 
 
 class Pagination:
-    def __init__(self, page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=100)):
+    def __init__(self, page: int = Query(1, ge=1), page_size: int = Query(10, ge=1, le=100)):
         self.page = page
-        self.page_size = page_size
+        self.page_size = min(page_size, 10)
 
     @property
     def offset(self):

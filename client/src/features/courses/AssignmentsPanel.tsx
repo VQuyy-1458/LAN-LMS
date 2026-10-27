@@ -1,4 +1,5 @@
 "use client";
+import {useCourseReadonly} from "@/components/CourseAccess";
 import {
   useCallback,
   useEffect,
@@ -9,6 +10,7 @@ import {
 import { apiRequest } from "@/lib/api";
 import { date, key, localInput, localISO, request, type Page } from "@/lib/lms";
 import { useAction } from "@/lib/useAction";
+import ConfirmAction from "@/components/ConfirmAction";
 import FilePreview from "@/components/FilePreview";
 import AssignmentProgress from "./AssignmentProgress";
 import { useRealtime } from "@/components/Realtime";
@@ -20,6 +22,7 @@ type Assignment = {
   due_at: string;
   allow_resubmit: boolean;
   attachment_filename: string | null;
+  attachments: {id:number;filename:string;size_bytes:number}[];
   submission_status?: string;
   submitted_count?: number;
   total_students?: number;
@@ -32,6 +35,14 @@ type FileSub = {
   score: number | null;
   feedback: string | null;
 };
+async function saveWithFiles(form:HTMLFormElement,body:unknown,courseId:number,assignmentId?:number){
+ const data=new FormData(form);
+ for(const [name,value] of Object.entries(body as Record<string,unknown>))data.set(name,String(value));
+ const selected=data.getAll("files").filter(f=>f instanceof File&&f.name);
+ data.delete("files");for(const f of selected)data.append("files",f);
+ data.set("replace_files",String(data.has("replace_files")));
+ return apiRequest(assignmentId?`/api/assignments/${assignmentId}/with-files`:`/api/courses/${courseId}/assignments/with-files`,{method:assignmentId?"PATCH":"POST",body:data});
+}
 function AssignmentForm({
   initial,
   save,
@@ -89,6 +100,8 @@ function AssignmentForm({
             maxLength={20000}
           />
         </label>
+        <label className="full">File đề bài và tài liệu đính kèm (tối đa 10 file)<input type="file" multiple name="files" accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.zip"/><small>20 MiB mỗi file, tổng 100 MiB.</small></label>
+        {initial&&<label className="check-label"><input type="checkbox" name="replace_files"/>Thay toàn bộ file cũ bằng các file mới đã chọn; bỏ chọn để bổ sung file.</label>}
         <label className="check-label">
           <input
             type="checkbox"
@@ -115,11 +128,12 @@ function AssignmentCard({
   teacher: boolean;
   reload: () => Promise<void>;
 }) {
+  const readonly=useCourseReadonly();
   const [rows, setRows] = useState<FileSub[]>([]),
     [page, setPage] = useState(1),
     [total, setTotal] = useState(0),
     [open, setOpen] = useState(false);
-  const [preview,setPreview]=useState<{id:number;original_filename:string;kind?:"attachment"}|null>(null);
+  const [preview,setPreview]=useState<{id:number;original_filename:string;kind?:"attachment"|"handout"}|null>(null);
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -129,7 +143,7 @@ function AssignmentCard({
     retry = useRef<{ file: File; key: string } | null>(null);
   const load = useCallback(async () => {
     const r = await apiRequest<Page<FileSub>>(
-      `/api/assignments/${a.id}/submissions?page=${page}&page_size=30`,
+      `/api/assignments/${a.id}/submissions?page=${page}&page_size=10`,
     );
     setRows(r.items);
     setTotal(r.total);
@@ -184,7 +198,8 @@ function AssignmentCard({
               : "Chưa nộp bài"}
       </p>
       <Feedback error={action.error} message={action.message} />
-      {a.attachment_filename && (
+      {(a.attachments||[]).map(file=><div className="actions" key={file.id}><button className="secondary" onClick={()=>setPreview({id:file.id,original_filename:file.filename,kind:"handout"})}>Xem: {file.filename}</button><a href={`/api/assignment-files/${file.id}/download`}>Tải xuống</a></div>)}
+      {!a.attachments?.length && a.attachment_filename && (
         <p>
           <button className="secondary" onClick={()=>setPreview({id:a.id,original_filename:a.attachment_filename!,kind:"attachment"})}>Xem đề trực tiếp</button>{" "}
           <a href={`/api/assignments/${a.id}/attachment`}>
@@ -192,51 +207,22 @@ function AssignmentCard({
           </a>
         </p>
       )}
-      {teacher && (
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            const form = event.currentTarget;
-            void action.run(async () => {
-              await apiRequest(`/api/assignments/${a.id}/attachment`, {
-                method: "POST",
-                body: new FormData(form),
-              });
-              form.reset();
-              await reload();
-            }, "Đã lưu file đề bài.");
-          }}
-        >
-          <label>
-            Đính kèm / thay file đề bài (20 MiB)
-            <input
-              type="file"
-              name="file"
-              accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.zip"
-              required
-            />
-          </label>
-          <button className="secondary" disabled={action.busy}>
-            Lưu file đề bài
-          </button>
-        </form>
-      )}
 
-      {teacher ? (
+      {teacher && !readonly ? (
         <details style={{ marginTop: 18 }}>
           <summary>Chỉnh sửa bài tập</summary>
           <AssignmentForm
             initial={a}
             busy={action.busy}
-            save={(body) =>
+            save={(body,form) =>
               void action.run(async () => {
-                await request(`/api/assignments/${a.id}`, "PATCH", body);
+                await saveWithFiles(form,body,0,a.id);
                 await reload();
               })
             }
           />
         </details>
-      ) : (
+      ) : !teacher&&!readonly ? (
         <form onSubmit={upload} style={{ marginTop: 20 }}>
           <label>
             Chọn bài nộp
@@ -261,8 +247,9 @@ function AssignmentCard({
             </button>
           </div>
         </form>
-      )}
+      ) : null}
       <div className="actions">
+        {teacher&&!readonly&&<ConfirmAction label="Xóa bài tập" message={`Bạn chắc chắn muốn xóa “${a.title}”? Bài này sẽ không còn tính vào điểm bài tập.`} run={async()=>{await request(`/api/assignments/${a.id}`,"DELETE");await reload()}}/>}
         <button className="secondary" onClick={() => setOpen((v) => !v)}>
           {open
             ? "Ẩn lịch sử"
@@ -298,7 +285,7 @@ function AssignmentCard({
                     </td>
                     <td>{date(r.received_at)}</td>
                     <td>
-                      {teacher ? (
+                      {teacher && !readonly ? (
                         <form
                           onSubmit={(e) => {
                             e.preventDefault();
@@ -367,7 +354,7 @@ function AssignmentCard({
             <span>Trang {page}</span>
             <button
               className="secondary"
-              disabled={page * 30 >= total}
+              disabled={page * 10 >= total}
               onClick={() => setPage((x) => x + 1)}
             >
               Sau
@@ -385,6 +372,7 @@ export default function AssignmentsPanel({
   courseId: number;
   teacher: boolean;
 }) {
+  const readonly=useCourseReadonly();
   const [rows, setRows] = useState<Assignment[]>([]),
     [page, setPage] = useState(1),
     [total, setTotal] = useState(0);
@@ -403,11 +391,11 @@ export default function AssignmentsPanel({
     const r = await apiRequest<
       Page<Assignment> & { counts: Record<Filter, number> }
     >(
-      `/api/courses/${courseId}/assignments?page=${page}&page_size=20&status=${filter}`,
+      `/api/courses/${courseId}/assignments?page=${page}&page_size=10&status=${filter}`,
     );
     setRows(r.items);
     setCounts(r.counts);
-    if (page > 1 && (page - 1) * 20 >= r.total) setPage(1);
+    if (page > 1 && (page - 1) * 10 >= r.total) setPage(1);
     setTotal(r.total);
   }, [courseId, page, filter]);
   useEffect(() => {
@@ -416,7 +404,7 @@ export default function AssignmentsPanel({
   return (
     <div className="stack">
       <Feedback error={action.error} message={action.message} />
-      {teacher && (
+      {teacher && !readonly && (
         <section className="panel">
           <details>
             <summary>Tạo bài tập mới</summary>
@@ -424,11 +412,7 @@ export default function AssignmentsPanel({
               busy={action.busy}
               save={(body, form) =>
                 void action.run(async () => {
-                  await request(
-                    `/api/courses/${courseId}/assignments`,
-                    "POST",
-                    body,
-                  );
+                  await saveWithFiles(form,body,courseId);
                   form.reset();
                   await load();
                 }, "Đã tạo bài tập.")
@@ -481,7 +465,7 @@ export default function AssignmentsPanel({
         <span>Trang {page}</span>
         <button
           className="secondary"
-          disabled={page * 20 >= total}
+          disabled={page * 10 >= total}
           onClick={() => setPage((x) => x + 1)}
         >
           Sau

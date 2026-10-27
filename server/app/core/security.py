@@ -8,7 +8,7 @@ from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError
 from fastapi import Depends, HTTPException, Request
 
-from .database import AuthSession, User
+from .database import AuthSession, User, get_db
 
 hasher = PasswordHasher()
 COOKIE = 'lan_lms_session'
@@ -85,9 +85,14 @@ def current_user(request: Request):
     return principal
 
 
-def learning_user(user=Depends(current_user)):
+def learning_user(request: Request, user=Depends(current_user), db=Depends(get_db)):
     if user.must_change_password:
         fail(403, 'PASSWORD_CHANGE_REQUIRED', 'Cần đổi mật khẩu trước')
+    if request.method not in ('GET','HEAD','OPTIONS'):
+        from ..services.idempotency import write_lock
+        write_lock(db)
+        from ..services.lifecycle import assert_writable_request
+        assert_writable_request(db,user,request)
     return user
 
 

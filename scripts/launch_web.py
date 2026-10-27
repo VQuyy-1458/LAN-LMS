@@ -204,6 +204,8 @@ def make_environment(root, address=None, tls=None):
         if value is not None
     }
     env.update(os.environ)
+    env.setdefault("RAYON_NUM_THREADS", "2")
+    env.setdefault("NODE_OPTIONS", "--max-old-space-size=1536")
     env.update(
         PYTHONUTF8="1", DISABLE_SQLALCHEMY_CEXT_RUNTIME="1", NEXT_TELEMETRY_DISABLED="1"
     )

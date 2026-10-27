@@ -16,7 +16,7 @@ router = APIRouter(prefix="/api", tags=["calendar"])
 class EventInput(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     description: str = Field(default="", max_length=10000)
-    event_type: Literal["lesson", "exam", "deadline", "announcement"] = "lesson"
+    event_type: Literal["lesson", "announcement"] = "lesson"
     starts_at: datetime
     ends_at: datetime
 
@@ -51,16 +51,9 @@ def events(
     p=Depends(Pagination),
 ):
     access.course(db, user, course_id)
-    q = select(CalendarEvents).where(CalendarEvents.course_id == course_id)
-    return p.response(
-        [
-            payload(x)
-            for x in db.scalars(
-                q.order_by(CalendarEvents.starts_at).offset(p.offset).limit(p.page_size)
-            )
-        ],
-        db.scalar(select(func.count()).select_from(q.subquery())),
-    )
+    from .calendar_feed import feed
+    rows=feed(db,course_id,user)
+    return p.response(rows[p.offset:p.offset+p.page_size],len(rows))
 
 
 @router.post("/courses/{course_id}/events", status_code=201)
@@ -92,6 +85,8 @@ def update(
     if not row:
         fail(404, "NOT_FOUND", "Không tìm thấy sự kiện")
     access.course(db, user, row.course_id, True)
+    if db.scalar(select(AttendanceSessions.id).where(AttendanceSessions.event_id==event_id)):
+        fail(409,"LESSON_HAS_ATTENDANCE","Buổi học đã có điểm danh; không thay đổi lịch hoặc loại buổi học")
     for k, v in body.model_dump().items():
         setattr(row, k, v.timestamp() if isinstance(v, datetime) else v)
     audit(db, user.user_id, "update", "event", row.id)

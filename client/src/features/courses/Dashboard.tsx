@@ -4,6 +4,8 @@ import Link from "next/link";
 import { apiRequest } from "@/lib/api";
 import { date, type Course, type Event, type Exam } from "@/lib/lms";
 import WeeklySchedule from "@/components/WeeklySchedule";
+
+import PaginatedList from "@/components/Pagination";
 import Feedback from "@/components/Feedback";
 import { useRealtime } from "@/components/Realtime";
 type Assignment = {
@@ -238,7 +240,7 @@ export default function Dashboard({ teacher = false }: { teacher?: boolean }) {
             Lịch ngày {chosen.split("-").reverse().join("/")}
           </div>
           {selectedEvents.length ? (
-            selectedEvents.map((e) => (
+            <PaginatedList key={chosen}>{selectedEvents.map((e) => (
               <Link
                 href={`/${role}/courses?course=${e.course_id}&tab=${e.kind === "Thi lập trình" ? "exams" : e.kind === "Hạn nộp bài" ? "assignments" : "calendar"}`}
                 key={e.key}
@@ -255,7 +257,7 @@ export default function Dashboard({ teacher = false }: { teacher?: boolean }) {
                   </small>
                 </div>
               </Link>
-            ))
+            ))}</PaginatedList>
           ) : (
             <div className="empty">
               <span className="empty-symbol">▤</span>Chưa có hoạt động vào ngày

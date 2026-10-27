@@ -56,6 +56,9 @@ def exam_score(db, cid, sid, kind):
     if not exams:
         return None
     values = [single_exam_score(db, exam, sid) for exam in exams]
+    if kind == "midterm":
+        available=[value for value in values if value is not None]
+        return sum(available)/len(available) if available else None
     return sum(values) / len(values) if all(value is not None for value in values) else None
 
 

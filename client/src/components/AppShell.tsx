@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import AuthGuard from "./AuthGuard";
+import CourseTreeNav from "./CourseTreeNav";
 import LogoutButton from "./LogoutButton";
 import CurrentUserPanel from "./CurrentUserPanel";
 import Realtime, { Connection } from "./Realtime";
@@ -60,6 +61,7 @@ export default function AppShell({
                 {label}
               </Link>
             ))}
+            <CourseTreeNav teacher={teacher}/>
             <div className="nav-note">
               Chọn khóa học để bắt đầu.
               <br />

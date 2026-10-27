@@ -25,7 +25,7 @@ def student(db, user):
 
 def course(db, user, course_id, manage=False):
     row = db.get(Courses, course_id)
-    if not row:
+    if not row or row.status == "deleted":
         fail(404, "NOT_FOUND", "Không tìm thấy khóa học")
     if user.role == "teacher":
         profile = teacher(db, user)

@@ -32,7 +32,7 @@ CODES = {
 
 def exam(db, user, eid, manage=False):
     row = db.get(CodingExams, eid)
-    if not row:
+    if not row or row.deleted:
         fail(404, "NOT_FOUND", "Không tìm thấy kỳ thi")
     access.course(db, user, row.course_id, manage)
     return row
@@ -94,14 +94,26 @@ def ready(db, row):
     return problems
 
 
-def problem(db, user, pid, manage=False):
+def problem(db, user, pid, manage=False, allow_closed=False):
     row = db.get(Problems, pid)
     if not row:
         fail(404, "NOT_FOUND", "Không tìm thấy bài")
     e = exam(db, user, row.exam_id, manage)
+    if user.role=="student" and not allow_closed: ensure_attempt_open(db,user,e)
     if user.role == "student" and (e.status == "draft" or time.time() < e.starts_at):
         fail(403, "EXAM_NOT_OPEN", "Chưa đến giờ xem đề")
     return row, e
+
+
+def attempt_closed(db,user,e):
+    if user.role!="student": return False
+    student=access.student(db,user)
+    row=db.scalar(select(ExamSessions).join(ExamRegistrations).where(ExamRegistrations.exam_id==e.id,ExamRegistrations.student_id==student.id))
+    return bool(row and (row.status!="active" or row.ends_at<=time.time() or e.status=="closed"))
+
+
+def ensure_attempt_open(db,user,e):
+    if attempt_closed(db,user,e):fail(409,"ATTEMPT_CLOSED","Bạn đã kết thúc bài thi và không thể mở lại đề")
 
 
 def problem_payload(row):
