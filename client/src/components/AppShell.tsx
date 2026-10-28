@@ -69,6 +69,13 @@ export default function AppShell({
               </Link>
             ))}
             <CourseTreeNav teacher={teacher}/>
+            <Link
+              href="/change-password"
+              className={path === "/change-password" ? "active" : ""}
+            >
+              <span className="nav-number">03</span>
+              Đổi mật khẩu
+            </Link>
             <div className="nav-note">
               Chọn khóa học để bắt đầu.
               <br />

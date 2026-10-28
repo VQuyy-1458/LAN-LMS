@@ -18,6 +18,16 @@
   margin: 32px auto;
   padding: 0 20px 32px;
 }
+.password-page {
+  width: min(100% - 32px, 560px);
+  margin: 48px auto;
+}
+.password-panel .page-heading {
+  align-items: flex-start;
+}
+.password-panel form {
+  margin-top: 24px;
+}
 .public-hero {
   background: #fff1f2;
   border: 1px solid #f9d5d7;
