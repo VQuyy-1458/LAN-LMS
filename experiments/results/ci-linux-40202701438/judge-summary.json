@@ -1,0 +1,1289 @@
+{
+  "measured_at": "2026-10-25T14:35:02.483643+00:00",
+  "environment": {
+    "os": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+    "python": "3.12.15",
+    "cpu": "AMD EPYC 9V45 96-Core Processor",
+    "ram_gib": 15.614940643310547,
+    "docker_version": "28.0.4",
+    "image_id": "sha256:7a4236248acc1d9a3793c04b87b3e264a1e477e6e2395a28f7dec97e50a18f21",
+    "logical_cpus": 4,
+    "image": "lan-lms-judge:day25",
+    "dataset": "20 isolated C/C++/Java sum programs, one test, every fourth program sleeps 1s, 3000ms/256MiB, fresh database per trial",
+    "utilization_note": "busy_time_ratio is wall-clock worker occupancy, not CPU utilization"
+  },
+  "runs": [
+    {
+      "workers": 1,
+      "trial": 1,
+      "jobs": 20,
+      "elapsed_seconds": 20.689897943999995,
+      "throughput_jobs_per_second": 0.9666553239717617,
+      "p50_queue_wait_ms": 12415.591716766357,
+      "p50_end_to_end_ms": 12808.99727344513,
+      "busy_time_ratio": 0.9716925309353774,
+      "raw": [
+        {
+          "submission_id": 1,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 320.2788829803467,
+          "compile_ms": 4040.5383089999987,
+          "run_ms": 1155.595660999992,
+          "end_to_end_ms": 5535.466432571411,
+          "attempts": 1
+        },
+        {
+          "submission_id": 2,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 5536.6246700286865,
+          "compile_ms": 287.91735599999413,
+          "run_ms": 150.19209900000874,
+          "end_to_end_ms": 5979.210138320923,
+          "attempts": 1
+        },
+        {
+          "submission_id": 3,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 5980.111837387085,
+          "compile_ms": 770.1289010000067,
+          "run_ms": 210.2876269999996,
+          "end_to_end_ms": 6964.991807937622,
+          "attempts": 1
+        },
+        {
+          "submission_id": 4,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 6965.811729431152,
+          "compile_ms": 146.5894210000016,
+          "run_ms": 170.4072140000079,
+          "end_to_end_ms": 7287.27912902832,
+          "attempts": 1
+        },
+        {
+          "submission_id": 5,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 7288.4016036987305,
+          "compile_ms": 286.71847300000763,
+          "run_ms": 1173.9992099999909,
+          "end_to_end_ms": 8753.753900527954,
+          "attempts": 1
+        },
+        {
+          "submission_id": 6,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 8754.815578460693,
+          "compile_ms": 668.9051610000121,
+          "run_ms": 210.48768699999698,
+          "end_to_end_ms": 9638.570070266724,
+          "attempts": 1
+        },
+        {
+          "submission_id": 7,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 9639.60576057434,
+          "compile_ms": 145.98418100000288,
+          "run_ms": 149.4918909999967,
+          "end_to_end_ms": 9939.39232826233,
+          "attempts": 1
+        },
+        {
+          "submission_id": 8,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 9940.435647964478,
+          "compile_ms": 287.97240400000135,
+          "run_ms": 170.35597199999586,
+          "end_to_end_ms": 10403.039455413818,
+          "attempts": 1
+        },
+        {
+          "submission_id": 9,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 10404.211282730103,
+          "compile_ms": 648.2935009999977,
+          "run_ms": 1195.8128520000032,
+          "end_to_end_ms": 12252.753496170044,
+          "attempts": 1
+        },
+        {
+          "submission_id": 10,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 12253.849983215332,
+          "compile_ms": 146.5207399999997,
+          "run_ms": 171.18922400000258,
+          "end_to_end_ms": 12576.077461242676,
+          "attempts": 1
+        },
+        {
+          "submission_id": 11,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 12577.333450317383,
+          "compile_ms": 288.366608000004,
+          "run_ms": 171.6410939999946,
+          "end_to_end_ms": 13041.917085647583,
+          "attempts": 1
+        },
+        {
+          "submission_id": 12,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 13044.896841049194,
+          "compile_ms": 690.6350309999993,
+          "run_ms": 211.73496100000477,
+          "end_to_end_ms": 13952.035665512085,
+          "attempts": 1
+        },
+        {
+          "submission_id": 13,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 13953.267335891724,
+          "compile_ms": 147.2301529999953,
+          "run_ms": 1190.3797989999985,
+          "end_to_end_ms": 15295.526266098022,
+          "attempts": 1
+        },
+        {
+          "submission_id": 14,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 15296.60677909851,
+          "compile_ms": 287.64150599999994,
+          "run_ms": 149.51404199999274,
+          "end_to_end_ms": 15737.980127334595,
+          "attempts": 1
+        },
+        {
+          "submission_id": 15,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 15739.118337631226,
+          "compile_ms": 668.9107360000008,
+          "run_ms": 206.29439100000013,
+          "end_to_end_ms": 16618.757724761963,
+          "attempts": 1
+        },
+        {
+          "submission_id": 16,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 16619.88925933838,
+          "compile_ms": 146.40511700000047,
+          "run_ms": 149.74534499999947,
+          "end_to_end_ms": 16920.42899131775,
+          "attempts": 1
+        },
+        {
+          "submission_id": 17,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 16921.535968780518,
+          "compile_ms": 477.2345500000057,
+          "run_ms": 1414.9640870000012,
+          "end_to_end_ms": 18818.15814971924,
+          "attempts": 1
+        },
+        {
+          "submission_id": 18,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 18819.21434402466,
+          "compile_ms": 750.2075230000003,
+          "run_ms": 210.49365400000397,
+          "end_to_end_ms": 19784.41286087036,
+          "attempts": 1
+        },
+        {
+          "submission_id": 19,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 19785.659074783325,
+          "compile_ms": 147.2660430000019,
+          "run_ms": 170.80118500000196,
+          "end_to_end_ms": 20108.453273773193,
+          "attempts": 1
+        },
+        {
+          "submission_id": 20,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 20109.57384109497,
+          "compile_ms": 287.44205199998873,
+          "run_ms": 149.9235370000065,
+          "end_to_end_ms": 20551.315546035767,
+          "attempts": 1
+        }
+      ]
+    },
+    {
+      "workers": 2,
+      "trial": 1,
+      "jobs": 20,
+      "elapsed_seconds": 9.043803287000003,
+      "throughput_jobs_per_second": 2.2114589808414964,
+      "p50_queue_wait_ms": 4041.7568683624268,
+      "p50_end_to_end_ms": 5078.766703605652,
+      "busy_time_ratio": 0.9255504027859786,
+      "raw": [
+        {
+          "submission_id": 1,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 339.5426273345947,
+          "compile_ms": 168.4956869999894,
+          "run_ms": 1179.9952690000168,
+          "end_to_end_ms": 1709.8579406738281,
+          "attempts": 1
+        },
+        {
+          "submission_id": 2,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 343.2502746582031,
+          "compile_ms": 327.9320299999995,
+          "run_ms": 150.6833370000038,
+          "end_to_end_ms": 869.4310188293457,
+          "attempts": 1
+        },
+        {
+          "submission_id": 3,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 871.5536594390869,
+          "compile_ms": 668.5975480000081,
+          "run_ms": 212.8407769999967,
+          "end_to_end_ms": 1758.3346366882324,
+          "attempts": 1
+        },
+        {
+          "submission_id": 4,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 1710.6451988220215,
+          "compile_ms": 168.64988399998992,
+          "run_ms": 172.5636799999961,
+          "end_to_end_ms": 2057.2471618652344,
+          "attempts": 1
+        },
+        {
+          "submission_id": 5,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 1759.3605518341064,
+          "compile_ms": 330.2162469999814,
+          "run_ms": 1201.7485800000145,
+          "end_to_end_ms": 3296.8175411224365,
+          "attempts": 1
+        },
+        {
+          "submission_id": 6,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 2058.0737590789795,
+          "compile_ms": 769.6753009999782,
+          "run_ms": 212.9485000000102,
+          "end_to_end_ms": 3045.5563068389893,
+          "attempts": 1
+        },
+        {
+          "submission_id": 7,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 3046.786308288574,
+          "compile_ms": 166.58684800000856,
+          "run_ms": 173.84537699999214,
+          "end_to_end_ms": 3391.896963119507,
+          "attempts": 1
+        },
+        {
+          "submission_id": 8,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 3296.783447265625,
+          "compile_ms": 330.45375300000046,
+          "run_ms": 207.32728699999825,
+          "end_to_end_ms": 3839.9288654327393,
+          "attempts": 1
+        },
+        {
+          "submission_id": 9,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 3392.3885822296143,
+          "compile_ms": 771.4264489999891,
+          "run_ms": 1260.8227150000175,
+          "end_to_end_ms": 5430.948972702026,
+          "attempts": 1
+        },
+        {
+          "submission_id": 10,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 3841.411590576172,
+          "compile_ms": 168.09825500001807,
+          "run_ms": 224.58473199998252,
+          "end_to_end_ms": 4240.457773208618,
+          "attempts": 1
+        },
+        {
+          "submission_id": 11,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 4242.102146148682,
+          "compile_ms": 307.38930599997616,
+          "run_ms": 170.86558100001525,
+          "end_to_end_ms": 4726.584434509277,
+          "attempts": 1
+        },
+        {
+          "submission_id": 12,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 4727.691650390625,
+          "compile_ms": 692.9261850000046,
+          "run_ms": 231.86946900000294,
+          "end_to_end_ms": 5657.452821731567,
+          "attempts": 1
+        },
+        {
+          "submission_id": 13,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 5430.733680725098,
+          "compile_ms": 209.06082499999457,
+          "run_ms": 1179.0298550000102,
+          "end_to_end_ms": 6827.900171279907,
+          "attempts": 1
+        },
+        {
+          "submission_id": 14,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 5658.243417739868,
+          "compile_ms": 288.91744599999925,
+          "run_ms": 150.04680900000267,
+          "end_to_end_ms": 6102.318525314331,
+          "attempts": 1
+        },
+        {
+          "submission_id": 15,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 6103.537082672119,
+          "compile_ms": 714.2769429999873,
+          "run_ms": 279.8370430000148,
+          "end_to_end_ms": 7102.049827575684,
+          "attempts": 1
+        },
+        {
+          "submission_id": 16,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 6828.345060348511,
+          "compile_ms": 167.930417000008,
+          "run_ms": 241.7763359999867,
+          "end_to_end_ms": 7244.471788406372,
+          "attempts": 1
+        },
+        {
+          "submission_id": 17,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 7102.7514934539795,
+          "compile_ms": 371.1739990000069,
+          "run_ms": 1177.6146159999996,
+          "end_to_end_ms": 8656.339168548584,
+          "attempts": 1
+        },
+        {
+          "submission_id": 18,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 7249.2218017578125,
+          "compile_ms": 746.0231180000108,
+          "run_ms": 190.0010519999853,
+          "end_to_end_ms": 8189.959764480591,
+          "attempts": 1
+        },
+        {
+          "submission_id": 19,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 8191.113233566284,
+          "compile_ms": 146.11095099999716,
+          "run_ms": 149.82418400001052,
+          "end_to_end_ms": 8491.549730300903,
+          "attempts": 1
+        },
+        {
+          "submission_id": 20,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 8492.715835571289,
+          "compile_ms": 288.60382999999956,
+          "run_ms": 170.22132900001452,
+          "end_to_end_ms": 8955.973148345947,
+          "attempts": 1
+        }
+      ]
+    },
+    {
+      "workers": 1,
+      "trial": 2,
+      "jobs": 20,
+      "elapsed_seconds": 15.868548277999992,
+      "throughput_jobs_per_second": 1.2603547375362505,
+      "p50_queue_wait_ms": 8335.357189178467,
+      "p50_end_to_end_ms": 8705.949544906616,
+      "busy_time_ratio": 0.9589472923680549,
+      "raw": [
+        {
+          "submission_id": 1,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 338.51027488708496,
+          "compile_ms": 147.21775499998557,
+          "run_ms": 1175.668585000011,
+          "end_to_end_ms": 1681.612491607666,
+          "attempts": 1
+        },
+        {
+          "submission_id": 2,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 1682.7244758605957,
+          "compile_ms": 287.34825899999805,
+          "run_ms": 170.0448629999869,
+          "end_to_end_ms": 2144.487142562866,
+          "attempts": 1
+        },
+        {
+          "submission_id": 3,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 2145.447254180908,
+          "compile_ms": 609.9860719999981,
+          "run_ms": 190.03710399999818,
+          "end_to_end_ms": 2949.9526023864746,
+          "attempts": 1
+        },
+        {
+          "submission_id": 4,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 2951.0135650634766,
+          "compile_ms": 146.05017000002363,
+          "run_ms": 149.2064959999766,
+          "end_to_end_ms": 3250.5879402160645,
+          "attempts": 1
+        },
+        {
+          "submission_id": 5,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 3251.527786254883,
+          "compile_ms": 282.8508999999997,
+          "run_ms": 1173.525103000003,
+          "end_to_end_ms": 4712.053537368774,
+          "attempts": 1
+        },
+        {
+          "submission_id": 6,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 4713.029384613037,
+          "compile_ms": 649.0098590000173,
+          "run_ms": 211.2637499999721,
+          "end_to_end_ms": 5577.584028244019,
+          "attempts": 1
+        },
+        {
+          "submission_id": 7,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 5578.586578369141,
+          "compile_ms": 162.06723799999168,
+          "run_ms": 150.0673259999985,
+          "end_to_end_ms": 5895.139217376709,
+          "attempts": 1
+        },
+        {
+          "submission_id": 8,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 5896.178245544434,
+          "compile_ms": 283.58730899998363,
+          "run_ms": 172.28530299999534,
+          "end_to_end_ms": 6356.356620788574,
+          "attempts": 1
+        },
+        {
+          "submission_id": 9,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 6357.413530349731,
+          "compile_ms": 628.1490399999825,
+          "run_ms": 1193.734649000021,
+          "end_to_end_ms": 8183.815717697144,
+          "attempts": 1
+        },
+        {
+          "submission_id": 10,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 8184.786081314087,
+          "compile_ms": 145.9222489999945,
+          "run_ms": 149.75903499998822,
+          "end_to_end_ms": 8484.902620315552,
+          "attempts": 1
+        },
+        {
+          "submission_id": 11,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 8485.928297042847,
+          "compile_ms": 287.22354199999245,
+          "run_ms": 149.2875950000041,
+          "end_to_end_ms": 8926.99646949768,
+          "attempts": 1
+        },
+        {
+          "submission_id": 12,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 8927.942991256714,
+          "compile_ms": 608.5015240000189,
+          "run_ms": 189.15392399998154,
+          "end_to_end_ms": 9729.943037033081,
+          "attempts": 1
+        },
+        {
+          "submission_id": 13,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 9730.979442596436,
+          "compile_ms": 145.857699000004,
+          "run_ms": 1169.5053429999973,
+          "end_to_end_ms": 11050.53186416626,
+          "attempts": 1
+        },
+        {
+          "submission_id": 14,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 11051.482915878296,
+          "compile_ms": 287.0212619999961,
+          "run_ms": 169.15295799998376,
+          "end_to_end_ms": 11511.993646621704,
+          "attempts": 1
+        },
+        {
+          "submission_id": 15,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 11512.932300567627,
+          "compile_ms": 608.0319829999894,
+          "run_ms": 189.35440500001732,
+          "end_to_end_ms": 12314.459800720215,
+          "attempts": 1
+        },
+        {
+          "submission_id": 16,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 12315.481185913086,
+          "compile_ms": 146.65141999998355,
+          "run_ms": 170.88187300001323,
+          "end_to_end_ms": 12637.404680252075,
+          "attempts": 1
+        },
+        {
+          "submission_id": 17,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 12638.478517532349,
+          "compile_ms": 286.73405399999297,
+          "run_ms": 1153.4360240000012,
+          "end_to_end_ms": 14083.083152770996,
+          "attempts": 1
+        },
+        {
+          "submission_id": 18,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 14083.993673324585,
+          "compile_ms": 628.9726799999755,
+          "run_ms": 209.9503180000113,
+          "end_to_end_ms": 14927.122354507446,
+          "attempts": 1
+        },
+        {
+          "submission_id": 19,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 14928.099155426025,
+          "compile_ms": 146.16322899999545,
+          "run_ms": 149.63301199998114,
+          "end_to_end_ms": 15228.216648101807,
+          "attempts": 1
+        },
+        {
+          "submission_id": 20,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 15229.324102401733,
+          "compile_ms": 287.81784000000243,
+          "run_ms": 155.98965499998485,
+          "end_to_end_ms": 15677.757501602173,
+          "attempts": 1
+        }
+      ]
+    },
+    {
+      "workers": 2,
+      "trial": 2,
+      "jobs": 20,
+      "elapsed_seconds": 10.04797225499999,
+      "throughput_jobs_per_second": 1.9904513559984962,
+      "p50_queue_wait_ms": 4673.160195350647,
+      "p50_end_to_end_ms": 5687.302947044373,
+      "busy_time_ratio": 0.9211947650327187,
+      "raw": [
+        {
+          "submission_id": 1,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 335.1473808288574,
+          "compile_ms": 231.4268749999826,
+          "run_ms": 1224.3490099999974,
+          "end_to_end_ms": 1816.9174194335938,
+          "attempts": 1
+        },
+        {
+          "submission_id": 2,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 334.5358371734619,
+          "compile_ms": 375.19563600000083,
+          "run_ms": 171.88615300000265,
+          "end_to_end_ms": 948.5085010528564,
+          "attempts": 1
+        },
+        {
+          "submission_id": 3,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 950.5188465118408,
+          "compile_ms": 690.5571420000172,
+          "run_ms": 248.6247009999829,
+          "end_to_end_ms": 1894.6406841278076,
+          "attempts": 1
+        },
+        {
+          "submission_id": 4,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 1818.073034286499,
+          "compile_ms": 188.36298900001225,
+          "run_ms": 242.01976499998068,
+          "end_to_end_ms": 2262.359142303467,
+          "attempts": 1
+        },
+        {
+          "submission_id": 5,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 1895.1447010040283,
+          "compile_ms": 406.4757480000196,
+          "run_ms": 1234.6915089999868,
+          "end_to_end_ms": 3540.9631729125977,
+          "attempts": 1
+        },
+        {
+          "submission_id": 6,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 2263.1404399871826,
+          "compile_ms": 690.9409740000001,
+          "run_ms": 232.651331999989,
+          "end_to_end_ms": 3191.835880279541,
+          "attempts": 1
+        },
+        {
+          "submission_id": 7,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 3192.847728729248,
+          "compile_ms": 186.02220900001498,
+          "run_ms": 347.84638499999687,
+          "end_to_end_ms": 3731.7819595336914,
+          "attempts": 1
+        },
+        {
+          "submission_id": 8,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 3547.7230548858643,
+          "compile_ms": 545.7945329999916,
+          "run_ms": 277.42926100000886,
+          "end_to_end_ms": 4390.25092124939,
+          "attempts": 1
+        },
+        {
+          "submission_id": 9,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 3742.795467376709,
+          "compile_ms": 827.6243660000091,
+          "run_ms": 1276.1329189999915,
+          "end_to_end_ms": 5880.065441131592,
+          "attempts": 1
+        },
+        {
+          "submission_id": 10,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 4412.091016769409,
+          "compile_ms": 264.9161359999823,
+          "run_ms": 238.8446799999997,
+          "end_to_end_ms": 4923.008441925049,
+          "attempts": 1
+        },
+        {
+          "submission_id": 11,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 4934.229373931885,
+          "compile_ms": 306.2416680000126,
+          "run_ms": 236.3511899999935,
+          "end_to_end_ms": 5494.540452957153,
+          "attempts": 1
+        },
+        {
+          "submission_id": 12,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 5495.709180831909,
+          "compile_ms": 771.7232489999901,
+          "run_ms": 239.81507499999566,
+          "end_to_end_ms": 6511.716604232788,
+          "attempts": 1
+        },
+        {
+          "submission_id": 13,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 5880.707025527954,
+          "compile_ms": 215.28367100000878,
+          "run_ms": 1214.1539099999932,
+          "end_to_end_ms": 7326.390504837036,
+          "attempts": 1
+        },
+        {
+          "submission_id": 14,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 6512.261390686035,
+          "compile_ms": 378.52540400001544,
+          "run_ms": 190.4575629999954,
+          "end_to_end_ms": 7086.38334274292,
+          "attempts": 1
+        },
+        {
+          "submission_id": 15,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 7087.581396102905,
+          "compile_ms": 775.412939000006,
+          "run_ms": 272.4778019999974,
+          "end_to_end_ms": 8152.581453323364,
+          "attempts": 1
+        },
+        {
+          "submission_id": 16,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 7334.962844848633,
+          "compile_ms": 211.70657100000767,
+          "run_ms": 210.8225819999916,
+          "end_to_end_ms": 7763.702630996704,
+          "attempts": 1
+        },
+        {
+          "submission_id": 17,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 7769.794225692749,
+          "compile_ms": 371.9249560000151,
+          "run_ms": 1255.3196629999945,
+          "end_to_end_ms": 9401.889324188232,
+          "attempts": 1
+        },
+        {
+          "submission_id": 18,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 8152.533769607544,
+          "compile_ms": 711.6557759999864,
+          "run_ms": 263.17960900001935,
+          "end_to_end_ms": 9132.829427719116,
+          "attempts": 1
+        },
+        {
+          "submission_id": 19,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 9134.061098098755,
+          "compile_ms": 208.19924700001025,
+          "run_ms": 232.024569999993,
+          "end_to_end_ms": 9589.26248550415,
+          "attempts": 1
+        },
+        {
+          "submission_id": 20,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 9402.063369750977,
+          "compile_ms": 347.82421299999555,
+          "run_ms": 197.38689999999792,
+          "end_to_end_ms": 9953.76706123352,
+          "attempts": 1
+        }
+      ]
+    },
+    {
+      "workers": 1,
+      "trial": 3,
+      "jobs": 20,
+      "elapsed_seconds": 16.473457080000003,
+      "throughput_jobs_per_second": 1.2140742470068095,
+      "p50_queue_wait_ms": 8773.671269416809,
+      "p50_end_to_end_ms": 9196.047902107239,
+      "busy_time_ratio": 0.9704637176254419,
+      "raw": [
+        {
+          "submission_id": 1,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 320.9261894226074,
+          "compile_ms": 147.27060100000244,
+          "run_ms": 1174.9683080000182,
+          "end_to_end_ms": 1662.323236465454,
+          "attempts": 1
+        },
+        {
+          "submission_id": 2,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 1668.9178943634033,
+          "compile_ms": 287.83226600000944,
+          "run_ms": 190.15670999999656,
+          "end_to_end_ms": 2164.7961139678955,
+          "attempts": 1
+        },
+        {
+          "submission_id": 3,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 2166.0101413726807,
+          "compile_ms": 712.0997419999924,
+          "run_ms": 211.4493800000048,
+          "end_to_end_ms": 3094.139575958252,
+          "attempts": 1
+        },
+        {
+          "submission_id": 4,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 3095.259428024292,
+          "compile_ms": 148.89463800000158,
+          "run_ms": 208.4753679999949,
+          "end_to_end_ms": 3457.2525024414062,
+          "attempts": 1
+        },
+        {
+          "submission_id": 5,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 3458.400249481201,
+          "compile_ms": 365.41210300001126,
+          "run_ms": 1175.2253660000065,
+          "end_to_end_ms": 5003.405332565308,
+          "attempts": 1
+        },
+        {
+          "submission_id": 6,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 5004.503011703491,
+          "compile_ms": 690.3572310000072,
+          "run_ms": 209.98125899998854,
+          "end_to_end_ms": 5909.113168716431,
+          "attempts": 1
+        },
+        {
+          "submission_id": 7,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 5910.360813140869,
+          "compile_ms": 146.12557899999956,
+          "run_ms": 185.96203699999592,
+          "end_to_end_ms": 6246.625185012817,
+          "attempts": 1
+        },
+        {
+          "submission_id": 8,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 6247.709035873413,
+          "compile_ms": 266.53053800001203,
+          "run_ms": 169.8246819999838,
+          "end_to_end_ms": 6688.365459442139,
+          "attempts": 1
+        },
+        {
+          "submission_id": 9,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 6689.467191696167,
+          "compile_ms": 672.3412919999987,
+          "run_ms": 1215.2200369999946,
+          "end_to_end_ms": 8581.411838531494,
+          "attempts": 1
+        },
+        {
+          "submission_id": 10,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 8582.41057395935,
+          "compile_ms": 205.35158100000217,
+          "run_ms": 171.5061899999739,
+          "end_to_end_ms": 8963.762998580933,
+          "attempts": 1
+        },
+        {
+          "submission_id": 11,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 8964.931964874268,
+          "compile_ms": 287.71108099999765,
+          "run_ms": 171.09784699999864,
+          "end_to_end_ms": 9428.332805633545,
+          "attempts": 1
+        },
+        {
+          "submission_id": 12,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 9429.516077041626,
+          "compile_ms": 751.8869459999848,
+          "run_ms": 211.63080700000592,
+          "end_to_end_ms": 10397.8271484375,
+          "attempts": 1
+        },
+        {
+          "submission_id": 13,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 10399.02400970459,
+          "compile_ms": 147.69255999999586,
+          "run_ms": 1173.8312729999905,
+          "end_to_end_ms": 11724.99680519104,
+          "attempts": 1
+        },
+        {
+          "submission_id": 14,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 11726.09567642212,
+          "compile_ms": 266.5488309999944,
+          "run_ms": 165.3898090000041,
+          "end_to_end_ms": 12162.333011627197,
+          "attempts": 1
+        },
+        {
+          "submission_id": 15,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 12163.378477096558,
+          "compile_ms": 645.559803999987,
+          "run_ms": 217.4811879999936,
+          "end_to_end_ms": 13030.83086013794,
+          "attempts": 1
+        },
+        {
+          "submission_id": 16,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 13032.074451446533,
+          "compile_ms": 146.70041799999467,
+          "run_ms": 149.8734230000025,
+          "end_to_end_ms": 13339.702606201172,
+          "attempts": 1
+        },
+        {
+          "submission_id": 17,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 13340.816020965576,
+          "compile_ms": 287.4796919999767,
+          "run_ms": 1173.784937000022,
+          "end_to_end_ms": 14806.596040725708,
+          "attempts": 1
+        },
+        {
+          "submission_id": 18,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 14807.650327682495,
+          "compile_ms": 689.3426040000179,
+          "run_ms": 209.83167500000377,
+          "end_to_end_ms": 15711.179256439209,
+          "attempts": 1
+        },
+        {
+          "submission_id": 19,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 15712.312459945679,
+          "compile_ms": 146.83550899999886,
+          "run_ms": 149.77390799998602,
+          "end_to_end_ms": 16013.363599777222,
+          "attempts": 1
+        },
+        {
+          "submission_id": 20,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 16014.426469802856,
+          "compile_ms": 287.7816769999981,
+          "run_ms": 151.67350300001203,
+          "end_to_end_ms": 16458.497285842896,
+          "attempts": 1
+        }
+      ]
+    },
+    {
+      "workers": 2,
+      "trial": 3,
+      "jobs": 20,
+      "elapsed_seconds": 8.845095329999992,
+      "throughput_jobs_per_second": 2.2611401295094935,
+      "p50_queue_wait_ms": 4039.490222930908,
+      "p50_end_to_end_ms": 5028.8006067276,
+      "busy_time_ratio": 0.9261388338818451,
+      "raw": [
+        {
+          "submission_id": 1,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 359.59672927856445,
+          "compile_ms": 188.93371799998704,
+          "run_ms": 1198.7098250000088,
+          "end_to_end_ms": 1768.7444686889648,
+          "attempts": 1
+        },
+        {
+          "submission_id": 2,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 358.3688735961914,
+          "compile_ms": 349.8018920000163,
+          "run_ms": 172.57034699997575,
+          "end_to_end_ms": 932.3399066925049,
+          "attempts": 1
+        },
+        {
+          "submission_id": 3,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 934.5395565032959,
+          "compile_ms": 669.4023560000062,
+          "run_ms": 216.13120499998217,
+          "end_to_end_ms": 1825.2391815185547,
+          "attempts": 1
+        },
+        {
+          "submission_id": 4,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 1769.568681716919,
+          "compile_ms": 168.74544300000593,
+          "run_ms": 193.6644289999947,
+          "end_to_end_ms": 2137.3207569122314,
+          "attempts": 1
+        },
+        {
+          "submission_id": 5,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 1827.2688388824463,
+          "compile_ms": 330.9435249999808,
+          "run_ms": 1195.4229800000178,
+          "end_to_end_ms": 3358.6034774780273,
+          "attempts": 1
+        },
+        {
+          "submission_id": 6,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 2138.2129192352295,
+          "compile_ms": 709.3825059999972,
+          "run_ms": 209.5370119999984,
+          "end_to_end_ms": 3062.7331733703613,
+          "attempts": 1
+        },
+        {
+          "submission_id": 7,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 3063.7590885162354,
+          "compile_ms": 146.05867299999886,
+          "run_ms": 170.8374569999762,
+          "end_to_end_ms": 3385.484218597412,
+          "attempts": 1
+        },
+        {
+          "submission_id": 8,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 3358.665943145752,
+          "compile_ms": 328.1285740000044,
+          "run_ms": 175.2177869999798,
+          "end_to_end_ms": 3867.1538829803467,
+          "attempts": 1
+        },
+        {
+          "submission_id": 9,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 3386.399269104004,
+          "compile_ms": 773.4270330000186,
+          "run_ms": 1237.797358999984,
+          "end_to_end_ms": 5403.26714515686,
+          "attempts": 1
+        },
+        {
+          "submission_id": 10,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 3867.520570755005,
+          "compile_ms": 165.05476699998667,
+          "run_ms": 172.49782299998628,
+          "end_to_end_ms": 4209.333181381226,
+          "attempts": 1
+        },
+        {
+          "submission_id": 11,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 4211.4598751068115,
+          "compile_ms": 287.3238090000143,
+          "run_ms": 149.94687600000134,
+          "end_to_end_ms": 4654.33406829834,
+          "attempts": 1
+        },
+        {
+          "submission_id": 12,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 4655.349969863892,
+          "compile_ms": 711.2286349999977,
+          "run_ms": 212.56202600000051,
+          "end_to_end_ms": 5583.719968795776,
+          "attempts": 1
+        },
+        {
+          "submission_id": 13,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 5402.800798416138,
+          "compile_ms": 168.55863099999624,
+          "run_ms": 1160.8667739999987,
+          "end_to_end_ms": 6739.299297332764,
+          "attempts": 1
+        },
+        {
+          "submission_id": 14,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 5584.463596343994,
+          "compile_ms": 267.5347240000008,
+          "run_ms": 171.63250100000482,
+          "end_to_end_ms": 6029.131650924683,
+          "attempts": 1
+        },
+        {
+          "submission_id": 15,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 6030.284881591797,
+          "compile_ms": 649.0721569999778,
+          "run_ms": 232.17681900001708,
+          "end_to_end_ms": 6916.387557983398,
+          "attempts": 1
+        },
+        {
+          "submission_id": 16,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 6739.790201187134,
+          "compile_ms": 187.28330800001913,
+          "run_ms": 191.73777899999322,
+          "end_to_end_ms": 7124.586582183838,
+          "attempts": 1
+        },
+        {
+          "submission_id": 17,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 6917.054176330566,
+          "compile_ms": 348.66733399999816,
+          "run_ms": 1179.2738120000195,
+          "end_to_end_ms": 8450.770616531372,
+          "attempts": 1
+        },
+        {
+          "submission_id": 18,
+          "language": "java",
+          "verdict": "Accepted",
+          "queue_wait_ms": 7125.1890659332275,
+          "compile_ms": 729.6693139999775,
+          "run_ms": 210.297799000017,
+          "end_to_end_ms": 8069.804668426514,
+          "attempts": 1
+        },
+        {
+          "submission_id": 19,
+          "language": "c",
+          "verdict": "Accepted",
+          "queue_wait_ms": 8070.955038070679,
+          "compile_ms": 146.66037799997866,
+          "run_ms": 150.30751599999803,
+          "end_to_end_ms": 8372.42078781128,
+          "attempts": 1
+        },
+        {
+          "submission_id": 20,
+          "language": "cpp",
+          "verdict": "Accepted",
+          "queue_wait_ms": 8373.863935470581,
+          "compile_ms": 287.2573599999839,
+          "run_ms": 169.25028599999337,
+          "end_to_end_ms": 8835.150957107544,
+          "attempts": 1
+        }
+      ]
+    }
+  ]
+}

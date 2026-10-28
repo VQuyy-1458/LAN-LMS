@@ -1,0 +1,477 @@
+"use client";
+import {useCourseReadonly} from "@/components/CourseAccess";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
+import { apiRequest } from "@/lib/api";
+import { date, key, localInput, localISO, request, type Page } from "@/lib/lms";
+import { useAction } from "@/lib/useAction";
+import ConfirmAction from "@/components/ConfirmAction";
+import FilePreview from "@/components/FilePreview";
+import AssignmentProgress from "./AssignmentProgress";
+import { useRealtime } from "@/components/Realtime";
+import Feedback from "@/components/Feedback";
+type Assignment = {
+  id: number;
+  title: string;
+  description: string;
+  due_at: string;
+  allow_resubmit: boolean;
+  attachment_filename: string | null;
+  attachments: {id:number;filename:string;size_bytes:number}[];
+  submission_status?: string;
+  submitted_count?: number;
+  total_students?: number;
+};
+type FileSub = {
+  id: number;
+  student_id: string;
+  original_filename: string;
+  received_at: string;
+  score: number | null;
+  feedback: string | null;
+};
+async function saveWithFiles(form:HTMLFormElement,body:unknown,courseId:number,assignmentId?:number){
+ const data=new FormData(form);
+ for(const [name,value] of Object.entries(body as Record<string,unknown>))data.set(name,String(value));
+ const selected=data.getAll("files").filter(f=>f instanceof File&&f.name);
+ data.delete("files");for(const f of selected)data.append("files",f);
+ data.set("replace_files",String(data.has("replace_files")));
+ return apiRequest(assignmentId?`/api/assignments/${assignmentId}/with-files`:`/api/courses/${courseId}/assignments/with-files`,{method:assignmentId?"PATCH":"POST",body:data});
+}
+function AssignmentForm({
+  initial,
+  save,
+  busy,
+}: {
+  initial?: Assignment;
+  save: (body: unknown, form: HTMLFormElement) => void;
+  busy: boolean;
+}) {
+  const [defaultDue] = useState(() =>
+    localInput(
+      initial?.due_at || new Date(Date.now() + 86400000).toISOString(),
+    ),
+  );
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        const f = new FormData(e.currentTarget);
+        save(
+          {
+            title: f.get("title"),
+            description: f.get("description"),
+            due_at: localISO(String(f.get("due_at"))),
+            allow_resubmit: f.get("allow_resubmit") === "on",
+          },
+          e.currentTarget,
+        );
+      }}
+    >
+      <div className="form-grid">
+        <label>
+          Tên bài tập
+          <input
+            name="title"
+            defaultValue={initial?.title}
+            required
+            maxLength={200}
+          />
+        </label>
+        <label>
+          Hạn nộp
+          <input
+            name="due_at"
+            type="datetime-local"
+            defaultValue={defaultDue}
+            required
+          />
+        </label>
+        <label className="full">
+          Nội dung bài tập
+          <textarea
+            name="description"
+            defaultValue={initial?.description}
+            maxLength={20000}
+          />
+        </label>
+        <label className="full">File đề bài và tài liệu đính kèm (tối đa 10 file)<input type="file" multiple name="files" accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.zip"/><small>20 MiB mỗi file, tổng 100 MiB.</small></label>
+        {initial&&<label className="check-label"><input type="checkbox" name="replace_files"/>Thay toàn bộ file cũ bằng các file mới đã chọn; bỏ chọn để bổ sung file.</label>}
+        <label className="check-label">
+          <input
+            type="checkbox"
+            name="allow_resubmit"
+            defaultChecked={initial?.allow_resubmit ?? true}
+          />
+          Cho phép nộp lại trước hạn
+        </label>
+      </div>
+      <div className="actions">
+        <button disabled={busy}>
+          {initial ? "Lưu bài tập" : "Tạo bài tập"}
+        </button>
+      </div>
+    </form>
+  );
+}
+function AssignmentCard({
+  assignment: a,
+  teacher,
+  reload,
+}: {
+  assignment: Assignment;
+  teacher: boolean;
+  reload: () => Promise<void>;
+}) {
+  const readonly=useCourseReadonly();
+  const [rows, setRows] = useState<FileSub[]>([]),
+    [page, setPage] = useState(1),
+    [total, setTotal] = useState(0),
+    [open, setOpen] = useState(false);
+  const [preview,setPreview]=useState<{id:number;original_filename:string;kind?:"attachment"|"handout"}|null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const action = useAction(),
+    retry = useRef<{ file: File; key: string } | null>(null);
+  const load = useCallback(async () => {
+    const r = await apiRequest<Page<FileSub>>(
+      `/api/assignments/${a.id}/submissions?page=${page}&page_size=10`,
+    );
+    setRows(r.items);
+    setTotal(r.total);
+  }, [a.id, page]);
+  useEffect(() => {
+    if (open) load().catch(action.setError);
+  }, [open, load, action.setError]);
+  function upload(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = e.currentTarget,
+      f = new FormData(form),
+      file = f.get("file") as File;
+    if (!retry.current) retry.current = { file, key: key() };
+    const k = retry.current.key;
+    void action.run(async () => {
+      await apiRequest(`/api/assignments/${a.id}/submissions`, {
+        method: "POST",
+        body: f,
+        headers: { "Idempotency-Key": k },
+      });
+      retry.current = null;
+      form.reset();
+      setOpen(true);
+      await load();
+    }, "Đã nhận bài nộp. Bạn có thể tải lại file để kiểm tra.");
+  }
+  return (
+    <section className="panel">
+      {preview&&<FilePreview id={preview.id} kind={preview.kind} name={preview.original_filename} onClose={()=>setPreview(null)}/>}
+      <div className="panel-title">
+        <div>
+          <h2>{a.title}</h2>
+          <p className="section-note">
+            Hạn nộp: {date(a.due_at)} ·{" "}
+            {a.allow_resubmit ? "Được nộp lại" : "Chỉ nộp một lần"}
+          </p>
+        </div>
+        <span className="badge">
+          {new Date(a.due_at).getTime() < now ? "Đã hết hạn" : "Đang nhận bài"}
+        </span>
+      </div>
+      <p className="statement">
+        {a.description || "Giảng viên chưa thêm mô tả."}
+      </p>
+      <p className="section-note">
+        {teacher
+          ? `${a.submitted_count || 0}/${a.total_students || 0} sinh viên đã nộp`
+          : a.submission_status === "submitted"
+            ? "Đã nộp bài"
+            : a.submission_status === "overdue"
+              ? "Đã quá hạn nộp"
+              : "Chưa nộp bài"}
+      </p>
+      <Feedback error={action.error} message={action.message} />
+      {(a.attachments||[]).map(file=><div className="actions" key={file.id}><button className="secondary" onClick={()=>setPreview({id:file.id,original_filename:file.filename,kind:"handout"})}>Xem: {file.filename}</button><a href={`/api/assignment-files/${file.id}/download`}>Tải xuống</a></div>)}
+      {!a.attachments?.length && a.attachment_filename && (
+        <p>
+          <button className="secondary" onClick={()=>setPreview({id:a.id,original_filename:a.attachment_filename!,kind:"attachment"})}>Xem đề trực tiếp</button>{" "}
+          <a href={`/api/assignments/${a.id}/attachment`}>
+            Tải đề bài: {a.attachment_filename}
+          </a>
+        </p>
+      )}
+
+      {teacher && !readonly ? (
+        <details style={{ marginTop: 18 }}>
+          <summary>Chỉnh sửa bài tập</summary>
+          <AssignmentForm
+            initial={a}
+            busy={action.busy}
+            save={(body,form) =>
+              void action.run(async () => {
+                await saveWithFiles(form,body,0,a.id);
+                await reload();
+              })
+            }
+          />
+        </details>
+      ) : !teacher&&!readonly ? (
+        <form onSubmit={upload} style={{ marginTop: 20 }}>
+          <label>
+            Chọn bài nộp
+            <input
+              name="file"
+              type="file"
+              accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.zip,.c,.cpp,.java"
+              required
+              onChange={() => {
+                retry.current = null;
+              }}
+            />
+          </label>
+          <p className="section-note">
+            Tối đa 20 MiB. Hệ thống lưu lịch sử các lần nộp hợp lệ.
+          </p>
+          <div className="actions">
+            <button
+              disabled={action.busy || new Date(a.due_at).getTime() < now}
+            >
+              Nộp bài tập
+            </button>
+          </div>
+        </form>
+      ) : null}
+      <div className="actions">
+        {teacher&&!readonly&&<ConfirmAction label="Xóa bài tập" message={`Bạn chắc chắn muốn xóa “${a.title}”? Bài này sẽ không còn tính vào điểm bài tập.`} run={async()=>{await request(`/api/assignments/${a.id}`,"DELETE");await reload()}}/>}
+        <button className="secondary" onClick={() => setOpen((v) => !v)}>
+          {open
+            ? "Ẩn lịch sử"
+            : teacher
+              ? "Xem bài nộp của lớp"
+              : "Xem lịch sử nộp"}
+        </button>
+      </div>
+      {open && (
+        <>
+          <div className="table-wrap" style={{ marginTop: 16 }}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Sinh viên</th>
+                  <th>Bài nộp</th>
+                  <th>Thời gian</th>
+                  <th>Điểm / Nhận xét</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.id}>
+                    <td>{r.student_id}</td>
+                    <td>
+                      <button className="secondary" onClick={()=>setPreview(r)}>Xem trực tiếp</button>
+                      <a
+                        className="download"
+                        href={`/api/assignment-submissions/${r.id}/download`}
+                      >
+                        {r.original_filename} ↓
+                      </a>
+                    </td>
+                    <td>{date(r.received_at)}</td>
+                    <td>
+                      {teacher && !readonly ? (
+                        <form
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            const f = new FormData(e.currentTarget);
+                            void action.run(async () => {
+                              await request(
+                                `/api/assignment-submissions/${r.id}/grade`,
+                                "PATCH",
+                                {
+                                  score: Number(f.get("score")),
+                                  feedback: f.get("feedback"),
+                                },
+                              );
+                              await load();
+                            }, "Đã lưu điểm và cập nhật kết quả cho sinh viên.");
+                          }}
+                        >
+                          <label>
+                            Điểm (0–10)
+                            <input
+                              name="score"
+                              type="number"
+                              min="0"
+                              max="10"
+                              step="0.01"
+                              defaultValue={r.score ?? ""}
+                              required
+                            />
+                          </label>
+                          <label>
+                            Nhận xét
+                            <input
+                              name="feedback"
+                              defaultValue={r.feedback ?? ""}
+                              maxLength={4000}
+                            />
+                          </label>
+                          <button
+                            disabled={action.busy}
+                            style={{ marginTop: 8 }}
+                          >
+                            Lưu điểm
+                          </button>
+                        </form>
+                      ) : (
+                        <>
+                          <strong>{r.score ?? "Chưa chấm"}</strong>
+                          <p className="section-note">{r.feedback}</p>
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {!rows.length && <div className="empty">Chưa có bài nộp.</div>}
+          <div className="actions">
+            <button
+              className="secondary"
+              disabled={page === 1}
+              onClick={() => setPage((x) => x - 1)}
+            >
+              Trước
+            </button>
+            <span>Trang {page}</span>
+            <button
+              className="secondary"
+              disabled={page * 10 >= total}
+              onClick={() => setPage((x) => x + 1)}
+            >
+              Sau
+            </button>
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+export default function AssignmentsPanel({
+  courseId,
+  teacher,
+}: {
+  courseId: number;
+  teacher: boolean;
+}) {
+  const readonly=useCourseReadonly();
+  const [rows, setRows] = useState<Assignment[]>([]),
+    [page, setPage] = useState(1),
+    [total, setTotal] = useState(0);
+  type Filter = "all" | "not_submitted" | "submitted" | "overdue" | "within" | "progress";
+  const [filter, setFilter] = useState<Filter>("all");
+  const [counts, setCounts] = useState<Record<Filter, number>>({
+    all: 0, within:0, progress:0,
+    not_submitted: 0,
+    submitted: 0,
+    overdue: 0,
+  });
+  const action = useAction();
+  const {revision}=useRealtime();
+  const load = useCallback(async () => {
+    if(filter==="progress")return;
+    const r = await apiRequest<
+      Page<Assignment> & { counts: Record<Filter, number> }
+    >(
+      `/api/courses/${courseId}/assignments?page=${page}&page_size=10&status=${filter}`,
+    );
+    setRows(r.items);
+    setCounts(r.counts);
+    if (page > 1 && (page - 1) * 10 >= r.total) setPage(1);
+    setTotal(r.total);
+  }, [courseId, page, filter]);
+  useEffect(() => {
+    load().catch(action.setError);
+  }, [load, revision, action.setError]);
+  return (
+    <div className="stack">
+      <Feedback error={action.error} message={action.message} />
+      {teacher && !readonly && (
+        <section className="panel">
+          <details>
+            <summary>Tạo bài tập mới</summary>
+            <AssignmentForm
+              busy={action.busy}
+              save={(body, form) =>
+                void action.run(async () => {
+                  await saveWithFiles(form,body,courseId);
+                  form.reset();
+                  await load();
+                }, "Đã tạo bài tập.")
+              }
+            />
+          </details>
+        </section>
+      )}
+      <nav className="tabs" aria-label="Lọc bài tập">
+        {(
+          (teacher ? [["all","Tổng số"],["within","Trong hạn"],["overdue","Quá hạn"],["progress","Tiến độ"]] : [
+            ["all", "Tổng số"],
+            ["not_submitted", "Chưa nộp"],
+            ["submitted", teacher ? "Đã nộp đủ" : "Đã nộp"],
+            ["overdue", "Quá hạn"],
+          ]) as [Filter, string][]
+        ).map(([value, label]) => (
+          <button
+            key={value}
+            className={filter === value ? "active" : ""}
+            onClick={() => {
+              setFilter(value);
+              setPage(1);
+            }}
+          >
+            {label} {value!=="progress"&&`(${counts[value]??0})`}
+          </button>
+        ))}
+      </nav>
+      {filter==="progress"?<AssignmentProgress courseId={courseId} teacher={teacher}/>:<>
+      {rows.map((a) => (
+        <AssignmentCard
+          key={a.id}
+          assignment={a}
+          teacher={teacher}
+          reload={load}
+        />
+      ))}
+      {!rows.length && (
+        <div className="empty">Không có bài tập trong mục này.</div>
+      )}
+      <div className="actions">
+        <button
+          className="secondary"
+          disabled={page === 1}
+          onClick={() => setPage((x) => x - 1)}
+        >
+          Trước
+        </button>
+        <span>Trang {page}</span>
+        <button
+          className="secondary"
+          disabled={page * 10 >= total}
+          onClick={() => setPage((x) => x + 1)}
+        >
+          Sau
+        </button>
+      </div>
+      </>}
+    </div>
+  );
+}

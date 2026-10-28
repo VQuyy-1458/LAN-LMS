@@ -1,0 +1,66 @@
+name: Integration tests
+on:
+  push:
+    branches: [main, develop, 'codex/**']
+  pull_request:
+    branches: [develop, main]
+permissions:
+  contents: read
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - run: pip install -r server/requirements.lock
+      - run: docker build -t lan-lms-judge:day25 judge
+      - run: python -m pytest -q --tb=short
+        env:
+          RUN_DOCKER_TESTS: '1'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+        working-directory: client
+      - run: npm test && npm run typecheck && npm run lint && npm run build
+        working-directory: client
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+      - name: Measure real Docker judge throughput when explicitly requested
+        if: contains(github.event.head_commit.message, '[benchmark]')
+        run: python -m experiments.run_judge --output experiments/results/ci-linux --trials 3 --jobs 20
+      - name: Upload measured judge data
+        if: contains(github.event.head_commit.message, '[benchmark]') && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: judge-measurements
+          path: experiments/results/ci-linux
+          if-no-files-found: warn
+  report:
+    if: contains(github.event.head_commit.message, '[report]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install isolated report conversion tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libreoffice-writer poppler-utils fonts-liberation
+          python -m pip install pdf2image==1.17.0
+      - name: Render committed report for page-by-page review
+        run: |
+          python scripts/report_tools/render_docx.py REPORT/NhomXX_LANLMS_Report.docx --output_dir .runtime/report-render --emit_pdf --verbose
+          python -c "import hashlib,json,os,pathlib; p=pathlib.Path('REPORT/NhomXX_LANLMS_Report.docx'); pathlib.Path('.runtime/report-render/provenance.json').write_text(json.dumps({'commit':os.environ['GITHUB_SHA'],'docx_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'run_id':os.environ['GITHUB_RUN_ID']},indent=2))"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: report-render
+          path: .runtime/report-render
+          if-no-files-found: error

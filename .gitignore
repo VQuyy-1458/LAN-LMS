@@ -48,3 +48,28 @@ Desktop.ini
 # Generated frontend types/cache
 client/next-env.d.ts
 *.tsbuildinfo
+
+# Local proxy runtime
+.runtime/
+
+# SQLite WAL/SHM and new private judge storage
+*.db-wal
+*.db-shm
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite3-wal
+*.sqlite3-shm
+storage/code_submissions/*
+storage/test_cases/*
+storage/course_imports/*
+!storage/code_submissions/.gitkeep
+!storage/test_cases/.gitkeep
+
+# Temporary Microsoft Office lock files
+~$*
+
+storage/assignment_handouts/*
+output/
+
+# Installed local proxy binary; offline kits carry their own verified copy.
+tools/nginx/

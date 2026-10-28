@@ -1,6 +1,7 @@
 from alembic import context
 from server.app.core.config import Settings
 from server.app.core.database import Base, database
+import server.app.models  # register shared D01 tables
 
 engine, _ = database(Settings().database_url)
 with engine.connect() as connection:

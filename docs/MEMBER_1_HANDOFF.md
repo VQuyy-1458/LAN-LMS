@@ -1,3 +1,5 @@
+> Nhật ký mốc trước bản hoàn thiện. Trạng thái hiện hành xem README, PROJECT_PLAN 1.2 và API 1.2.
+
 # Thành viên 1 — Backend nền tảng
 
 Triển khai ngày 24/10/2026 trên nhánh `codex/member-1-backend`. Không bao gồm code nghiệp vụ thuộc thành viên 2/3/4 và không khai báo toàn bộ sản phẩm đã hoàn thành.
@@ -49,7 +51,7 @@ Backend/test/migration đã chạy trên môi trường Python 3.12 Windows. Ngi
 
 1. POST `/api/auth/login` body `{username,password}`, browser tự gửi Origin, fetch dùng credentials same-origin.
 2. GET `/api/auth/me`; nếu must_change_password thì đưa đến trang đổi mật khẩu.
-3. GET `/api/auth/csrf`, giữ token trong bộ nhớ; gửi X-CSRF-Token cho các POST/PATCH/DELETE. Endpoint này rotate token: sau mở tab khác hoặc nhận INVALID_CSRF thì lấy lại token; không tự retry thao tác không có idempotency nếu chưa biết kết quả.
+3. GET `/api/auth/csrf`, giữ token trong bộ nhớ; gửi X-CSRF-Token cho các POST/PATCH/DELETE. Token ổn định trong cùng session kể từ bản ngày 24: mở tab khác không làm mất hiệu lực; khi nhận INVALID_CSRF thì lấy lại token; không tự retry thao tác không có idempotency nếu chưa biết kết quả.
 4. Đổi mật khẩu trả 204, đưa về login. Logout trả 204; xóa trạng thái người dùng phía client.
 5. Mở WS sau khi đăng nhập và đổi mật khẩu. Với `{type:"heartbeat",id}` trả `{type:"heartbeat.ack",id}`. Không có thao tác subscribe user/course tùy ý từ browser.
 6. Reconnect sau 1/2/4/8 giây, tối đa 15 giây với jitter. Sau reconnect GET trạng thái; polling bài chưa xong 3 giây/lần khi WS mất; dừng khi rời trang hoặc terminal. Đây là trách nhiệm frontend, chưa có code frontend trong nhánh này.
@@ -96,3 +98,7 @@ Không có secret/DB mẫu thật được commit. Chưa xác nhận hiệu năn
 ## Cập nhật cấu trúc thư mục
 
 Auth router hiện ở server/app/modules/auth/router.py, export qua modules/auth/__init__.py; main.py giữ nguyên import. Các file khung mới được mô tả tại [REPOSITORY_GUIDE.md](REPOSITORY_GUIDE.md). Không coi các module router rỗng là đã tích hợp.
+
+## Bổ sung nghiệm thu ngày 24/10
+
+Xem [MEMBER_1_DAY_24.md](MEMBER_1_DAY_24.md) để đối chiếu A01–A05, A08 và Q01 với bảng phân công. Có thêm /api/ready (kiểm tra các bảng auth đã migrate), get_db dependency, common Page/Pagination/utc_iso, response model OpenAPI, start_proxy.ps1 và check_lan.py. Frontend và Docker vẫn cần kết quả tích hợp thật từ thành viên phụ trách.

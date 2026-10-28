@@ -84,6 +84,7 @@ def test_origin_validation_and_errors(app):
 def test_expiry_inactive_and_course_policy(app):
     with TestClient(app) as c:
         login(c)
+        app.state.course_access = None  # explicit unintegrated-policy fallback
         assert c.get('/course/1').status_code == 503
         app.state.course_access = lambda user, course_id: user.role == 'teacher' and course_id == 1
         assert c.get('/course/1').status_code == 200
@@ -115,9 +116,13 @@ def test_websocket_heartbeat_delivery_and_revocation(app):
             ws.send_json({'type': 'heartbeat.ack', 'id': heartbeat['id']})
             c.portal.call(app.state.hub.publish, 'submission.updated', {'submission_id': 1, 'version': 1}, {1})
             assert ws.receive_json()['type'] == 'submission.updated'
-            c.post('/api/auth/logout', headers=csrf(c))
+            assert c.post('/api/auth/logout', headers=csrf(c)).status_code == 204
+            assert c.get('/api/auth/me').status_code == 401
             with pytest.raises(WebSocketDisconnect):
-                ws.receive_json()
+                # A heartbeat already sent before revocation may be buffered in transit.
+                # No business event may arrive after the logout response.
+                while True:
+                    assert ws.receive_json()['type'] == 'heartbeat'
         assert not app.state.hub.connections
 
 

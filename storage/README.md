@@ -1,3 +1,11 @@
-# Kho dữ liệu runtime
+# Private storage
 
-course_materials/: tài liệu khóa học; submissions/: file/code sinh viên nộp; temporary/: dữ liệu thực thi tạm. Chỉ .gitkeep được commit ở các thư mục này. Không dùng làm web public và không commit dữ liệu cá nhân, mật khẩu hay bài nộp thật. Backend sinh tên lưu và kiểm tra quyền tải; đường dẫn hiển thị khác đường dẫn đĩa.
+- course_materials: tài liệu.
+- submissions: bài tập file.
+- code_submissions: source code.
+- test_cases: input và expected output.
+- temporary: dữ liệu tạm.
+
+Tên lưu UUID; DB chỉ giữ metadata/path tương đối. Không public serve thư mục này. Download qua API có phân quyền. Nội dung bị Git ignore; chỉ giữ README và .gitkeep. Không giải nén ZIP hoặc thực thi file upload.
+
+API và worker cần cùng STORAGE_ROOT. Backup/restore cả DB và thư mục này bằng script trong README gốc, có checksum và yêu cầu đích mới. Không đẩy dữ liệu sinh viên hoặc backup lên Git.

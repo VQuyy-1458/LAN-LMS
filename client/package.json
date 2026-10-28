@@ -1,9 +1,31 @@
 {
   "name": "lan-lms-client",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
-  "description": "Scaffold only. Member 2 must select and lock Next.js/React/TypeScript/Tailwind dependencies before running.",
-  "scripts": {},
-  "dependencies": {},
-  "devDependencies": {}
+  "description": "LAN-LMS student and teacher portal with REST, WebSocket and programming exams",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@zxing/browser": "0.2.1",
+    "next": "^16.4.3",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.4.3",
+    "postcss": "^8.5.31",
+    "tailwindcss": "^4.3.3",
+    "typescript": "6.0.3"
+  }
 }

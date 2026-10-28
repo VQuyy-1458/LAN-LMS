@@ -1,4 +1,2 @@
-// Thành viên 2: thay file khung này bằng giao diện tích hợp API thật.
-export default function Page() {
-  return <main><h1>Điểm danh</h1><p>Chưa triển khai chức năng.</p></main>;
-}
+import Workspace from "@/features/courses/Workspace";
+export default function Page(){return <Workspace teacher initialTab="attendance"/>;}

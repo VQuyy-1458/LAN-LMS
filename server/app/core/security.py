@@ -1,16 +1,30 @@
 import hashlib
 import secrets
 import time
+import re
 from dataclasses import dataclass
 
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError
 from fastapi import Depends, HTTPException, Request
 
-from .database import AuthSession, User
+from .database import AuthSession, User, get_db
 
 hasher = PasswordHasher()
 COOKIE = 'lan_lms_session'
+
+
+def cookie_name(request):
+    tab = request.headers.get('x-session-tab') or request.query_params.get('session_tab')
+    if tab is None:
+        return COOKIE  # Compatibility with API clients and existing integrations.
+    if not re.fullmatch(r'[a-f0-9]{32}', tab):
+        fail(400, 'INVALID_SESSION_TAB', 'Phiên tab không hợp lệ')
+    return COOKIE + '_' + tab
+
+
+def session_token(request):
+    return request.cookies.get(cookie_name(request))
 
 
 def digest(value):
@@ -56,7 +70,7 @@ def lookup(app, token):
 
 
 def current_user(request: Request):
-    principal = lookup(request.app, request.cookies.get(COOKIE))
+    principal = lookup(request.app, session_token(request))
     if not principal:
         fail(401, 'UNAUTHENTICATED', 'Vui lòng đăng nhập')
     if request.method not in ('GET', 'HEAD', 'OPTIONS'):
@@ -64,14 +78,21 @@ def current_user(request: Request):
         with request.app.state.sessions() as db:
             session = db.get(AuthSession, principal.session_hash)
             supplied = request.headers.get('x-csrf-token', '')
+            if not session or session.expires_at <= time.time():
+                fail(401, "UNAUTHENTICATED", "Vui lòng đăng nhập")
             if not session.csrf_hash or not secrets.compare_digest(session.csrf_hash, digest(supplied)):
                 fail(403, 'INVALID_CSRF', 'CSRF token không hợp lệ')
     return principal
 
 
-def learning_user(user=Depends(current_user)):
+def learning_user(request: Request, user=Depends(current_user), db=Depends(get_db)):
     if user.must_change_password:
         fail(403, 'PASSWORD_CHANGE_REQUIRED', 'Cần đổi mật khẩu trước')
+    if request.method not in ('GET','HEAD','OPTIONS'):
+        from ..services.idempotency import write_lock
+        write_lock(db)
+        from ..services.lifecycle import assert_writable_request
+        assert_writable_request(db,user,request)
     return user
 
 

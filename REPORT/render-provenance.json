@@ -1,0 +1,23 @@
+{
+  "commit": "8a438366cf0749c2fe23940e40279061eecd9758",
+  "docx_sha256": "2972af042e378f92141a7688a2c7e1769496dc9333c36f366bb04977f393338e",
+  "run_id": "40224553014",
+  "render_run_url": "https://github.com/VQuyy-1458/LAN-LMS/actions/runs/40224553014",
+  "pdf_sha256": "af165f85dd052a27906df99c4a41f3d774d71cfb578cf8cf57a36d7ec82a72bf",
+  "page_count": 11,
+  "visual_review_completed": true,
+  "visual_review_date": "2026-10-26",
+  "reviewed_page_png_sha256": {
+    "page-1.png": "4d6db0f7dfc2d2660ea2f183e12b94cbdad1332065a5b838397129f77e4c01d2",
+    "page-2.png": "ac10c878658261314a2b383400e2e899b9ec1d155d0e8dcc37ed08c67ee0fb61",
+    "page-3.png": "4ede598bea54b906509a15503957ff2e0d07ee95a6e14a84391fd26f4456f610",
+    "page-4.png": "5179adacdecc2995101bc4153d393b93e9520427c44038728369360a88476ff1",
+    "page-5.png": "c3db3bb8e0614268928de4e9fd636dd0ff25e15f8592a40a4f02340449f710b3",
+    "page-6.png": "aac31d75b9a0c55729222afef692890c1987069f2d843e3000d22195c3de2219",
+    "page-7.png": "bbbe818b5ede783dfddeeb98cbd632ef456efa28f7c0318c2a438510cf2a1711",
+    "page-8.png": "07d969d9dee95069fa4aa30c2747febeabb601a957ff0656a8f0aab674847a98",
+    "page-9.png": "1258816e41087340062fd740695fab9fdba9ec9fc435f43a7dbb0defeec41638",
+    "page-10.png": "2fabeb90eb32c8020ffe5d2e4401d31f19bce656d52b0450bd716e8016e399d1",
+    "page-11.png": "00e55005ff3bfd2b93447393b4599554cbc004a33ac4eea38cbbf46c78383835"
+  }
+}

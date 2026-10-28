@@ -1,3 +1,4 @@
+import anyio
 import asyncio
 import json
 import secrets
@@ -5,7 +6,7 @@ from datetime import datetime, timezone
 
 from fastapi import WebSocket, WebSocketDisconnect
 
-from .security import COOKIE, lookup
+from .security import session_token, lookup, digest
 
 
 class EventHub:
@@ -13,8 +14,17 @@ class EventHub:
     def __init__(self):
         self.connections = {}
 
+    async def revoke(self, user_id, session_hash=None):
+        for ws, (uid, _) in list(self.connections.items()):
+            if uid == user_id and (session_hash is None or digest(session_token(ws) or "") == session_hash):
+                self.connections.pop(ws, None)
+                try:
+                    await ws.close(1008)
+                except (RuntimeError, OSError):
+                    pass
+
     async def publish(self, event_type, data, recipient_ids):
-        if event_type not in {'submission.updated', 'exam.updated', 'session.updated'}:
+        if event_type not in {'submission.updated', 'exam.updated', 'session.updated', 'attendance.updated', 'grade.updated'}:
             raise ValueError('Unsupported event type')
         event = {'event_id': secrets.token_urlsafe(16), 'type': event_type,
                  'occurred_at': datetime.now(timezone.utc).isoformat(), 'data': data}
@@ -29,11 +39,13 @@ class EventHub:
 
 async def websocket_endpoint(ws: WebSocket):
     app = ws.app
-    user = await asyncio.to_thread(lookup, app, ws.cookies.get(COOKIE))
+    user = await asyncio.to_thread(lookup, app, session_token(ws))
     if ws.headers.get('origin') not in app.state.settings.allowed_origins or not user or user.must_change_password:
         await ws.close(1008)
         return
     await ws.accept()
+    from ..services.notifications import touch
+    await asyncio.to_thread(touch, app, user.user_id)
     queue = asyncio.Queue(maxsize=100)
     app.state.hub.connections[ws] = (user.user_id, queue)
     heartbeat_id = None
@@ -44,7 +56,7 @@ async def websocket_endpoint(ws: WebSocket):
         while True:
             remaining = max(0, deadline - asyncio.get_running_loop().time())
             done, _ = await asyncio.wait([receive, outgoing], timeout=remaining, return_when=asyncio.FIRST_COMPLETED)
-            fresh = await asyncio.to_thread(lookup, app, ws.cookies.get(COOKIE))
+            fresh = await asyncio.to_thread(lookup, app, session_token(ws))
             if not fresh or fresh.must_change_password:
                 await ws.close(1008)
                 return
@@ -61,6 +73,7 @@ async def websocket_endpoint(ws: WebSocket):
                 if not isinstance(message, dict) or not heartbeat_id or message.get('type') != 'heartbeat.ack' or message.get('id') != heartbeat_id:
                     await ws.close(1008)
                     return
+                await asyncio.to_thread(touch, app, user.user_id)
                 heartbeat_id = None
                 deadline = asyncio.get_running_loop().time() + app.state.settings.heartbeat_seconds
                 receive = asyncio.create_task(ws.receive_text())
@@ -74,7 +87,8 @@ async def websocket_endpoint(ws: WebSocket):
                 heartbeat_id = secrets.token_urlsafe(12)
                 await ws.send_json({'type': 'heartbeat', 'id': heartbeat_id})
                 deadline = asyncio.get_running_loop().time() + app.state.settings.heartbeat_timeout
-    except WebSocketDisconnect:
+    except (WebSocketDisconnect, asyncio.CancelledError):
+        # Peer closure / ASGI shutdown may cancel a heartbeat DB touch in flight.
         pass
     except (RuntimeError, OSError):
         pass
@@ -82,4 +96,5 @@ async def websocket_endpoint(ws: WebSocket):
         app.state.hub.connections.pop(ws, None)
         for task in (receive, outgoing):
             task.cancel()
-        await asyncio.gather(receive, outgoing, return_exceptions=True)
+        with anyio.CancelScope(shield=True):
+            await asyncio.gather(receive, outgoing, return_exceptions=True)
